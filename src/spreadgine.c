@@ -1,3 +1,5 @@
+//Copyright <>< 2018 Charles Lohr, under the MIT-x11 or NewBSD licenses, you choose.
+
 #include <spreadgine.h>
 #include <os_generic.h>
 
@@ -11,9 +13,12 @@
 static void * SpreadHTTPThread( void * spread )
 {
 	Spredgine * spr;
-	while( !EXit )
+	while( 1 )
 	{
+		//DO WORK HERE
+		//Also figure out a graceful way of quitting when spreadgine wants to shut down.
 		//...
+
 	}
 }
 
@@ -74,7 +79,7 @@ void SpreadDestroy( Spreadgine * spr )
 	OGJoinThread( spr->spreadhthread );
 
 	if( spr->shaders ) free( spr->shaders );
-	if( spr->geometries ) free( spr->geometries );
+	if( spr->geos ) free( spr->geos );
 	if( spr->textures ) free( spr->textures );
 	int i;
 	for( i = 0; i < SPREADGINE_CAMERAS; i++ )
@@ -99,6 +104,8 @@ void SpreadSetupCamera( Spreadgine * spr, int camid, const char * camname )
 	spr->vpnames[camid] = strdup( camname );
 	tdPerspective( 45, 1, .01, 1000, ret->vpperspectives[camid] );
 	tdIdentity(ret->vpviews[camid]);
+
+	SpreadBumpConfiguration( spr );
 }
 
 void spglEnable( Spredgine * e, int en )
@@ -153,27 +160,11 @@ void SpreadPushMessage( Spredgine * e, uint8_t messageid, int payloadsize, void 
 	int modhead = cbhead % SPREADGINE_CIRCBUF;
 	int sent = 0;
 
-
-/*	int ops = payloadsize;
-	//Similar to the arcanepop used in the Watchman controller (in honor of Ben)
-	if( ops > 128 )
-	{
-		cbbuff[modhead] = ops & 0x7f;
-		ops >>= 7;
-		modhead = (modhead+1)%cbhead; sent++;
-	}
-
-	cbbuff[modhead] = ops | 0x80;
-	modhead = (modhead+1)%cbhead; sent++;
-*/
-	payloadsize++;	//For now, output an extra byte as the message id.
-
 	cbbuff[modhead] = payloadsize>>24; modhead = (modhead+1)%cbhead; sent++;
 	cbbuff[modhead] = payloadsize>>16; modhead = (modhead+1)%cbhead; sent++;
 	cbbuff[modhead] = payloadsize>>8; modhead = (modhead+1)%cbhead; sent++;
 	cbbuff[modhead] = payloadsize>>0; modhead = (modhead+1)%cbhead; sent++;
 
-	payloadsize--;
 	cbbuff[modhead] = messageid;
 	modhead = (modhead+1)%cbhead; sent++;
 
@@ -195,11 +186,30 @@ void SpreadPushMessage( Spredgine * e, uint8_t messageid, int payloadsize, void 
 }
 
 
-SpreadShader * SpreadLoadShader( Spreadgine * spr, const char * shader_name, const char * fragmentShader, const char * vertexShader, int attriblistlength, const char ** attriblist )
+SpreadShader * SpreadLoadShader( Spreadgine * spr, const char * shadername, const char * fragmentShader, const char * vertexShader, int attriblistlength, const char ** attriblist )
 {
 	int i;
-	SpreadShader * ret = calloc( sizeof( SpreadShader ), 1 );
 	int retval;
+	SpreadShader * ret;
+
+	//First see if there are any free shaders available in the parent...
+	for( i = 0; i < spr->setshaders; i++ )
+	{
+		if( spr->shaders[i].shadername == 0 )
+			break;
+	}
+	if( i == spr->setshaders )
+	{
+		spr->shaders = realloc( spr->shaders, (spr->setshaders+1)* sizeof( SpreadShader ) );
+		ret = &spr->shaders[spr->setshaders];
+		memset( ret, 0, sizeof( SpreadShader ) );
+	}
+	else
+	{
+		ret = &spr->shaders[i];
+	}
+
+	ret->shader_in_parent = i;
 
 	ret->vertex_shader = glCreateShader(GL_VERTEX_SHADER);
 	if (!ret->vertex_shader)
@@ -279,13 +289,23 @@ SpreadShader * SpreadLoadShader( Spreadgine * spr, const char * shader_name, con
 		}
 		goto qexit;
 	}
-	glUseProgram(program);
-	default_screenscale_offset = glGetUniformLocation ( program , "screenscale" );
-
 
 	ret->known_uniform_slots = 0;
+	ret->shadername = strdup( shadername );
+	ret->fragment_shader_text = strdup( fragmentShader );
+	ret->vertex_shader_text = strdup( vertexShader );
 
-	ret->shader_name = strdup( shader_name );
+	spr->setshaders++;
+
+	ret->view_index = glGetUniformLocation( ret->program_shader, "vmatrix" );
+	ret->perspective_index = glGetUniformLocation( ret->program_shader, "pmatrix" );
+
+	glUseProgram(ret->program_shader);
+
+	spr->current_shader = ret->shader_in_parent;
+
+	SpreadBumpConfiguration( spr );
+
 	return ret;
 
 
@@ -293,49 +313,162 @@ qexit:
 	if( ret->fragment_shader ) glDeleteShader( ret->fragment_shader );
 	if( ret->vertex_shader ) glDeleteShader( ret->vertex_shader );
 	if( ret->program_shader ) glDeleteShader( ret->program_shader );
-	free( ret );
-	free( ret );
 	return 0;
 }
 
 int SpreadGetUniformSlot( SpreadShader * shd, const char * slotname )
 {
 	int i;
-	for( i = 0; i < shd->known_uniform_slots; i++ )
+	int slot = glGetUniformLocation( shd->program_shader, slotname );
+	if( slot > known_uniform_slots )
 	{
-		if( shd->uniform_slot_names && strcmp( shd->uniform_slot_names[i], slotname ) == 0 )
-		{
-			return i;
-		}
+		shd->known_uniform_slots = slot+1;
+		shd->uniform_slot_names = realloc( shd->known_uniform_slots * sizeof( char* ) );
+		shd->uniform_slot_name_lens = realloc( shd->uniform_slot_name_lens * sizeof( int ) );
+		shd->size_of_uniforms = realloc( shd->known_uniform_slots * sizeof( int ) );
+		shd->uniforms_in_slots = realloc( shd->known_uniform_slots * sizeof( float * ) );
+
+		shd->uniform_slot_names[slot] = strdup( slotname );
+		shd->uniform_slot_name_lens[slot] = strlen( slotname );
+		shd->size_of_uniforms[slot] = 0;
+		shd->uniforms_in_slots[slot] = 0;
 	}
 
-	int place = shd->uniform_slot_names;
+	return slot;
+}
 
-	glUseProgram(program);
-	int slot = glGetUniformLocation( shd->program_shader, slotname );
-	if( slot < 0 ) return -1;
+void SpreadUniform4f( SpreadShader * shd, int slot, const float * uni )
+{
+	int stlen = shd->uniform_slot_name_lens[slot];
+	char outputarray[stlen+sizeof(float)*4];
+	glUniform4fv( slot, 1, uni );
+	memcpy( outputarray, uni, sizeof(float)*4 );
+	memcpy( outputarray + sizeof(float)*4, shd->uniform_slot_names[slot], stlen );
+	SpreadPushMessage(e, 81, sizeof(float)*4+stlen, outputarray );
+}
 
+void SpreadUniform16f( SpreadShader * shd, int slot, const float * uni )
+{
+	int stlen = shd->uniform_slot_name_lens[slot];
+	char outputarray[stlen+sizeof(float)*16];
+	glUniformMatrix4fv( slot, 1, uni );
+	memcpy( outputarray, uni, sizeof(float)*16 );
+	memcpy( outputarray + sizeof(float)*16, shd->uniform_slot_names[slot], stlen );
+	SpreadPushMessage(e, 82, sizeof(float)*16+stlen, outputarray );
+}
 
-//XXX TODO Fix all this junk.
-	shd->known_uniform_slots++;
-	shd->uniform_slot_names = realloc( shd->known_uniform_slots * sizeof( char* ) );
-	shd->size_of_uniforms = realloc( shd->known_uniform_slots * sizeof( int ) );
-	shd->uniforms_in_slots = realloc( shd->known_uniform_slots * sizeof( float * ) );
+void SpreadApplyShader( SpreadShader * shd )
+{
+	glUseProgram(shd->program_shader);
+	SpreadPushMessage(e, 80, 4, &shd->shader_in_parent );
+}
 
-	shd->uniform_slot_names[place] = strdup( slotname );
-	shd->size_of_uniforms[place] = 0;
-	shd->uniforms_in_slots[place] = 0;
+void SpreadFreeShader( SpreadShader * shd )
+{
+	if( shd->fragment_shader ) glDeleteShader( shd->fragment_shader );
+	if( shd->vertex_shader ) glDeleteShader( shd->vertex_shader );
+	if( shd->program_shader ) glDeleteShader( shd->program_shader );
+	if( shd->uniform_slot_names ) 		{ free( shd->uniform_slot_names ) ;  	shd->uniform_slot_names = 0; }
+	if( shd->uniform_slot_name_lens ) 	{ free( shd->uniform_slot_name_lens ); 	shd->uniform_slot_name_lens = 0; }
+	if( shd->size_of_uniforms ) 		{ free( shd->size_of_uniforms ); 		shd->size_of_uniforms = 0; }
+	if( shd->uniforms_in_slots ) 		{ free( shd->uniforms_in_slots );		shd->uniforms_in_slots = 0; }
+	if( shd->shadername )				{ free( shd->shadername );				shd->shadername = 0; }
+	if( shd->fragment_shader_text )		{ free( shd->fragment_shader_text );	shd->fragment_shader_text = 0; }
+	if( shd->vertex_shader_text )		{ free( shd->vertex_shader_text );		shd->vertex_shader_text = 0; }
 
-	return place;
+	SpreadBumpConfiguration( shd->parent );
 }
 
 
 
-	glUniform4f( default_screenscale_offset, 2./width, -2./height, 1.0, 1.0 );
 
-void SpreadUniform4f( SpreadShader * shd, int slot, float * uni );
-void SpreadUniform16f( SpreadShader * shd, int slot, float * uni );
-void SpreadFreeShader( SpreadShader * shd );
-void SpreadApplyShader( SpreadShader * shd );
-void SpreadDestroyShader( SpreadShader * shd );
+
+SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, int render_type, int verts, int nr_arrays, void ** arrays, int * strides, int * types, int * typesizes )
+{
+
+	int i;
+	int retval;
+	SpreadGeometry * ret;
+
+	//First see if there are any free geos available in the parent...
+	for( i = 0; i < spr->setgeos; i++ )
+	{
+		if( spr->geos[i].geoname == 0 )
+			break;
+	}
+	if( i == spr->setgeos )
+	{
+		spr->geos = realloc( spr->geos, (spr->setgeos+1)* sizeof( SpreadGeometry ) );
+		ret = &spr->geos[spr->setgeos];
+		memset( ret, 0, sizeof( SpreadGeometry ) );
+	}
+	else
+	{
+		ret = &spr->geos[i];
+	}
+
+	ret->geo_in_parent = i;
+	ret->geoname = strdup( geoname );
+	ret->render_type = render_type;
+	ret->verts = verts;
+	ret->numarrays = nr_arrays;
+	ret->arrays = malloc( sizeof(void*) * nr_arrays );
+	ret->types = malloc( sizeof(int) * nr_arrays );
+	ret->strides = malloc( sizeof(int) * nr_arrays );
+	ret->typesizes = malloc( sizeof(int) * nr_arrays );
+
+	for( i = 0; i < nr_arrays; i++ )
+	{
+		ret->types[i] = typestobu[i];
+		int stride = ret->strides[i] = strides[i];
+		int typesize = ret->typesizes[i] = typesizes[i];
+		ret->arrays[i] = malloc( stride * typesize * verts );
+		memcpy( ret->arrays[i], arrays[i], stride * typesize * verts );
+	}
+
+
+	SpreadBumpConfiguration( shd->parent );
+}
+
+void UpdateSpreadGeometry( SpreadGeometry * geo, int arrayno, void * arraydata )
+{
+	int arraysize = geo->strides[arrayno] * geo->typesizes[arrayno] * geo->verts;
+	uint8_t trray[arraysize + 8] (__attribute__(aligned(32)));
+	memcpy( geo->arrays[arrayno], arraydata, arraysize );
+	((uint32_t*)trray)[0] = htonl( geo->geo_in_parent );
+	((uint32_t*)trray)[1] = htonl( arrayno );
+	memcpy( trray+8, arraydata, arraysize );
+	SpreadPushMessage(geo->parent, 88, arraysize+8, trray );
+}
+
+void SpreadRenderGeometry( SpreadGeometry * geo, int start, int nr_emit )
+{
+	Spreadgine * parent = geo->parent;
+	int vmatpos = parent->shaders[parent->current_shader].view_index;
+	int pmatpos = parent->shaders[parent->current_shader].perspective_index;
+
+	int i;
+	for( i = 0; i < geo->numarrays; i++ )
+	{
+		glVertexAttribPointer( i, geo->strides[i], geo->types[i], GL_FALSE, 0, geo->arrays[i] );
+	    glEnableVertexAttribArray(i);
+	}
+
+	for( i = 0; i < parent->setvps; i++ )
+	{
+		glUniformMatrix4fv( vmatpos, 1, parent->vpviews[i] );
+		glUniformMatrix4fv( pmatpos, 1, parent->vpperspectives[i] );
+		glViewport(vpedges[i][0],  vpedges[i][1], vpedges[i][2], vpedges[i][2]); 
+
+		glDrawArrays(geo->render_type, start, nr_emit);
+	}
+
+	uint32_t SpreadGeoInfo[3];
+	SpreadGeoInfo[0] = htonl( geo->geo_in_parent );
+	SpreadGeoInfo[1] = htonl( start );
+	SpreadGeoInfo[2] = htonl( nr_emit );
+	SpreadPushMessage(geo->parent, 89, sizeof(SpreadGeoInfo), SpreadGeoInfo );
+}
+
+
 
