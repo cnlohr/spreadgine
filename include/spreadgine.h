@@ -4,10 +4,19 @@
 #define _SPREADGINE_H
 
 #include <stdint.h>
+#include <stdio.h>
+#ifdef EGL
+#include <EGL/egl.h>
+#else
+#define GL_GLEXT_PROTOTYPES
+#include <GL/gl.h>
+#include <GL/glext.h>
+#endif
 
-typedef struct SpreadShader;
-typedef struct SpreadGeometry;
-typedef struct SpreadTexture;
+typedef struct SpreadShader SpreadShader;
+typedef struct SpreadGeometry SpreadGeometry;
+typedef struct SpreadTexture SpreadTexture;
+typedef struct Spreadgine Spreadgine;
 
 
 #define SPREADGINE_VIEWPORTS 2
@@ -15,7 +24,7 @@ typedef struct SpreadTexture;
 #define SPREADGINE_CIRCBUF   65536*16	//A 1MB circular buffer.
 
 
-typedef struct
+struct Spreadgine
 {
 	SpreadShader * shaders;
 	int setshaders;
@@ -40,23 +49,24 @@ typedef struct
 	uint8_t * cbbuff;
 	void * spreadthread;
 	float  lastclearcolor[4];
-} Spreadgine;
+};
+
 
 //Initializes the spreadgine with a basic shader 'default', a cube 'cube', and a texture 'gradiant'
 //It also initializes `vps` views with camera at the origin. For 99.9% of applications, vps should be 2.
 //Be sure to set everything up before a client connects. None of these functions will update the client.
 //Also... 'fReport' can either be stderr or something you make with open_memstream
-Spredgine * SpreadInit( int w, int h, const char * title, int httpport, int vps, FILE * fReport );
+Spreadgine * SpreadInit( int w, int h, const char * title, int httpport, int vps, FILE * fReport );
 void SpreadDestroy( Spreadgine * spr );
 void SpreadSetupCamera( Spreadgine * spr, int camid, const char * camname );
 
 
-void spglEnable( Spredgine * e, int en );
-void spglDisable( Spredgine * e, int en );
-void spglLineWidth( Spredgine * e, float wid );
-void spglSwap(Spredgine * e);
-void spglClearColor( Spredgine * e, float r, float g, float b, float a );
-void spglClear( Spredgine * e, int clearmask );
+void spglEnable( Spreadgine * e, uint32_t en );
+void spglDisable( Spreadgine * e, uint32_t de );
+void spglLineWidth( Spreadgine * e, float wid );
+void spglSwap(Spreadgine * e);
+void spglClearColor( Spreadgine * e, float r, float g, float b, float a );
+void spglClear( Spreadgine * e, uint32_t clearmask );
 //TODO: Add more GL stand-ins here.  Note that only functions available in GLES, GL and WebGL should be made available here.
 
 
@@ -81,10 +91,10 @@ void spglClear( Spredgine * e, int clearmask );
 //		82 = glUniformMatrix4fv( float[4] + plan_text_uniform_name );
 //		83..87 reserved for other uniform operations.
 //		88 = PushNewArrayData( int geono, int arrayno, [VOID*] data);
-//		89 = SpreadRenderGeometry( int geono, int offset_at, int nr_verts );
+//		89 = SpreadRenderGeometry( int geono, int offset_at, int nr_verts, float viewmatrix[16] );
 
 //  128+ = User functions
-void SpreadPushMessage( Spredgine * e, uint8_t messageid, int payloadsize, void * payload );
+void SpreadPushMessage( Spreadgine * e, uint8_t messageid, int payloadsize, void * payload );
 
 
 //Bump configuration means something about the overarching configuration has changed.
@@ -93,7 +103,7 @@ void SpreadBumpConfiguration( Spreadgine * e );
 
 /////////////////////////////SHADERS///////////////////////////////
 
-typedef struct
+struct SpreadShader
 {
 	Spreadgine * parent;
 	uint32_t shader_in_parent;
@@ -111,6 +121,7 @@ typedef struct
 	int * size_of_uniforms;
 
 	//"Required" uniform matrix entries.
+	int model_index;  // YOU MUST INCLUDE "mmatrix" so spreadgine knows where to shove the camera.
 	int view_index;  // YOU MUST INCLUDE "vmatrix" so spreadgine knows where to shove the camera.
 	int perspective_index; // YOU MUST INCLUDE "pmatrix" so spreadgine knows where to shove the camera.
 
@@ -118,8 +129,9 @@ typedef struct
 	int vertex_shader;
 	int fragment_shader;
 	int program_shader;
-} SpreadShader;
+};
 
+//Attriblist == the positions of the geometry attributes in your geometry, usually [vpos] [vcolor] or something like that.
 SpreadShader * SpreadLoadShader( Spreadgine * spr, const char * shadername, const char * fragmentShader, const char * vertexShader, int attriblistlength, const char ** attriblist );
 int SpreadGetUniformSlot( SpreadShader * shd, const char * slotname );
 void SpreadUniform4f( SpreadShader * shd, int slot, const float * uni );
@@ -128,7 +140,7 @@ void SpreadFreeShader( SpreadShader * shd );
 void SpreadApplyShader( SpreadShader * shd );
 
 //////////////////////////////GEOMETRY/////////////////////////////
-typedef struct
+struct SpreadGeometry
 {
 	Spreadgine * parent;
 	uint32_t geo_in_parent;
@@ -141,11 +153,11 @@ typedef struct
 	int render_type; //GL_TRIANGLES, GL_POINTS, GL_LINES
 	int numarrays;	//First array is always; specifies the number of types of arays.
 	int verts;
-} SpreadGeometry;
+};
 
-SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, int render_type, int verts, int nr_arrays, void ** arrays, int * strides, int * types, int * typesizes );
+SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, int render_type, int verts, int nr_arrays, const void ** arrays, int * strides, int * types, int * typesizes );
 void UpdateSpreadGeometry( SpreadGeometry * geo, int arrayno, void * arraydata );
-void SpreadRenderGeometry( SpreadGeometry * geo, int start, int nr_emit ); 
+void SpreadRenderGeometry( SpreadGeometry * geo, int start, int nr_emit, const float * modelmatrix ); 
 
 //////////////////////////////TEXTURES//////////////////////////////
 
