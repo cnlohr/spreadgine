@@ -20,6 +20,8 @@ int main()
 	tdTranslate( e->vpviews[0], -.2, 0, 0 );
 	tdTranslate( e->vpviews[1], .2, 0, 0 );
 	e->geos[0].render_type = GL_TRIANGLES;
+	SpreadChangeCameaView(e, 0, e->vpviews[0] );
+	SpreadChangeCameaView(e, 1, e->vpviews[1] );
 
 	float modelmatrix[16];
 	tdIdentity( modelmatrix );
@@ -36,6 +38,7 @@ int main()
 		tdRotateEA( modelmatrix, 0,1,.2125 );		//Operates ON f
 		//tdTranslate( modelmatrix, 0, 0, .1 );
 
+		usleep(10000);
 		spglSwap( e );
 	}
 }

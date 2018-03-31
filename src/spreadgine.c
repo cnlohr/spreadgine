@@ -319,7 +319,6 @@ SpreadShader * SpreadLoadShader( Spreadgine * spr, const char * shadername, cons
 	glAttachShader(ret->program_shader, ret->vertex_shader);
 	glAttachShader(ret->program_shader, ret->fragment_shader);
 
-	//XXX TODO: attach more things here.
 	for( i = 0; i < attriblistlength; i++ )
 	{
 		glBindAttribLocation( ret->program_shader, i, attriblist[i] );
@@ -402,7 +401,7 @@ void SpreadUniform16f( SpreadShader * shd, int slot, const float * uni )
 {
 	int stlen = shd->uniform_slot_name_lens[slot];
 	char outputarray[stlen+sizeof(float)*16];
-	glUniformMatrix4fv( slot, 1, 1, uni );
+	glUniformMatrix4fv( slot, 1, 0, uni );
 	memcpy( outputarray, uni, sizeof(float)*16 );
 	memcpy( outputarray + sizeof(float)*16, shd->uniform_slot_names[slot], stlen );
 	SpreadPushMessage(shd->parent, 82, sizeof(float)*16+stlen, outputarray );
@@ -524,7 +523,8 @@ void SpreadRenderGeometry( SpreadGeometry * geo, int start, int nr_emit, const f
 	int pmatpos = ss->perspective_index;
 	int mmatpos = ss->model_index;
 
-	glUniformMatrix4fv( mmatpos, 1, 1, modelmatrix );
+	glUniformMatrix4fv( mmatpos, 1, 0, modelmatrix );
+	tdPrint( modelmatrix );
 
 	int i;
 	for( i = 0; i < geo->numarrays; i++ )
@@ -536,8 +536,8 @@ void SpreadRenderGeometry( SpreadGeometry * geo, int start, int nr_emit, const f
 	for( i = 0; i < parent->setvps; i++ )
 	{
 		int * vpedges = parent->vpedges[i];
-		glUniformMatrix4fv( vmatpos, 1, 1, parent->vpviews[i] );
-		glUniformMatrix4fv( pmatpos, 1, 1, parent->vpperspectives[i] );
+		glUniformMatrix4fv( vmatpos, 1, 0, parent->vpviews[i] );
+		glUniformMatrix4fv( pmatpos, 1, 0, parent->vpperspectives[i] );
 		glViewport(vpedges[0],  vpedges[1], vpedges[2], vpedges[3]); 
 
 		glDrawArrays(geo->render_type, start, nr_emit);
