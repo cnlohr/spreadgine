@@ -39,8 +39,8 @@
 //"entry" is in printf mode... "format" is in 'b' for byte, 'i' for integer, 'f' for float, 's' for string, 'v' takes two parameters, a # of bytes and a pointer to the payload. 'S' takes a # of strings and a list of strings.
 //If entry is null, it is not stored to the hash table.
 void SpreadMessage( Spreadgine * e, const char * entry, const char * format, ... ); //XXX WARNING Not threadsafe.
-
 void SpreadHashRemove( Spreadgine * e, const char * he, ... );
+int SpreadCreateDump( Spreadgine * spr, uint8_t ** ptrout );
 
 //Deploy for immediate delivery - don't use this for complicated operations or anything that needs to be cached.
 void SpreadPushMessage( Spreadgine * e, uint8_t messageid, int payloadsize, void * payload );
@@ -53,6 +53,7 @@ void SpreadRemoteInit( Spreadgine * e );
 
 //Don't call this unless you've already locked the common data mutex.
 struct SpreadHashEntry * SpreadHashEntryGetOrInsert( Spreadgine * e , const char * he );
+
 
 #endif
 

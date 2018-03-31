@@ -3,7 +3,9 @@
 <SCRIPT SRC=binarywebsocket.js></script>
 <SCRIPT SRC=webglsystem.js></SCRIPT>
 </HEAD>
-<BODY onload=InitSystem("ws://"+(window.location.href.split("/")[2])+"/d/ws/streamdata")>
-Hello!
+<BODY onload='InitSystem("ws://"+(window.location.href.split("/")[2])+"/d/ws/streamdata", document.getElementById( "webglcanvas" ));'>
+
+<canvas id="webglcanvas" style="border: none;width:100%;height:100%"></canvas>
+
 </BODY>
 </HTML>

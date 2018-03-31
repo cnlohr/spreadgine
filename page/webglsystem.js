@@ -1,4 +1,5 @@
-function InitSystem( addy )
+function InitSystem( addy, canvas )
 {
 	InitWebsocket( addy );
+	console.log( canvas) ;
 }

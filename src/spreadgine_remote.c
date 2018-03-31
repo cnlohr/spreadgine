@@ -10,6 +10,16 @@
 
 static Spreadgine * SpreadForHTTP;
 
+struct ClientStruct
+{
+	uint8_t * KEEPbufferout;
+	uint32_t  KEEPplace;
+	uint32_t  KEEPlength;
+
+
+	uint32_t CircPtr;
+};
+
 static void huge()
 {
 	uint8_t i = 0;
@@ -45,8 +55,9 @@ void HTTPCustomStart( )
 void CloseEvent()
 {
 	//No close event (no one cares when a client is done)
+	if( curhttp->data.userptr.v ) free( curhttp->data.userptr.v );
+	curhttp->data.userptr.v = 0;
 }
-
 
 
 static void WSStreamData(  int len )
@@ -59,20 +70,59 @@ static void WSStreamData(  int len )
 	}
 }
 
+
 static void WSStreamOut( )
 {
-	char cbo[10];
-/*	WebSocketSend( cbo, 10 );
+	int i;
+	struct ClientStruct * cs = curhttp->data.userptr.v;
+	if( !cs ) return;
 
-SpreadForHTTP
-
-	union data_t
+	//Keep flowing the KEEP buffer out, until we're done with it
+	if( cs->KEEPbufferout )
 	{
+		int rtor = cs->KEEPlength - cs->KEEPplace;
+		int tosend = (rtor>1024)?1024:rtor;
+		WebSocketSend( cs->KEEPbufferout + cs->KEEPplace, tosend );
+		cs->KEEPplace += tosend;
+		if(cs->KEEPplace ==  cs->KEEPlength )
+		{
+			free( cs->KEEPbufferout );
+			cs->KEEPbufferout = 0;
+		}	
+	}
+	else
+	{
+		//Then switch over to the circular buffer and pick up where we started sending the keep buffer.
+		uint32_t tos = SpreadForHTTP->cbhead - cs->CircPtr;
+		if( tos > SPREADGINE_CIRCBUF )
+		{
+			fprintf( SpreadForHTTP->fReport, "Error: Client would underflow circ buffer [%d %d %d]\n", tos, SpreadForHTTP->cbhead, cs->CircPtr );
+			curhttp->isdone = 1;
+			return;
+		}
+		uint32_t tplace = SpreadForHTTP->cbhead % SPREADGINE_CIRCBUF;
+		uint32_t splace = cs->CircPtr % SPREADGINE_CIRCBUF;
+		uint32_t tosend = 0;
 
-		struct MFSFileInfo filedescriptor;
-		struct UserData { uint16_t a, b, c; } user;
-	} data;
-*/
+		//Would break boundary of end of circular buffer.  Don't do it.
+		if( tplace < splace )
+		{
+			tosend = SPREADGINE_CIRCBUF-splace;
+		}
+		else
+		{
+			tosend = tplace-splace;
+		}
+		if( tosend > tos ) tosend = tos;
+		if( tosend > 1024 ) tosend = 1024;
+		//printf( "TOS %d/%d/%d [%d/%d] %d %d\n", tplace, splace, tosend, SpreadForHTTP->cbhead, cs->CircPtr, SPREADGINE_CIRCBUF, tos );
+		if( tosend )
+		{
+			//printf( "%d [@%d]: ", tosend, splace ); for( i = 0; i < tosend; i++ ) printf( "%02x ", SpreadForHTTP->cbbuff[i+ splace] );
+			WebSocketSend( SpreadForHTTP->cbbuff + splace, tosend );
+			cs->CircPtr += tosend;
+		}
+	}
 }
 
 
@@ -83,9 +133,10 @@ void NewWebSocket()
 		curhttp->rcb = (void*)&WSStreamOut;
 		curhttp->rcbDat = (void*)&WSStreamData;
 
-		curhttp->data.user.a = 0;
-		//curhttp->data.user.c = SpreadForHTTP->
-		//curhttp->
+		struct ClientStruct * c = curhttp->data.userptr.v = malloc( sizeof( struct ClientStruct ) );
+		c->CircPtr = SpreadForHTTP->cbhead;
+		c->KEEPplace = 0;
+		c->KEEPlength = SpreadCreateDump( SpreadForHTTP, (uint8_t**)&c->KEEPbufferout );
 	}
 	else
 	{
@@ -383,4 +434,34 @@ void SpreadHashRemove( Spreadgine * e, const char * he, ... )
 	}
 	return;
 }
+
+int SpreadCreateDump( Spreadgine * spr, uint8_t ** ptrout )
+{
+	uint8_t * pout = malloc(1024);
+	int poutreserved = 1024;
+	int poutsize = 0;
+	int i;
+	for( i = 0; i < SPREADGINE_CACHEMAP_SIZE; i++ )
+	{
+		if( !spr->KEEPhash[i] ) continue;
+
+		OGLockMutex( spr->KEEPmutex );
+		SpreadHashEntry * ke = spr->KEEPhash[i];
+		do
+		{
+			if( poutsize + ke->payloadlen < poutreserved )
+			{
+				poutreserved = poutsize + ke->payloadlen + 1024;
+				pout = realloc( pout, poutreserved );
+			}
+			memcpy( pout + poutsize, ke->payload, ke->payloadlen );
+			poutsize += ke->payloadlen;
+			ke = ke->next;
+		} while( ke );
+		OGUnlockMutex( spr->KEEPmutex );
+	}
+	*ptrout = pout;
+	return poutsize;
+}
+
 

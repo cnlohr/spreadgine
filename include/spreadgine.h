@@ -21,7 +21,7 @@ typedef struct Spreadgine Spreadgine;
 
 #define SPREADGINE_VIEWPORTS 2
 #define SPREADGINE_CAMERAS   10
-#define SPREADGINE_CIRCBUF   65536*16	//A 1MB circular buffer.
+#define SPREADGINE_CIRCBUF   (65536*16)	//A 1MB circular buffer.
 
 #define SPREADGINE_CACHEMAP_SIZE 1307
 
@@ -76,7 +76,6 @@ struct Spreadgine
 //Also... 'fReport' can either be stderr or something you make with open_memstream
 Spreadgine * SpreadInit( int w, int h, const char * title, int httpport, int vps, FILE * fReport );
 void SpreadDestroy( Spreadgine * spr );
-void SpreadSetupCamera( Spreadgine * spr, uint8_t camid, float fov, float aspect, float near, float far, const char * camname );
 
 
 void spglEnable( Spreadgine * e, uint32_t en );
@@ -87,6 +86,10 @@ void spglClearColor( Spreadgine * e, float r, float g, float b, float a );
 void spglClear( Spreadgine * e, uint32_t clearmask );
 //TODO: Add more GL stand-ins here.  Note that only functions available in GLES, GL and WebGL should be made available here.
 
+
+/////////////////////////////CAMERAS//////////////////////////////
+
+void SpreadSetupCamera( Spreadgine * spr, uint8_t camid, float fov, float aspect, float near, float far, const char * camname );
 
 
 /////////////////////////////SHADERS///////////////////////////////
