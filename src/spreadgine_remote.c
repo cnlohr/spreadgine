@@ -319,6 +319,13 @@ void SpreadMessage( Spreadgine * e, const char * entry, const char * format, ...
 				he->payload[outplace++] = d;
 			} while( d );
 			break;
+		case 'X':
+			v = va_arg(ap, int );
+			vp = va_arg(ap, void * );
+			if( outplace + v> he->payload_reserved ) he->payload = realloc( he->payload,he->payload_reserved+=64+v ); 
+			memcpy( he->payload + outplace, vp, v );
+			outplace += v;
+			break;
 		case 'v':
 			v = va_arg(ap, int );
 			vp = va_arg(ap, void * );

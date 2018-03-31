@@ -26,6 +26,22 @@ function Pop32()
 	return packbuffer[packbufferp++]<<24 | packbuffer[packbufferp++]<<16 | packbuffer[packbufferp++]<<8 | packbuffer[packbufferp++];
 }
 
+function PopMulti8Auto()
+{
+	nrtopop = Pop32();
+	console.log( "Popping " + nrtopop );
+	var ret = packbuffer.slice(packbufferp,packbufferp+nrtopop);
+	packbufferp+=nrtopop;
+	return ret;
+}
+
+function PopMulti8( nrtopop )
+{
+	var ret = packbuffer.slice(packbufferp,packbufferp+nrtopop);
+	packbufferp+=nrtopop;
+	return ret;
+}
+
 function Pop8()
 {
 	return packbuffer[packbufferp++];

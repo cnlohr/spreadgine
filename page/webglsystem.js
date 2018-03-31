@@ -3,8 +3,11 @@ var wgl = null;
 
 var wgcams = [];
 var wgshades = [];
-var curshad = null;
-var wggeo = [];
+var wgcurshad = 0;
+var wggeos = [];
+
+var perspectivematrix;
+var viewmatrix;// = {1.,0.,0.,0.,0.,1.,0.,0.,0.,0.,1.,0.,0.,0.,0.,1.}
 
 function InitSystem( addy, canvas )
 {
@@ -12,6 +15,10 @@ function InitSystem( addy, canvas )
 	wgl = wgcanvas.getContext("webgl");
 	wgl.viewportWidth = wgcanvas.width;
 	wgl.viewportHeight = wgcanvas.height;
+
+//	mat4.perspective(45, wgl.viewportWidth / wgl.viewportHeight, 0.1, 100.0, perspectivematrix);
+//	mat4.identity( viewmatrix );
+
 
 	InitWebsocket( addy );
 }
@@ -29,8 +36,14 @@ function ProcessPack()
 		case 65: //		65 = UpdateCameraName( uint8_t id, char name[...] );
 			//XXX TODO
 			break;
-//		66 = UpdateCameraPerspective( uint8_t id, float perspective[16] );
-//		67 = UpdateCameraView( uint8_t id, float view[16] );
+		case 66:	//XXX Wrong, but we'll use it for now.
+			var cid = Pop8();
+			perspectivematrix = PopMultiFloat(16);
+			break;
+		case 67:
+			var cid = Pop8();
+			viewmatrix = PopMultiFloat(16);
+			break;
 		case 68:  //Setup camera
 			var cid = Pop8();
 			var fov = PopFloat();
@@ -81,6 +94,11 @@ function ProcessPack()
 			if (!wgl.getProgramParameter(ts.program, wgl.LINK_STATUS)) {
 				alert("Could not initialise shaders");
 			}
+
+			ts.mindex = wgl.getUniformLocation(ts.program, "mmatrix" );
+			ts.vindex = wgl.getUniformLocation(ts.program, "vmatrix" );
+			ts.pindex = wgl.getUniformLocation(ts.program, "pmatrix" );
+
 			break;
 		case 70:
 			var shaderid = Pop8();
@@ -112,41 +130,75 @@ function ProcessPack()
 			wgl.clear( bits );
 			break;
 		case 80:
-			curshad=wgshades[Pop32()];
-			wgl.useProgram(curshad.shaderProgram);
+			wgcurshad=Pop32();
 			break;
 		case 81:
 			var v = PopMultiFloat(4);
-			var loc = wgl.getUniformLocation(curshad.shaderProgram,PopStr() );
+			var loc = wgl.getUniformLocation(wgshades[wgcurshad].program,PopStr() );
 			wgl.uniform4fv( loc, v );
 			break;
 		case 82:
 			var v = PopMultiFloat(16);
-			var loc = wgl.getUniformLocation(curshad.shaderProgram,PopStr() );
+			var loc = wgl.getUniformLocation(wgshades[wgcurshad].program,PopStr() );
 			wgl.uniformMatrix4fv( loc, v );
 			break;
 
 		case 87:
 			var gip = Pop8();
-			while( wggeos.length <= cid ) wggeos.push( {} );
+			while( wggeos.length <= gip ) wggeos.push( {} );
 			wggeos[gip].nam = PopStr();
 			wggeos[gip].rendertype = Pop32();
 			wggeos[gip].verts = Pop32();
-			var arrays = wggeos[gip].nr_arrays = Pop32();
-			
-//XXX TODO Pick up here.
-//	SpreadMessage( spr, "geometry%d", "bbsiibvvv", ret->geo_in_parent, 87, ret->geo_in_parent, geoname, render_type, verts, nr_arrays,
-//		sizeof(int)*nr_arrays, strides, 
-//		sizeof(int)*nr_arrays, types, 
-//		sizeof(int)*nr_arrays, typesizes );
+			var arrays = wggeos[gip].nr_arrays = Pop8();
+			wggeos[gip].strides = PopMulti8Auto();
+			wggeos[gip].types = PopMulti8Auto();
+			console.log( wggeos[gip] );
+			break;
+		case 88:
+			var gip = Pop8();
+			while( wggeos.length <= gip ) wggeos.push( {} );
+			var arrayno = Pop8();
+			if( !wggeos[gip].arraydata ) wggeos[gip].arraydata = [];
+			var nrv = Pop32();
+			wggeos[gip].arraydata[arrayno] = PopMultiFloat(nrv/4);
+			console.log("Got: " + gip + " " + arrayno);
+			console.log(wggeos[gip].arraydata[arrayno]); 
+			break;
+		case 89:
+			var gip = Pop8();
+			var ge = wggeos[gip];
+			var offset = Pop32();
+			var verts = Pop32();
+			var mmatrix = PopMultiFloat(16);
+			var curshad = wgshades[wgcurshad];
+			wgl.useProgram(curshad.program);
 
-			
-		
-//		87 = Create new geometry (complicated fields, read in spreadgine.c)
-//		88 = PushNewArrayData( uint8_t geono, int arrayno, [VOID*] data);
-//		89 = SpreadRenderGeometry( uint8_t geono, int offset_at, int nr_verts, float viewmatrix[16] );
-//		90 = RemoveGeometry( uint8_t geono );	//Tricky: There is no call to remove children of geometries.  Client must do that.
 
+			//Now, how do we render this mess?
+			wgl.uniformMatrix4fv( curshad.mindex, wgl.GL_TRUE, mmatrix );
+			for( var i = 0; i < ge.nr_arrays; i++ )
+			{
+//				console.log( ge.arraydata[i] );
+				//wgl.vertexAttribPointer( i, (ge.types==0)?4:1, (ge.types==0)?wgl.GL_FLOAT:wgl.GL_UNSIGNED_BYTE, wgl.GL_FALSE, ge.strides, 0 );
+				wgl.vertexAttribPointer( i, 4, wgl.GL_FLOAT, wgl.GL_FALSE, 4, 0 );
+				// ge.arraydata[i]
+				wgl.enableVertexAttribArray(i);
+				//console.log(ge.arraydata[i]);
+				if( ge.arraydata[i].length < 1)console.log(ge.arraydata[i]); 
+				wgl.bufferData( wgl.ARRAY_BUFFER,ge.arraydata[i],wgl.STATIC_DRAW);
+				console.log( ge.arraydata[i] );
+			}
+
+			wgl.uniformMatrix4fv( curshad.vindex, wgl.GL_TRUE, viewmatrix);
+			wgl.uniformMatrix4fv( curshad.pindex, wgl.GL_TRUE, perspectivematrix );
+
+			wgl.drawArrays(ge.rendertype, offset, verts);
+
+			break;
+		case 90:
+			var gip = Pop8();
+			wggeos[gip] = null;
+			break;
 		default:
 			break;
 			//discard

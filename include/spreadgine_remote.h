@@ -29,7 +29,7 @@
 
 //		87 = Create new geometry (complicated fields, read in spreadgine.c)
 //		88 = PushNewArrayData( uint8_t geono, int arrayno, [VOID*] data);
-//		89 = SpreadRenderGeometry( uint8_t geono, int offset_at, int nr_verts, float viewmatrix[16] );
+//		89 = SpreadRenderGeometry( uint8_t geono, int offset_at, int nr_verts, float modelmatrix[16] );
 //		90 = RemoveGeometry( uint8_t geono );	//Tricky: There is no call to remove children of geometries.  Client must do that.
 //		
 //

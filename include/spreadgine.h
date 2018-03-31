@@ -25,6 +25,10 @@ typedef struct Spreadgine Spreadgine;
 
 #define SPREADGINE_CACHEMAP_SIZE 1307
 
+#define SPREADGINE_T_FLOAT 0
+#define SPREADGINE_T_UBYTE 1
+
+
 struct SpreadHashEntry
 {
 	struct SpreadHashEntry * next;
@@ -90,6 +94,8 @@ void spglClear( Spreadgine * e, uint32_t clearmask );
 /////////////////////////////CAMERAS//////////////////////////////
 
 void SpreadSetupCamera( Spreadgine * spr, uint8_t camid, float fov, float aspect, float near, float far, const char * camname );
+void SpreadChangeCameaPerspective( Spreadgine * spr, uint8_t camid, float * newpersp );
+void SpreadChangeCameaView( Spreadgine * spr, uint8_t camid, float * newview );
 
 
 /////////////////////////////SHADERS///////////////////////////////
@@ -143,9 +149,8 @@ struct SpreadGeometry
 	//Array[3] = Normal
 
 	void ** arrays;
-	int * strides;
-	int * typesizes;	//Almost always array of [4]'s
-	int * types; 		//always GL_FLOAT, or GL_UNSIGNED_BYTE
+	uint8_t * strides;
+	uint8_t * types; 		//always GL_FLOAT (0), or GL_UNSIGNED_BYTE (1)
 
 	int numarrays;
 
@@ -153,10 +158,11 @@ struct SpreadGeometry
 	int verts;
 };
 
-SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, int render_type, int verts, int nr_arrays, const void ** arrays, int * strides, int * types, int * typesizes );
+SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, int render_type, int verts, int nr_arrays, const void ** arrays, int * strides, int * types );
 void UpdateSpreadGeometry( SpreadGeometry * geo, int arrayno, void * arraydata );
 void SpreadRenderGeometry( SpreadGeometry * geo, int start, int nr_emit, const float * modelmatrix ); 
 void SpreadFreeGeometry( SpreadGeometry * geo );
+
 
 //////////////////////////////TEXTURES//////////////////////////////
 

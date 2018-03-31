@@ -12,7 +12,7 @@
 #include <CNFG3D.h>
 
 
-
+uint8_t SpreadTypeSizes[] = { 4, 1 };
 
 Spreadgine * SpreadInit( int w, int h, const char * title, int httpport, int vps, FILE * fReport )
 {
@@ -56,6 +56,9 @@ Spreadgine * SpreadInit( int w, int h, const char * title, int httpport, int vps
 		char EyeName[5] = { 'E', 'y', 'e', '0'+i };
 		SpreadSetupCamera( ret, i, 75, (float)w/vps/h, .01, 1000, EyeName );
 		tdIdentity(ret->vpviews[i]);
+		SpreadChangeCameaView( ret, i, ret->vpviews[i] );
+
+
 		ret->vpnames[i] = strdup( "EyeX" );
 		ret->vpnames[i][3] = '0' + i;
 		ret->vpedges[i][0] = i*w/vps;
@@ -125,10 +128,9 @@ Spreadgine * SpreadInit( int w, int h, const char * title, int httpport, int vps
 
 		static int strides[2] = { 3, 4 };
 		static int types[2] = { GL_FLOAT, GL_FLOAT };
-		static int typesizes[2] = { 4, 4 };
 		const float * arrays[] = { CubeDataVerts, CubeColorData };
 
-		SpreadGeometry * geo0 = SpreadCreateGeometry( ret, "geo1", GL_TRIANGLES, 36, 2, (const void **)arrays, strides, types, typesizes  );
+		SpreadGeometry * geo0 = SpreadCreateGeometry( ret, "geo1", GL_TRIANGLES, 36, 2, (const void **)arrays, strides, types  );
 		if( !geo0 )
 		{
 			fprintf( fReport, "Error making geometry.\n" );
@@ -174,7 +176,21 @@ void SpreadSetupCamera( Spreadgine * spr, uint8_t camid, float fov, float aspect
 	tdIdentity(spr->vpviews[camid]);
 
 	SpreadMessage( spr, "camera%d", "bbffffs", camid, 68, camid, fov, aspect, near, far, camname );
+	SpreadChangeCameaPerspective( spr, camid, spr->vpperspectives[camid]  );
 }
+
+void SpreadChangeCameaPerspective( Spreadgine * spr, uint8_t camid, float * newpersp )
+{
+	memcpy( spr->vpperspectives[camid], newpersp, sizeof(float)*16 );
+	SpreadMessage( spr, "campersp%d", "bbX", camid, 66, camid, 16*sizeof(float), newpersp );
+}
+
+void SpreadChangeCameaView( Spreadgine * spr, uint8_t camid, float * newview )
+{
+	memcpy( spr->vpviews[camid], newview, sizeof(float)*16 );
+	SpreadMessage( spr, "camview%d", "bbX", camid, 67, camid, 16*sizeof(float), newview );
+}
+
 
 void spglEnable( Spreadgine * e, uint32_t en )
 {
@@ -396,7 +412,8 @@ void SpreadApplyShader( SpreadShader * shd )
 {
 	glUseProgram(shd->program_shader);
 	uint32_t sip = htonl( shd->shader_in_parent );
-	SpreadPushMessage(shd->parent, 80, 4, &sip );
+	//SpreadPushMessage(shd->parent, 80, 4, &sip );
+	SpreadMessage( shd->parent, "curshader", "bi", 80, shd->shader_in_parent );
 }
 
 void SpreadFreeShader( SpreadShader * shd )
@@ -417,7 +434,7 @@ void SpreadFreeShader( SpreadShader * shd )
 
 }
 
-SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, int render_type, int verts, int nr_arrays, const void ** arrays, int * strides, int * types, int * typesizes )
+SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, int render_type, int verts, int nr_arrays, const void ** arrays, int * strides, int * types )
 {
 
 	int i;
@@ -448,33 +465,47 @@ SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, i
 	ret->parent = spr;
 	ret->numarrays = nr_arrays;
 	ret->arrays = malloc( sizeof(void*) * nr_arrays );
-	ret->types = malloc( sizeof(int) * nr_arrays );
-	ret->strides = malloc( sizeof(int) * nr_arrays );
-	ret->typesizes = malloc( sizeof(int) * nr_arrays );
+	ret->types = malloc( sizeof(uint8_t) * nr_arrays );
+	ret->strides = malloc( sizeof(uint8_t) * nr_arrays );
 
 	for( i = 0; i < nr_arrays; i++ )
 	{
-		ret->types[i] = types[i];
+		int typesize = 0;
+		if( types[i] == GL_FLOAT )
+		{
+			ret->types[i] = 0;
+		}
+		else if( types[i] == GL_UNSIGNED_BYTE )
+		{
+			ret->types[i] = 1;
+		}
+		else
+		{
+			fprintf( spr->fReport, "Error: bad 'type' passed into SpreadCreateGeometry. Assuming GL_FLOAT.\n" );
+			ret->types[i] = 0;
+		}
 		int stride = ret->strides[i] = strides[i];
-		int typesize = ret->typesizes[i] = typesizes[i];
+			typesize = SpreadTypeSizes[ret->types[i]];
 		ret->arrays[i] = malloc( stride * typesize * verts );
 		memcpy( ret->arrays[i], arrays[i], stride * typesize * verts );
 
-		SpreadMessage( spr, "geodata%d_%d", "biiv", ret->geo_in_parent, i, 88, ret->geo_in_parent, i, stride * typesize * verts, ret->arrays[i] );
+		printf( "%d %d %d\n", stride, ret->types[i], typesize );
+		SpreadMessage( spr, "geodata%d_%d", "bbbv", ret->geo_in_parent, i, 88, ret->geo_in_parent, i, stride * typesize * verts, ret->arrays[i] );
 	}
 
-	SpreadMessage( spr, "geometry%d", "bbsiibvvv", ret->geo_in_parent, 87, ret->geo_in_parent, geoname, render_type, verts, nr_arrays,
-		sizeof(int)*nr_arrays, strides, 
-		sizeof(int)*nr_arrays, types, 
-		sizeof(int)*nr_arrays, typesizes );
+	{
+		SpreadMessage( spr, "geometry%d", "bbsiibvv", ret->geo_in_parent, 87, ret->geo_in_parent, geoname, render_type, verts, nr_arrays,
+			sizeof(uint8_t)*nr_arrays, ret->strides, 
+			sizeof(uint8_t)*nr_arrays, ret->types );
+	}
 
 	return ret;
 }
 
 void UpdateSpreadGeometry( SpreadGeometry * geo, int arrayno, void * arraydata )
 {
-	int arraysize = geo->strides[arrayno] * geo->typesizes[arrayno] * geo->verts;
-	SpreadMessage( geo->parent, "geodata%d_%d", "biiv", geo->geo_in_parent, arrayno, 88, geo->geo_in_parent, arrayno, arraysize, arraydata );
+	int arraysize = geo->strides[arrayno] * SpreadTypeSizes[ geo->types[arrayno] ] * geo->verts;
+	SpreadMessage( geo->parent, "geodata%d_%d", "bbbv", geo->geo_in_parent, arrayno, 88, geo->geo_in_parent, arrayno, arraysize, arraydata );
 
 /*	int arraysize = geo->strides[arrayno] * geo->typesizes[arrayno] * geo->verts;
 	uint8_t trray[arraysize + 8] __attribute__((aligned(32)));
@@ -498,7 +529,7 @@ void SpreadRenderGeometry( SpreadGeometry * geo, int start, int nr_emit, const f
 	int i;
 	for( i = 0; i < geo->numarrays; i++ )
 	{
-		glVertexAttribPointer( i, geo->strides[i], geo->types[i], GL_FALSE, 0, geo->arrays[i] );
+		glVertexAttribPointer( i, geo->strides[i], (geo->types[i]==0)?GL_FLOAT:GL_UNSIGNED_BYTE, GL_FALSE, 0, geo->arrays[i] );
 	    glEnableVertexAttribArray(i);
 	}
 
@@ -524,7 +555,6 @@ void SpreadRenderGeometry( SpreadGeometry * geo, int start, int nr_emit, const f
 void SpreadFreeGeometry( SpreadGeometry * geo )
 {
 	if( geo->strides ) free( geo->strides );
-	if( geo->typesizes ) free( geo->typesizes );
 	if( geo->types ) free( geo->types );
 	if( geo->geoname ) free( geo->geoname );
 	geo->geoname = 0;
