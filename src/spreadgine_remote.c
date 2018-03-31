@@ -142,6 +142,7 @@ void SpreadMessage( Spreadgine * e, const char * entry, const char * format, ...
 			if( outplace + 4 > he->payload_reserved ) he->payload = realloc( he->payload, he->payload_reserved+=64 ); 
 			f = va_arg(ap, double );
 			memcpy( &he->payload[outplace], &f, 4 );
+			outplace += 4;
 			break;
 		case 'S':
 			v = va_arg(ap, int);
@@ -154,20 +155,23 @@ void SpreadMessage( Spreadgine * e, const char * entry, const char * format, ...
 			for( j = 0; j < v; j++ )
 			{
 				s = sv[j];
-				while( d = *(s++) )
+				do
 				{
+					d = *(s++);
 					if( outplace + 1 > he->payload_reserved ) he->payload = realloc( he->payload, he->payload_reserved+=64 ); 
 					he->payload[outplace++] = d;
 				}
+				while( d );
 			}
 			break;
 		case 's':
 			s = va_arg(ap, const char * );
-			while( d = *(s++) )
+			do
 			{
+				d = *(s++);
 				if( outplace + 1 > he->payload_reserved ) he->payload = realloc( he->payload,he->payload_reserved+=64 ); 
 				he->payload[outplace++] = d;
-			}
+			} while( d );
 			break;
 		case 'v':
 			v = va_arg(ap, int );
@@ -178,6 +182,7 @@ void SpreadMessage( Spreadgine * e, const char * entry, const char * format, ...
 			he->payload[outplace++] = v>>8;
 			he->payload[outplace++] = v>>0;
 			memcpy( he->payload + outplace, vp, v );
+			outplace += v;
 			break;			
 		}
 	}
@@ -185,14 +190,14 @@ void SpreadMessage( Spreadgine * e, const char * entry, const char * format, ...
 	he->payloadlen = outplace;
 	uint32_t nbo = htonl( outplace );
 	memcpy( he->payload, &nbo, 4 );
-
+#if 0
 	printf ( "%d: ", he->payloadlen );
 	for( i = 0 ; i < he->payloadlen; i++ )
 	{
-		printf( "%02x ", he->payload[i] );
+		printf( "%02x[%c] ", he->payload[i], he->payload[i] );
 	}
 	printf( "\n" );
-
+#endif
 	int modhead = e->cbhead % SPREADGINE_CIRCBUF;
 	int sent = 0;
 	int endmod = modhead + he->payloadlen;
@@ -257,8 +262,20 @@ struct SpreadHashEntry * SpreadHashEntryGetOrInsert( Spreadgine * e , const char
 	return ne;
 }
 
-void SpreadHashRemove( Spreadgine * e, const char * he )
+void SpreadHashRemove( Spreadgine * e, const char * he, ... )
 {
+	
+    va_list ap;
+    va_start(ap, he);
+
+	char hebuff[1024];
+	int r = vsnprintf( hebuff, sizeof( hebuff ), he, ap );
+	if( r <= 0 )
+	{
+		fprintf( e->fReport, "Error: SpreadHashRemove called with bad data\n" );
+		return;
+	}
+
 	int hashval = case_matters_djb_hashl( he ) % SPREADGINE_CACHEMAP_SIZE;
 	struct SpreadHashEntry * hashbin = e->KEEPhash[hashval];
 	while( hashbin )

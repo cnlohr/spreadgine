@@ -12,6 +12,9 @@
 //		66 = UpdateCameraPerspective( uint8_t id, float perspective[16] );
 //		67 = UpdateCameraView( uint8_t id, float view[16] );
 //		68 = SetupCamera( uint8_t camid, float fov, float aspect, float near, float far, [char*]camname );
+//		69 = Setup New Shader (or update existing) ... See spreadgine_remote.c for mroe info.
+//		70 = Remove Shader( uint8_t shader id );
+//
 //
 //		74 = glEnable( int )
 //		75 = glDisable( int )
@@ -22,9 +25,12 @@
 //		80 = glUseProgram( Shader[int]->shader_in_parent );
 //		81 = glUniform4fv( float[4] + plan_text_uniform_name );
 //		82 = glUniformMatrix4fv( float[4] + plan_text_uniform_name );
-//		83..87 reserved for other uniform operations.
+//		83..86 reserved for other uniform operations.
+
+//		87 = Create new geometry (complicated fields, read in spreadgine.c)
 //		88 = PushNewArrayData( int geono, int arrayno, [VOID*] data);
 //		89 = SpreadRenderGeometry( int geono, int offset_at, int nr_verts, float viewmatrix[16] );
+//		
 //
 //		127 = Bump Configuration (re-download)
 //  128+ = User functions
@@ -33,7 +39,7 @@
 //If entry is null, it is not stored to the hash table.
 void SpreadMessage( Spreadgine * e, const char * entry, const char * format, ... ); //XXX WARNING Not threadsafe.
 
-void SpreadHashRemove( Spreadgine * e, const char * he );
+void SpreadHashRemove( Spreadgine * e, const char * he, ... );
 
 //Deploy for immediate delivery - don't use this for complicated operations or anything that needs to be cached.
 void SpreadPushMessage( Spreadgine * e, uint8_t messageid, int payloadsize, void * payload );

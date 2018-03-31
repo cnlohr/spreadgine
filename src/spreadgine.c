@@ -167,12 +167,10 @@ void SpreadSetupCamera( Spreadgine * spr, uint8_t camid, float fov, float aspect
 	}
 	if( spr->vpnames[camid] ) free( spr->vpnames[camid] );
 	spr->vpnames[camid] = strdup( camname );
-	tdPerspective( 45, 1, .01, 1000, spr->vpperspectives[camid] );
+	tdPerspective( fov, aspect, near, far, spr->vpperspectives[camid] );
 	tdIdentity(spr->vpviews[camid]);
 
-	//XXX TODO ADD Update to network.
-//	( spr, camid );
-//	SpreadBumpConfiguration( spr );
+	SpreadMessage( spr, "camera%d", "bbffffs", camid, 68, camid, fov, aspect, near, far, camname );
 }
 
 void spglEnable( Spreadgine * e, uint32_t en )
@@ -339,9 +337,8 @@ SpreadShader * SpreadLoadShader( Spreadgine * spr, const char * shadername, cons
 
 	spr->current_shader = ret->shader_in_parent;
 
-	SpreadMessage( spr, "shader%d", "sssiS", ret->shader_in_parent, shadername, fragmentShader, vertexShader, attriblistlength, attriblistlength, attriblist );
+	SpreadMessage( spr, "shader%d", "bbsssS", ret->shader_in_parent, 69, ret->shader_in_parent, shadername, fragmentShader, vertexShader, attriblistlength, attriblist );
 	return ret;
-
 
 qexit:
 	if( ret->fragment_shader ) glDeleteShader( ret->fragment_shader );
@@ -410,12 +407,9 @@ void SpreadFreeShader( SpreadShader * shd )
 	if( shd->fragment_shader_text )		{ free( shd->fragment_shader_text );	shd->fragment_shader_text = 0; }
 	if( shd->vertex_shader_text )		{ free( shd->vertex_shader_text );		shd->vertex_shader_text = 0; }
 
-//	SpreadBumpConfiguration( shd->parent );
+	SpreadMessage( shd->parent, 0, "bb", 70, shd->shader_in_parent );
+	SpreadHashRemove( shd->parent, "shader%d", shd->shader_in_parent );
 }
-
-
-
-
 
 SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, int render_type, int verts, int nr_arrays, const void ** arrays, int * strides, int * types, int * typesizes )
 {
@@ -459,10 +453,14 @@ SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, i
 		int typesize = ret->typesizes[i] = typesizes[i];
 		ret->arrays[i] = malloc( stride * typesize * verts );
 		memcpy( ret->arrays[i], arrays[i], stride * typesize * verts );
+
+		SpreadMessage( spr, "geodata%d_%d", "biiv", ret->geo_in_parent, i, 88, ret->geo_in_parent, i, stride * typesize * verts, ret->arrays[i] );
 	}
 
-
-	//SpreadBumpConfiguration( ret->parent );
+	SpreadMessage( spr, "geometry%d", "bbsiibvvv", ret->geo_in_parent, 87, ret->geo_in_parent, geoname, render_type, verts, nr_arrays,
+		sizeof(int)*nr_arrays, strides, 
+		sizeof(int)*nr_arrays, types, 
+		sizeof(int)*nr_arrays, typesizes );
 
 	return ret;
 }
@@ -470,12 +468,15 @@ SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, i
 void UpdateSpreadGeometry( SpreadGeometry * geo, int arrayno, void * arraydata )
 {
 	int arraysize = geo->strides[arrayno] * geo->typesizes[arrayno] * geo->verts;
+	SpreadMessage( geo->parent, "geodata%d_%d", "biiv", geo->geo_in_parent, arrayno, 88, geo->geo_in_parent, arrayno, arraysize, arraydata );
+
+/*	int arraysize = geo->strides[arrayno] * geo->typesizes[arrayno] * geo->verts;
 	uint8_t trray[arraysize + 8] __attribute__((aligned(32)));
 	memcpy( geo->arrays[arrayno], arraydata, arraysize );
 	((uint32_t*)trray)[0] = htonl( geo->geo_in_parent );
 	((uint32_t*)trray)[1] = htonl( arrayno );
 	memcpy( trray+8, arraydata, arraysize );
-	SpreadPushMessage(geo->parent, 88, arraysize+8, trray );
+	SpreadPushMessage(geo->parent, 88, arraysize+8, trray );*/
 }
 
 void SpreadRenderGeometry( SpreadGeometry * geo, int start, int nr_emit, const float * modelmatrix )
