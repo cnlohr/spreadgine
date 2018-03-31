@@ -5,6 +5,7 @@
 #include <spreadgine_remote.h>
 #include <os_generic.h>
 #include <arpa/inet.h> //For htonl
+#include <stdlib.h>
 
 //For rawdraw
 #include <CNFGFunctions.h>
@@ -45,6 +46,8 @@ Spreadgine * SpreadInit( int w, int h, const char * title, int httpport, int vps
 	}
 
 	SpreadRemoteInit( ret );
+	SpreadMessage( ret, "setup", "biiis", 64, w, h, vps, title );
+
 
 	ret->setvps = vps;
 	for( i = 0; i < vps; i++ )
@@ -75,8 +78,9 @@ Spreadgine * SpreadInit( int w, int h, const char * title, int httpport, int vps
 			"    gl_Position = (pmatrix * (vmatrix * (mmatrix * vec4(vpos, 1.0)))); \n"
 			"}\n";
 		static const char *default_fragment_shader_source =
+			"#ifdef GL_ES\n"
 			"precision mediump float;\n"
-			"\n"
+			"#endif\n"
 			"varying vec4 vvColor;\n"
 			"\n"
 			"void main()\n"

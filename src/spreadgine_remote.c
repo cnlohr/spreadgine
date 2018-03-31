@@ -55,8 +55,11 @@ void HTTPCustomStart( )
 void CloseEvent()
 {
 	//No close event (no one cares when a client is done)
-	if( curhttp->data.userptr.v ) free( curhttp->data.userptr.v );
-	curhttp->data.userptr.v = 0;
+	if( curhttp->is_dynamic )
+	{
+		if( curhttp->data.userptr.v ) free( curhttp->data.userptr.v );
+		curhttp->data.userptr.v = 0;
+	}
 }
 
 
@@ -197,10 +200,12 @@ void SpreadPushMessage( Spreadgine * e, uint8_t messageid, int payloadsize, void
 	int modhead = e->cbhead % SPREADGINE_CIRCBUF;
 	int sent = 0;
 
+	payloadsize++;//For mesageid.
 	e->cbbuff[modhead] = payloadsize>>24; modhead = (modhead+1)%SPREADGINE_CIRCBUF; sent++;
 	e->cbbuff[modhead] = payloadsize>>16; modhead = (modhead+1)%SPREADGINE_CIRCBUF; sent++;
 	e->cbbuff[modhead] = payloadsize>>8; modhead = (modhead+1)%SPREADGINE_CIRCBUF; sent++;
 	e->cbbuff[modhead] = payloadsize>>0; modhead = (modhead+1)%SPREADGINE_CIRCBUF; sent++;
+	payloadsize--;
 
 	e->cbbuff[modhead] = messageid;
 	modhead = (modhead+1)%SPREADGINE_CIRCBUF; sent++;
@@ -329,7 +334,7 @@ void SpreadMessage( Spreadgine * e, const char * entry, const char * format, ...
 	}
 
 	he->payloadlen = outplace;
-	uint32_t nbo = htonl( outplace );
+	uint32_t nbo = htonl( he->payloadlen-4 );
 	memcpy( he->payload, &nbo, 4 );
 #if 0
 	printf ( "%d: ", he->payloadlen );

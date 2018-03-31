@@ -7,14 +7,14 @@
 //
 //Messages: [message size (Does not include opcode)] [opcode] [payload (optional)]
 //	64 range
-//		64 = InitializationPacket( uint32_t 
-//		65 = UpdateCameraName( uint8_t id, char name[...] );
-//		66 = UpdateCameraPerspective( uint8_t id, float perspective[16] );
-//		67 = UpdateCameraView( uint8_t id, float view[16] );
+//		64 = InitializationPacket
+//		65 = UpdateCameraName( uint8_t id, char name[...] ); //XXX TODO
+//		66 = UpdateCameraPerspective( uint8_t id, float perspective[16] ); //XXX TODO
+//		67 = UpdateCameraView( uint8_t id, float view[16] ); //XXX TODO
 //		68 = SetupCamera( uint8_t camid, float fov, float aspect, float near, float far, [char*]camname );
 //		69 = Setup New Shader (or update existing) ... See spreadgine_remote.c for mroe info.
 //		70 = Remove Shader( uint8_t shader id );
-//
+//	
 //
 //		74 = glEnable( int )
 //		75 = glDisable( int )
@@ -33,7 +33,6 @@
 //		90 = RemoveGeometry( uint8_t geono );	//Tricky: There is no call to remove children of geometries.  Client must do that.
 //		
 //
-//		127 = Bump Configuration (re-download)
 //  128+ = User functions
 
 //"entry" is in printf mode... "format" is in 'b' for byte, 'i' for integer, 'f' for float, 's' for string, 'v' takes two parameters, a # of bytes and a pointer to the payload. 'S' takes a # of strings and a list of strings.
