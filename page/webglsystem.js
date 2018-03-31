@@ -1,29 +1,54 @@
 var wgcanvas = null
 var wgl = null;
-
+var screenw, screenh;
 var wgcams = [];
 var wgshades = [];
 var wgcurshad = 0;
 var wggeos = [];
 
-var perspectivematrix;
-var viewmatrix;// = {1.,0.,0.,0.,0.,1.,0.,0.,0.,0.,1.,0.,0.,0.,0.,1.}
+var perspectivematrix = [];
+var viewmatrix = [];
+var doubleview = true;
+
+var squareVertexPositionBuffer = null;
 
 function InitSystem( addy, canvas )
 {
 	wgcanvas = canvas;
 	wgl = wgcanvas.getContext("webgl");
-	wgl.viewportWidth = wgcanvas.width;
-	wgl.viewportHeight = wgcanvas.height;
-
 //	mat4.perspective(45, wgl.viewportWidth / wgl.viewportHeight, 0.1, 100.0, perspectivematrix);
 //	mat4.identity( viewmatrix );
-
 
 	InitWebsocket( addy );
 }
 
+var StoredSceneOperations = [];
 function ProcessPack()
+{
+	//In calling this function, packbuffer = Uint8Array of packet and packbufferp should be 0.
+	//Queue up the messages until we see a 77 (page flip)
+	StoredSceneOperations.push( packbuffer );
+	if( packbuffer[0] != 77 ) return;
+
+	screenw = wgl.viewportWidth = wgcanvas.width;
+	screenh = wgl.viewportHeight = wgcanvas.height;
+	wgcanvas.style.width ='100%';
+	wgcanvas.style.height='100%';
+	wgcanvas.width  = wgcanvas.offsetWidth;
+	wgcanvas.height = wgcanvas.offsetHeight;
+
+	wgl.viewport( 0, 0, wgl.viewportWidth, wgl.viewportHeight );
+
+	for( var s in StoredSceneOperations )
+	{
+		packbuffer = StoredSceneOperations[s];
+		packbufferp = 0;
+		InternalProcessPack();
+	}
+	StoredSceneOperations = [];
+}
+
+function InternalProcessPack()
 {
 	var cal = Pop8();
 	switch( cal )
@@ -38,12 +63,11 @@ function ProcessPack()
 			break;
 		case 66:	//XXX Wrong, but we'll use it for now.
 			var cid = Pop8();
-			perspectivematrix = PopMultiFloat(16);
+			perspectivematrix[cid] = PopMultiFloat(16);
 			break;
 		case 67:
 			var cid = Pop8();
-			viewmatrix = PopMultiFloat(16);
-			console.log( "VIEW MATRIX" );
+			viewmatrix[cid] = PopMultiFloat(16);
 			break;
 		case 68:  //Setup camera
 			var cid = Pop8();
@@ -123,7 +147,7 @@ function ProcessPack()
 			wgl.lineWidth( PopFloat() );
 			break;
 		case 77:
-			//???
+			//"Swap Buffers"  this is actually the last thing that happens...
 			break;
 		case 78:
 			var r, g, b, a;
@@ -181,10 +205,8 @@ function ProcessPack()
 			var ad = wggeos[gip].arraydata[arrayno] = PopMultiFloat(nrv/4);
 			if( !wggeos[gip].arraybuffer[arrayno] ) wggeos[gip].arraybuffer[arrayno] = wgl.createBuffer();
 			var ab = wggeos[gip].arraybuffer[arrayno];
-
 			wgl.bindBuffer(wgl.ARRAY_BUFFER, ab);
 			wgl.bufferData(wgl.ARRAY_BUFFER, ad, wgl.STATIC_DRAW);
-
 			ab.itemSize = wggeos[gip].strides[arrayno];
 			ab.numItems = nrv;
 			break;
@@ -202,23 +224,29 @@ function ProcessPack()
 			wgl.uniformMatrix4fv( curshad.mindex, wgl.GL_FALSE, mmatrix );
 			for( var i = 0; i < ge.nr_arrays; i++ )
 			{
-//				console.log( ge.arraydata[i] );
-				//wgl.vertexAttribPointer( i, (ge.types==0)?4:1, (ge.types==0)?wgl.GL_FLOAT:wgl.GL_UNSIGNED_BYTE, wgl.GL_FALSE, ge.strides, 0 );
-				//wgl.bufferData( wgl.ARRAY_BUFFER,ge.arraydata[i],wgl.STATIC_DRAW);
-//				wgl.vertexAttribPointer( i, 4, wgl.GL_FLOAT, wgl.GL_FALSE, 4, 0 );
-				// ge.arraydata[i]
 				wgl.bindBuffer(wgl.ARRAY_BUFFER, ge.arraybuffer[i]);
-				//wgl.vertexAttribPointer( i, (ge.types==0)?4:1, (ge.types==0)?wgl.GL_FLOAT:wgl.GL_UNSIGNED_BYTE, wgl.GL_FALSE, ge.strides[i], 0 );
-				wgl.vertexAttribPointer( i, (ge.types==0)?4:1, (ge.types==0)?wgl.FLOAT:wgl.UNSIGNED_BYTE, wgl.GL_FALSE, ge.strides[i], 0 );
+				wgl.vertexAttribPointer(i, ge.strides[i], (ge.types[i]==0)?wgl.FLOAT:wgl.UNSIGNED_BYTE, false, 0, 0);
 				wgl.enableVertexAttribArray(i);
-				//console.log(ge.arraydata[i]);
-				//console.log( ge.arraydata[i] );
 			}
 
-			wgl.uniformMatrix4fv( curshad.vindex, wgl.GL_FALSE, viewmatrix);
-			wgl.uniformMatrix4fv( curshad.pindex, wgl.GL_FALSE, perspectivematrix );
 
-			wgl.drawArrays(ge.rendertype, offset, verts);
+			if( doubleview )
+			{
+				for( var i = 0; i < 2; i++ )
+				{
+					wgl.viewport( i*wgl.viewportWidth/2, 0, wgl.viewportWidth/2, wgl.viewportHeight );
+					wgl.uniformMatrix4fv( curshad.vindex, wgl.FALSE, viewmatrix[i]);
+					wgl.uniformMatrix4fv( curshad.pindex, wgl.FALSE, perspectivematrix[i] );			
+					wgl.drawArrays(ge.rendertype, offset, verts);
+				}
+			}
+			else
+			{
+				wgl.uniformMatrix4fv( curshad.vindex, wgl.FALSE, viewmatrix[0]);
+				wgl.uniformMatrix4fv( curshad.pindex, wgl.FALSE, perspectivematrix[1] );			
+				wgl.drawArrays(ge.rendertype, offset, verts);
+			}
+
 
 			break;
 		case 90:

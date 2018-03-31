@@ -524,7 +524,7 @@ void SpreadRenderGeometry( SpreadGeometry * geo, int start, int nr_emit, const f
 	int mmatpos = ss->model_index;
 
 	glUniformMatrix4fv( mmatpos, 1, 0, modelmatrix );
-	tdPrint( modelmatrix );
+	//tdPrint( modelmatrix );
 
 	int i;
 	for( i = 0; i < geo->numarrays; i++ )
@@ -538,6 +538,7 @@ void SpreadRenderGeometry( SpreadGeometry * geo, int start, int nr_emit, const f
 		int * vpedges = parent->vpedges[i];
 		glUniformMatrix4fv( vmatpos, 1, 0, parent->vpviews[i] );
 		glUniformMatrix4fv( pmatpos, 1, 0, parent->vpperspectives[i] );
+		tdPrint( parent->vpperspectives[1] );
 		glViewport(vpedges[0],  vpedges[1], vpedges[2], vpedges[3]); 
 
 		glDrawArrays(geo->render_type, start, nr_emit);

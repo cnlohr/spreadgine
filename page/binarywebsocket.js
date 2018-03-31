@@ -133,4 +133,9 @@ function InitWebsocket( address )
 		console.log( "Socket opened." );
 	}
 	socket.onmessage = handleReceive;
+	socket.onclose = function() {
+		console.log( "Socket failed." );
+		setTimeout( InitWebsocket(address), 2000 );
+		document.title = "Spreadgine Offline";
+	}
 }

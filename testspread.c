@@ -1,5 +1,6 @@
 #include <spreadgine.h>
 #include <CNFG3D.h>
+#include <unistd.h>
 
 void HandleKey( int keycode, int bDown )
 {
@@ -17,8 +18,8 @@ int main()
 {
 	Spreadgine * e = SpreadInit( 960, 640, "Spread Test", 8888, 2, stderr );
 
-	tdTranslate( e->vpviews[0], -.2, 0, 0 );
-	tdTranslate( e->vpviews[1], .2, 0, 0 );
+	tdTranslate( e->vpviews[0], -.5, 0, 0 );
+	tdTranslate( e->vpviews[1], .5, 0, 0 );
 	e->geos[0].render_type = GL_TRIANGLES;
 	SpreadChangeCameaView(e, 0, e->vpviews[0] );
 	SpreadChangeCameaView(e, 1, e->vpviews[1] );
