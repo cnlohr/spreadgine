@@ -204,20 +204,21 @@ void SpreadSetupCamera( Spreadgine * spr, uint8_t camid, float fov, float aspect
 	tdPerspective( fov, aspect, near, far, spr->vpperspectives[camid] );
 	tdIdentity(spr->vpviews[camid]);
 
-	SpreadMessage( spr, "camera%d", "bbffffs", camid, 68, camid, fov, aspect, near, far, camname );
+	printf( "...\n" );
+	SpreadMessage( spr, "camera#", "bbffffs", camid, 68, camid, fov, aspect, near, far, camname );
 	SpreadChangeCameaPerspective( spr, camid, spr->vpperspectives[camid]  );
 }
 
 void SpreadChangeCameaPerspective( Spreadgine * spr, uint8_t camid, float * newpersp )
 {
 	memcpy( spr->vpperspectives[camid], newpersp, sizeof(float)*16 );
-	SpreadMessage( spr, "campersp%d", "bbX", camid, 66, camid, 16*sizeof(float), newpersp );
+	SpreadMessage( spr, "campersp#", "bbX", camid, 66, camid, 16*sizeof(float), newpersp );
 }
 
 void SpreadChangeCameaView( Spreadgine * spr, uint8_t camid, float * newview )
 {
 	memcpy( spr->vpviews[camid], newview, sizeof(float)*16 );
-	SpreadMessage( spr, "camview%d", "bbX", camid, 67, camid, 16*sizeof(float), newview );
+	SpreadMessage( spr, "camview#", "bbX", camid, 67, camid, 16*sizeof(float), newview );
 }
 
 
@@ -385,7 +386,7 @@ SpreadShader * SpreadLoadShader( Spreadgine * spr, const char * shadername, cons
 
 	spr->current_shader = ret->shader_in_parent;
 
-	SpreadMessage( spr, "shader%d", "bbsssS", ret->shader_in_parent, 69, ret->shader_in_parent, shadername, fragmentShader, vertexShader, attriblistlength, attriblist );
+	SpreadMessage( spr, "shader#", "bbsssS", ret->shader_in_parent, 69, ret->shader_in_parent, shadername, fragmentShader, vertexShader, attriblistlength, attriblist );
 	return ret;
 
 qexit:
@@ -458,7 +459,7 @@ void SpreadFreeShader( SpreadShader * shd )
 	if( shd->vertex_shader_text )		{ free( shd->vertex_shader_text );		shd->vertex_shader_text = 0; }
 
 	SpreadMessage( shd->parent, 0, "bb", 70, shd->shader_in_parent );
-	SpreadHashRemove( shd->parent, "shader%d", shd->shader_in_parent );
+	SpreadHashRemove( shd->parent, "shader#", shd->shader_in_parent );
 
 }
 
@@ -532,7 +533,7 @@ SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, i
 	 	glBindBuffer(GL_ARRAY_BUFFER, ret->vbos[i]);
 		glBufferData(GL_ARRAY_BUFFER, stride * typesize * verts, ret->arrays[i], GL_STATIC_DRAW);
 
-		SpreadMessage( spr, "geodata%d_%d", "bbbv", ret->geo_in_parent, i, 88, ret->geo_in_parent, i, stride * typesize * verts, ret->arrays[i] );
+		SpreadMessage( spr, "geodata#_#", "bbbv", ret->geo_in_parent, i, 88, ret->geo_in_parent, i, stride * typesize * verts, ret->arrays[i] );
 	}
 
 	{
@@ -541,7 +542,7 @@ SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, i
 		{
 			SendIndexArray[i] = htonl( ret->indexarray[i] );
 		}
-		SpreadMessage( spr, "geometry%d", "bbsiibvvv", ret->geo_in_parent, 87, ret->geo_in_parent, geoname, render_type, verts, nr_arrays,
+		SpreadMessage( spr, "geometry#", "bbsiibvvv", ret->geo_in_parent, 87, ret->geo_in_parent, geoname, render_type, verts, nr_arrays,
 			sizeof(uint8_t)*nr_arrays, ret->strides, 
 			sizeof(uint8_t)*nr_arrays, ret->types,
 			sizeof(uint32_t)*indices, SendIndexArray );
@@ -553,7 +554,7 @@ SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, i
 void UpdateSpreadGeometry( SpreadGeometry * geo, int arrayno, void * arraydata )
 {
 	int arraysize = geo->strides[arrayno] * SpreadTypeSizes[ geo->types[arrayno] ] * geo->verts;
-	SpreadMessage( geo->parent, "geodata%d_%d", "bbbv", geo->geo_in_parent, arrayno, 88, geo->geo_in_parent, arrayno, arraysize, arraydata );
+	SpreadMessage( geo->parent, "geodata#_#", "bbbv", geo->geo_in_parent, arrayno, 88, geo->geo_in_parent, arrayno, arraysize, arraydata );
 
 /*	int arraysize = geo->strides[arrayno] * geo->typesizes[arrayno] * geo->verts;
 	uint8_t trray[arraysize + 8] __attribute__((aligned(32)));
@@ -614,11 +615,11 @@ void SpreadFreeGeometry( SpreadGeometry * geo )
 	for( i = 0; i < geo->numarrays; i++ )
 	{
 		free( geo->arrays[i] );
-		SpreadHashRemove( geo->parent, "geodata%d_%d", geo->geo_in_parent, i );
+		SpreadHashRemove( geo->parent, "geodata#_#", geo->geo_in_parent, i );
 	}
 
-	SpreadMessage( geo->parent, "geometry%d", "bb", geo->geo_in_parent, 90, geo->geo_in_parent );
-	SpreadHashRemove( geo->parent, "geometry%d", geo->geo_in_parent );
+	SpreadMessage( geo->parent, "geometry#", "bb", geo->geo_in_parent, 90, geo->geo_in_parent );
+	SpreadHashRemove( geo->parent, "geometry#", geo->geo_in_parent );
 }
 
 

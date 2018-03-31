@@ -37,7 +37,7 @@
 
 //"entry" is in printf mode... "format" is in 'b' for byte, 'i' for integer, 'f' for float, 's' for string, 'v' takes two parameters, a # of bytes and a pointer to the payload. 'S' takes a # of strings and a list of strings.
 //If entry is null, it is not stored to the hash table.
-void SpreadMessage( Spreadgine * e, const char * entry, const char * format, ... ); //XXX WARNING Not threadsafe.
+void SpreadMessage( Spreadgine * e, const char * entry, const char * format, ... ); //XXX WARNING Not threadsafe. ALSO "entry" IS NOT printf-compliant.  Use '#' to pull the next int.
 void SpreadHashRemove( Spreadgine * e, const char * he, ... );
 int SpreadCreateDump( Spreadgine * spr, uint8_t ** ptrout );
 

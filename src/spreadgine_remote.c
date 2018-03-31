@@ -242,12 +242,26 @@ void SpreadMessage( Spreadgine * e, const char * entry, const char * format, ...
 	if( entry )
 	{
 		char namebuffer[128];
-		int vsnpf = vsnprintf( namebuffer, sizeof(namebuffer), entry, ap );
-		if( vsnpf <= 0 )
+		int i, j = 0;
+		char c;
+		for( i = 0; (c = entry[i]) && j < sizeof(namebuffer)-12; i++ )
 		{
-			fprintf( e->fReport, "Error: SpreadMessage called with invalid entry formatting.\n" );
-			return;
+			if( c == '#' )
+			{
+				j+=sprintf( namebuffer+j, "%d", va_arg(ap, int) );
+			}
+			else
+			{
+				namebuffer[j++] = c;
+			}
 		}
+		namebuffer[j] = 0;
+		//int vsnpf = vsnprintf( namebuffer, sizeof(namebuffer), entry, ap );
+		//if( vsnpf <= 0 )
+		//{
+		//	fprintf( e->fReport, "Error: SpreadMessage called with invalid entry formatting.\n" );
+		//	return;
+		//}
 		OGLockMutex( e->KEEPmutex );
 		he = SpreadHashEntryGetOrInsert( e, namebuffer  );
 	}
@@ -323,6 +337,7 @@ void SpreadMessage( Spreadgine * e, const char * entry, const char * format, ...
 			v = va_arg(ap, int );
 			vp = va_arg(ap, void * );
 			if( outplace + v> he->payload_reserved ) he->payload = realloc( he->payload,he->payload_reserved+=64+v ); 
+			printf( "%p %d %p %d\n", he->payload, outplace, vp, v );
 			memcpy( he->payload + outplace, vp, v );
 			outplace += v;
 			break;

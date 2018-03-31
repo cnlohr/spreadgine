@@ -16,7 +16,11 @@ void HandleMotion( int x, int y, int mask )
 
 int main()
 {
+#ifdef MALI
+	Spreadgine * e = SpreadInit( 2160, 1200, "Spread Test", 8888, 2, stderr );
+#else
 	Spreadgine * e = SpreadInit( 960, 640, "Spread Test", 8888, 2, stderr );
+#endif
 
 	tdTranslate( e->vpviews[0], -.5, 0, 0 );
 	tdTranslate( e->vpviews[1], .5, 0, 0 );
