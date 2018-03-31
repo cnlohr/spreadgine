@@ -51,6 +51,16 @@ function PopFloat()
 	return floatbuff[0];
 }
 
+function PopMultiFloat( nrtopop )
+{
+	var bb = new Uint8Array( 4*nrtopop );
+	bb.set( packbuffer.slice(packbufferp,packbufferp+4*nrtopop), 0 );
+	var floatbuff = new Float32Array(bb.buffer,0 );
+	packbufferp+=4*nrtopop;
+	return floatbuff;
+}
+
+
 function handleReceive(message) {
 	var buffer = new Uint8Array(message.data);
 

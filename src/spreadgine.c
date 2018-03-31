@@ -214,7 +214,8 @@ void spglClearColor( Spreadgine * e, float r, float g, float b, float a )
 
 void spglClear( Spreadgine * e, uint32_t clearmask )
 {
-	SpreadPushMessage(e, 79, 4, &clearmask );
+	uint32_t lcmask = htonl(clearmask);
+	SpreadPushMessage(e, 79, 4, &lcmask );
 	glClear( clearmask );
 }
 
@@ -394,7 +395,8 @@ void SpreadUniform16f( SpreadShader * shd, int slot, const float * uni )
 void SpreadApplyShader( SpreadShader * shd )
 {
 	glUseProgram(shd->program_shader);
-	SpreadPushMessage(shd->parent, 80, 4, &shd->shader_in_parent );
+	uint32_t sip = htonl( shd->shader_in_parent );
+	SpreadPushMessage(shd->parent, 80, 4, &sip );
 }
 
 void SpreadFreeShader( SpreadShader * shd )
