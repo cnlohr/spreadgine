@@ -158,6 +158,7 @@ struct SpreadGeometry
 	void ** arrays;
 	uint8_t * strides;
 	uint8_t * types; 		//always GL_FLOAT (0), GL_UNSIGNED_BYTE (1)
+	int laststartv;
 
 	int numarrays;
 
@@ -167,7 +168,7 @@ struct SpreadGeometry
 
 SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, int render_type, int indices, uint16_t * indexbuffer, int verts, int nr_arrays, const void ** arrays, int * strides, int * types );
 void UpdateSpreadGeometry( SpreadGeometry * geo, int arrayno, void * arraydata );
-void SpreadRenderGeometry( SpreadGeometry * geo, const float * modelmatrix ); 
+void SpreadRenderGeometry( SpreadGeometry * geo, const float * modelmatrix, int startv, int numv ); 	//If nv = -1, run until end of list.
 void SpreadFreeGeometry( SpreadGeometry * geo );
 
 

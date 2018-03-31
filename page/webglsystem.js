@@ -194,6 +194,7 @@ function InternalProcessPack()
 			}
 			var ibo = wggeos[gip].indexbuffer = wgl.createBuffer();
 			wgl.bindBuffer(wgl.ELEMENT_ARRAY_BUFFER, ibo);
+			wggeos[gip].laststart = 0;
 			wgl.bufferData(wgl.ELEMENT_ARRAY_BUFFER, wggeos[gip].indexarray, wgl.STATIC_DRAW);
 			break;
 		case 88:		//Update geometry
@@ -211,7 +212,9 @@ function InternalProcessPack()
 			ab.numItems = nrv;
 			break;
 		case 89:
-			var gip = Pop32();
+			var gip = Pop16();
+			var start = Pop16();
+			var num = Pop16();
 			var ge = wggeos[gip];
 			var mmatrix = PopMultiFloat(16);
 
@@ -228,6 +231,11 @@ function InternalProcessPack()
 			}
 
 			wgl.bindBuffer(wgl.ELEMENT_ARRAY_BUFFER, ge.indexbuffer);
+			if( wggeos[gip].laststart != start )
+			{
+				wgl.bufferData(wgl.ELEMENT_ARRAY_BUFFER, new Uint16Array( wggeos[gip].indexarray.buffer, start*2 ), wgl.STATIC_DRAW);
+				wggeos[gip].laststart = start;
+			}
 
 			if( doubleview )
 			{
@@ -236,14 +244,14 @@ function InternalProcessPack()
 					wgl.viewport( i*wgl.viewportWidth/2, 0, wgl.viewportWidth/2, wgl.viewportHeight );
 					wgl.uniformMatrix4fv( curshad.vindex, wgl.FALSE, viewmatrix[i]);
 					wgl.uniformMatrix4fv( curshad.pindex, wgl.FALSE, perspectivematrix[i] );			
-					wgl.drawElements(ge.rendertype,	ge.indices, wgl.UNSIGNED_SHORT, 0 );
+					wgl.drawElements(ge.rendertype,	(num>0)?num:ge.indices, wgl.UNSIGNED_SHORT, 0 );
 				}
 			}
 			else
 			{
 				wgl.uniformMatrix4fv( curshad.vindex, wgl.FALSE, viewmatrix[0]);
 				wgl.uniformMatrix4fv( curshad.pindex, wgl.FALSE, perspectivematrix[1] );			
-				wgl.drawElements(ge.rendertype,	ge.indices, wgl.UNSIGNED_SHORT, 0 );
+				wgl.drawElements(ge.rendertype,	(num>0)?num:ge.indices, wgl.UNSIGNED_SHORT, 0 );
 			}
 
 

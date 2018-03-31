@@ -33,7 +33,7 @@ int main()
 	tdIdentity( modelmatrix );
 	tdTranslate( modelmatrix, 0., 0., -5. );
 
-	int frames;
+	int frames = 0, tframes = 0;
 	double lastframetime = OGGetAbsoluteTime();
 	while(1)
 	{
@@ -42,7 +42,9 @@ int main()
 		spglClear( e, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 		spglEnable( e, GL_DEPTH_TEST );
 		SpreadApplyShader( &e->shaders[0] );
-		SpreadRenderGeometry( &e->geos[0], modelmatrix ); 
+
+		int rstart = ((tframes)*6)%36;
+		SpreadRenderGeometry( &e->geos[0], modelmatrix, rstart, 6 ); 
 
 		tdRotateEA( modelmatrix, 0,1,.2125 );		//Operates ON f
 		//tdTranslate( modelmatrix, 0, 0, .1 );
@@ -50,6 +52,7 @@ int main()
 		spglSwap( e );
 
 		frames++;
+		tframes++;
 		if( Now - lastframetime > 1 )
 		{
 			printf( "FPS: %d\n", frames );

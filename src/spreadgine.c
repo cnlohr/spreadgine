@@ -510,6 +510,7 @@ SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, i
 	glGenBuffers(1, &ret->ibo );
  	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ret->ibo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t)*indices, ret->indexarray, GL_STATIC_DRAW);
+	ret->laststartv = 0;
 
 	ret->vbos = malloc( sizeof( uint32_t ) * nr_arrays );
 	glGenBuffers(nr_arrays, ret->vbos );
@@ -569,7 +570,7 @@ void UpdateSpreadGeometry( SpreadGeometry * geo, int arrayno, void * arraydata )
 	SpreadMessage( geo->parent, "geodata#_#", "bbbv", geo->geo_in_parent, arrayno, 88, geo->geo_in_parent, arrayno, arraysize, arraydata );
 }
 
-void SpreadRenderGeometry( SpreadGeometry * geo, const float * modelmatrix )
+void SpreadRenderGeometry( SpreadGeometry * geo, const float * modelmatrix, int startv, int numv )
 {
 	Spreadgine * parent = geo->parent;
 	SpreadShader * ss = &parent->shaders[parent->current_shader];
@@ -589,6 +590,11 @@ void SpreadRenderGeometry( SpreadGeometry * geo, const float * modelmatrix )
 	}
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, geo->ibo);
+	if( startv != geo->laststartv )
+	{
+	    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t)*geo->indices-startv, geo->indexarray+startv, GL_STATIC_DRAW);
+		geo->laststartv = startv;
+	}
 
 	for( i = 0; i < parent->setvps; i++ )
 	{
@@ -597,13 +603,14 @@ void SpreadRenderGeometry( SpreadGeometry * geo, const float * modelmatrix )
 		glUniformMatrix4fv( pmatpos, 1, 0, parent->vpperspectives[i] );
 		glViewport(vpedges[0],  vpedges[1], vpedges[2], vpedges[3]); 
 
-		//glDrawArrays(geo->render_type, start, nr_emit);
-		glDrawElements(geo->render_type, geo->indices, GL_UNSIGNED_SHORT, 0);
+		glDrawElements(geo->render_type, (numv==-1)?geo->indices:numv, GL_UNSIGNED_SHORT, 0);
 	}
 
-	uint32_t SpreadGeoInfo[1+16];
-	SpreadGeoInfo[0] = htonl( geo->geo_in_parent );
-	memcpy( &SpreadGeoInfo[1], modelmatrix, sizeof( float ) * 16 );
+	uint16_t SpreadGeoInfo[3+32];
+	SpreadGeoInfo[0] = htons( geo->geo_in_parent );
+	SpreadGeoInfo[1] = htons( startv );
+	SpreadGeoInfo[2] = htons( numv );
+	memcpy( &SpreadGeoInfo[3], modelmatrix, sizeof( float ) * 16 );
 	SpreadPushMessage(geo->parent, 89, sizeof(SpreadGeoInfo), SpreadGeoInfo );
 }
 
