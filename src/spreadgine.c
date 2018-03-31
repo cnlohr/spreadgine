@@ -100,6 +100,29 @@ Spreadgine * SpreadInit( int w, int h, const char * title, int httpport, int vps
 	}
 
 	{
+		#define SIMPLECUBE
+		#ifdef SIMPLECUBE
+		/* init_resources */
+		uint32_t CubeDataIndices[] = {
+			0, 1, 2,	2, 3, 0,	// front
+			1, 5, 6,	6, 2, 1,	// right
+			7, 6, 5,	5, 4, 7,	// back
+			4, 0, 3,	3, 7, 4,	// left
+			4, 5, 1,	1, 0, 4,	// bottom
+			3, 2, 6,	6, 7, 3,	// top
+		}; 		int IndexQty = 36;
+
+		static const float CubeDataVerts[] = {
+			-1.0, -1.0,  1.0,	 1.0, -1.0,  1.0,	 1.0,  1.0,  1.0,	-1.0,  1.0,  1.0,			// front
+			-1.0, -1.0, -1.0,	 1.0, -1.0, -1.0,	 1.0,  1.0, -1.0,	-1.0,  1.0, -1.0,			// back
+		};		int VertQty = 8;
+
+		static const float CubeDataColors[] = {
+			1.0, 0.0, 0.0, 1.0,		0.0, 1.0, 0.0, 1.0,		0.0, 0.0, 1.0, 1.0,		1.0, 1.0, 1.0, 1.0,			// front colors
+			1.0, 0.0, 0.0, 1.0,		0.0, 1.0, 0.0, 1.0,		0.0, 0.0, 1.0, 1.0,		1.0, 1.0, 1.0, 1.0,			// back colors
+		};
+
+		#else
 		static const float CubeDataVerts[36*3] = {
 			-1.0f,-1.0f,-1.0f,	-1.0f,-1.0f, 1.0f,	-1.0f, 1.0f, 1.0f,
 			-1.0f,-1.0f,-1.0f,	-1.0f, 1.0f, 1.0f,	-1.0f, 1.0f,-1.0f,
@@ -115,9 +138,9 @@ Spreadgine * SpreadInit( int w, int h, const char * title, int httpport, int vps
 			1.0f,-1.0f, 1.0f,	-1.0f,-1.0f, 1.0f,	-1.0f,-1.0f,-1.0f,
 			1.0f, 1.0f, 1.0f,	1.0f, 1.0f,-1.0f,	-1.0f, 1.0f,-1.0f,
 			1.0f, 1.0f, 1.0f,	-1.0f, 1.0f,-1.0f,	-1.0f, 1.0f, 1.0f,
-		};
+		};	int VertQty = 36;
 
-		static const float CubeColorData[36*4] = {
+		static const float CubeDataColors[36*4] = {
 			1.,0.,0.,1.,	1.,0.,0.,1.,	1.,0.,0.,1.,	1.,0.,0.,1.,	1.,0.,0.,1.,	1.,0.,0.,1.,
 			0.,1.,0.,1.,	0.,1.,0.,1.,	0.,1.,0.,1.,	0.,1.,0.,1.,	0.,1.,0.,1.,	0.,1.,0.,1.,
 			0.,0.,1.,1.,	0.,0.,1.,1.,	0.,0.,1.,1.,	0.,0.,1.,1.,	0.,0.,1.,1.,	0.,0.,1.,1.,
@@ -126,11 +149,17 @@ Spreadgine * SpreadInit( int w, int h, const char * title, int httpport, int vps
 			1.,1.,0.,1.,	1.,1.,0.,1.,	1.,1.,0.,1.,	1.,1.,0.,1.,	1.,1.,0.,1.,	1.,1.,0.,1.,
 		};
 
+		static uint32_t CubeDataIndices[36];
+		for( i = 0; i < 36; i++ ) CubeDataIndices[i] = i;
+		int IndexQty = 36;
+
+		#endif
+
 		static int strides[2] = { 3, 4 };
 		static int types[2] = { GL_FLOAT, GL_FLOAT };
-		const float * arrays[] = { CubeDataVerts, CubeColorData };
+		const float * arrays[] = { CubeDataVerts, CubeDataColors };
 
-		SpreadGeometry * geo0 = SpreadCreateGeometry( ret, "geo1", GL_TRIANGLES, 36, 2, (const void **)arrays, strides, types  );
+		SpreadGeometry * geo0 = SpreadCreateGeometry( ret, "geo1", GL_TRIANGLES, IndexQty, CubeDataIndices, VertQty, 2, (const void **)arrays, strides, types  );
 		if( !geo0 )
 		{
 			fprintf( fReport, "Error making geometry.\n" );
@@ -433,12 +462,13 @@ void SpreadFreeShader( SpreadShader * shd )
 
 }
 
-SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, int render_type, int verts, int nr_arrays, const void ** arrays, int * strides, int * types )
+SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, int render_type, int indices, uint32_t * indexarray, int verts, int nr_arrays, const void ** arrays, int * strides, int * types )
 {
 
 	int i;
 	int retval;
 	SpreadGeometry * ret;
+
 
 	//First see if there are any free geos available in the parent...
 	for( i = 0; i < spr->setgeos; i++ )
@@ -457,6 +487,10 @@ SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, i
 		ret = &spr->geos[i];
 	}
 
+	ret->indices = indices;
+	ret->indexarray = malloc(indices*sizeof(uint32_t));
+	memcpy( ret->indexarray, indexarray, sizeof(uint32_t)*indices );
+
 	ret->geo_in_parent = i;
 	ret->geoname = strdup( geoname );
 	ret->render_type = render_type;
@@ -466,6 +500,13 @@ SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, i
 	ret->arrays = malloc( sizeof(void*) * nr_arrays );
 	ret->types = malloc( sizeof(uint8_t) * nr_arrays );
 	ret->strides = malloc( sizeof(uint8_t) * nr_arrays );
+	
+	glGenBuffers(1, &ret->ibo );
+ 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ret->ibo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t)*indices, ret->indexarray, GL_STATIC_DRAW);
+
+	ret->vbos = malloc( sizeof( uint32_t ) * nr_arrays );
+	glGenBuffers(nr_arrays, ret->vbos );
 
 	for( i = 0; i < nr_arrays; i++ )
 	{
@@ -488,14 +529,22 @@ SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, i
 		ret->arrays[i] = malloc( stride * typesize * verts );
 		memcpy( ret->arrays[i], arrays[i], stride * typesize * verts );
 
-		printf( "%d %d %d\n", stride, ret->types[i], typesize );
+	 	glBindBuffer(GL_ARRAY_BUFFER, ret->vbos[i]);
+		glBufferData(GL_ARRAY_BUFFER, stride * typesize * verts, ret->arrays[i], GL_STATIC_DRAW);
+
 		SpreadMessage( spr, "geodata%d_%d", "bbbv", ret->geo_in_parent, i, 88, ret->geo_in_parent, i, stride * typesize * verts, ret->arrays[i] );
 	}
 
 	{
-		SpreadMessage( spr, "geometry%d", "bbsiibvv", ret->geo_in_parent, 87, ret->geo_in_parent, geoname, render_type, verts, nr_arrays,
+		uint32_t SendIndexArray[indices];
+		for( i = 0; i < indices; i++ )
+		{
+			SendIndexArray[i] = htonl( ret->indexarray[i] );
+		}
+		SpreadMessage( spr, "geometry%d", "bbsiibvvv", ret->geo_in_parent, 87, ret->geo_in_parent, geoname, render_type, verts, nr_arrays,
 			sizeof(uint8_t)*nr_arrays, ret->strides, 
-			sizeof(uint8_t)*nr_arrays, ret->types );
+			sizeof(uint8_t)*nr_arrays, ret->types,
+			sizeof(uint32_t)*indices, SendIndexArray );
 	}
 
 	return ret;
@@ -515,7 +564,7 @@ void UpdateSpreadGeometry( SpreadGeometry * geo, int arrayno, void * arraydata )
 	SpreadPushMessage(geo->parent, 88, arraysize+8, trray );*/
 }
 
-void SpreadRenderGeometry( SpreadGeometry * geo, int start, int nr_emit, const float * modelmatrix )
+void SpreadRenderGeometry( SpreadGeometry * geo, const float * modelmatrix )
 {
 	Spreadgine * parent = geo->parent;
 	SpreadShader * ss = &parent->shaders[parent->current_shader];
@@ -529,26 +578,27 @@ void SpreadRenderGeometry( SpreadGeometry * geo, int start, int nr_emit, const f
 	int i;
 	for( i = 0; i < geo->numarrays; i++ )
 	{
-		glVertexAttribPointer( i, geo->strides[i], (geo->types[i]==0)?GL_FLOAT:GL_UNSIGNED_BYTE, GL_FALSE, 0, geo->arrays[i] );
+		glBindBuffer(GL_ARRAY_BUFFER, geo->vbos[i]);
+		glVertexAttribPointer( i, geo->strides[i], (geo->types[i]==0)?GL_FLOAT:GL_UNSIGNED_BYTE, GL_FALSE, 0, /*geo->arrays[i]*/0 );
 	    glEnableVertexAttribArray(i);
 	}
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, geo->ibo);
 
 	for( i = 0; i < parent->setvps; i++ )
 	{
 		int * vpedges = parent->vpedges[i];
 		glUniformMatrix4fv( vmatpos, 1, 0, parent->vpviews[i] );
 		glUniformMatrix4fv( pmatpos, 1, 0, parent->vpperspectives[i] );
-		tdPrint( parent->vpperspectives[1] );
 		glViewport(vpedges[0],  vpedges[1], vpedges[2], vpedges[3]); 
 
-		glDrawArrays(geo->render_type, start, nr_emit);
+		//glDrawArrays(geo->render_type, start, nr_emit);
+		glDrawElements(geo->render_type, geo->indices, GL_UNSIGNED_INT, 0);
 	}
 
-	uint32_t SpreadGeoInfo[3+16];
+	uint32_t SpreadGeoInfo[1+16];
 	SpreadGeoInfo[0] = htonl( geo->geo_in_parent );
-	SpreadGeoInfo[1] = htonl( start );
-	SpreadGeoInfo[2] = htonl( nr_emit );
-	memcpy( &SpreadGeoInfo[3], modelmatrix, sizeof( float ) * 16 );
+	memcpy( &SpreadGeoInfo[1], modelmatrix, sizeof( float ) * 16 );
 	SpreadPushMessage(geo->parent, 89, sizeof(SpreadGeoInfo), SpreadGeoInfo );
 }
 

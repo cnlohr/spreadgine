@@ -34,7 +34,7 @@ int main()
 		spglClear( e, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 		spglEnable( e, GL_DEPTH_TEST );
 		SpreadApplyShader( &e->shaders[0] );
-		SpreadRenderGeometry( &e->geos[0], 0, 36, modelmatrix ); 
+		SpreadRenderGeometry( &e->geos[0], modelmatrix ); 
 
 		tdRotateEA( modelmatrix, 0,1,.2125 );		//Operates ON f
 		//tdTranslate( modelmatrix, 0, 0, .1 );

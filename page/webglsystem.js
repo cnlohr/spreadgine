@@ -185,16 +185,16 @@ function InternalProcessPack()
 			wggeos[gip].strides = PopMulti8Auto();
 			wggeos[gip].types = PopMulti8Auto();
 			wggeos[gip].arraybuffer = [];
-
-			//XXX TODO: Switch thing over to using index buffers everywhere.
-//			wggeos[gip].indexbuffer = gl.createBuffer();
-//			wggeos[gip].indexarray = new Uint16Array( 65536 )
-//			for( var i = 0; i < 65536; i++ )
-//			{
-//				wggeos[gip].indexarray[i] = i;
-//			}
-//			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, wggeos[gip].indexbuffer);
-//			gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(glIndices), gl.STATIC_DRAW);
+			var indices = wggeos[gip].indices = Pop32()/4;
+			var iarray = wggeos[gip].indexarray = new Uint16Array( indices );
+			console.log( "Indices: " + indices );
+			for( var i = 0; i < indices; i++ )
+			{
+				iarray[i] = Pop32();
+			}
+			var ibo = wggeos[gip].indexbuffer = wgl.createBuffer();
+			wgl.bindBuffer(wgl.ELEMENT_ARRAY_BUFFER, ibo);
+			wgl.bufferData(wgl.ELEMENT_ARRAY_BUFFER, wggeos[gip].indexarray, wgl.STATIC_DRAW);
 			break;
 		case 88:		//Update geometry
 			var gip = Pop8();
@@ -213,15 +213,13 @@ function InternalProcessPack()
 		case 89:
 			var gip = Pop32();
 			var ge = wggeos[gip];
-			var offset = Pop32();
-			var verts = Pop32();
 			var mmatrix = PopMultiFloat(16);
 
 			var curshad = wgshades[wgcurshad];
 			wgl.useProgram(curshad.program);
 
 			//Now, how do we render this mess?
-			wgl.uniformMatrix4fv( curshad.mindex, wgl.GL_FALSE, mmatrix );
+			wgl.uniformMatrix4fv( curshad.mindex, wgl.FALSE, mmatrix );
 			for( var i = 0; i < ge.nr_arrays; i++ )
 			{
 				wgl.bindBuffer(wgl.ARRAY_BUFFER, ge.arraybuffer[i]);
@@ -229,6 +227,7 @@ function InternalProcessPack()
 				wgl.enableVertexAttribArray(i);
 			}
 
+			wgl.bindBuffer(wgl.ELEMENT_ARRAY_BUFFER, ge.indexbuffer);
 
 			if( doubleview )
 			{
@@ -237,14 +236,14 @@ function InternalProcessPack()
 					wgl.viewport( i*wgl.viewportWidth/2, 0, wgl.viewportWidth/2, wgl.viewportHeight );
 					wgl.uniformMatrix4fv( curshad.vindex, wgl.FALSE, viewmatrix[i]);
 					wgl.uniformMatrix4fv( curshad.pindex, wgl.FALSE, perspectivematrix[i] );			
-					wgl.drawArrays(ge.rendertype, offset, verts);
+					wgl.drawElements(ge.rendertype,	ge.indices, wgl.UNSIGNED_SHORT, 0 );
 				}
 			}
 			else
 			{
 				wgl.uniformMatrix4fv( curshad.vindex, wgl.FALSE, viewmatrix[0]);
 				wgl.uniformMatrix4fv( curshad.pindex, wgl.FALSE, perspectivematrix[1] );			
-				wgl.drawArrays(ge.rendertype, offset, verts);
+				wgl.drawElements(ge.rendertype,	ge.indices, wgl.UNSIGNED_SHORT, 0 );
 			}
 
 

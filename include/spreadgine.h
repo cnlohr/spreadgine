@@ -143,24 +143,31 @@ struct SpreadGeometry
 	uint32_t geo_in_parent;
 	char * geoname;
 
-	//Array[0] = Position
-	//Array[1] = Color	
-	//Array[2] = Texutre Coordinates
-	//Array[3] = Normal
+	//Array[0] = Indices
+	//Array[1] = Position
+	//Array[2] = Color	
+	//Array[3] = Texutre Coordinates
+	//Array[4] = Normal
+
+	int indices;
+	uint32_t * indexarray;
+
+	uint32_t ibo;
+	uint32_t * vbos;
 
 	void ** arrays;
 	uint8_t * strides;
-	uint8_t * types; 		//always GL_FLOAT (0), or GL_UNSIGNED_BYTE (1)
+	uint8_t * types; 		//always GL_FLOAT (0), GL_UNSIGNED_BYTE (1)
 
 	int numarrays;
 
-	int render_type;	//GL_TRIANGLES, GL_POINTS, GL_LINES
+	int render_type;	//GL_TRIANGLES, GL_POINTS, GL_LINES, etc.
 	int verts;
 };
 
-SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, int render_type, int verts, int nr_arrays, const void ** arrays, int * strides, int * types );
+SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, int render_type, int indices, uint32_t * indexbuffer, int verts, int nr_arrays, const void ** arrays, int * strides, int * types );
 void UpdateSpreadGeometry( SpreadGeometry * geo, int arrayno, void * arraydata );
-void SpreadRenderGeometry( SpreadGeometry * geo, int start, int nr_emit, const float * modelmatrix ); 
+void SpreadRenderGeometry( SpreadGeometry * geo, const float * modelmatrix ); 
 void SpreadFreeGeometry( SpreadGeometry * geo );
 
 
