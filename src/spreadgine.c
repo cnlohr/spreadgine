@@ -204,7 +204,6 @@ void SpreadSetupCamera( Spreadgine * spr, uint8_t camid, float fov, float aspect
 	tdPerspective( fov, aspect, near, far, spr->vpperspectives[camid] );
 	tdIdentity(spr->vpviews[camid]);
 
-	printf( "...\n" );
 	SpreadMessage( spr, "camera#", "bbffffs", camid, 68, camid, fov, aspect, near, far, camname );
 	SpreadChangeCameaPerspective( spr, camid, spr->vpperspectives[camid]  );
 }
@@ -360,13 +359,13 @@ SpreadShader * SpreadLoadShader( Spreadgine * spr, const char * shadername, cons
 	if (!retval) {
 		char *log;
 
-		fprintf(stderr, "Error: program linking failed!\n");
+		fprintf(spr->fReport, "Error: program linking failed!\n");
 		glGetProgramiv(ret->program_shader, GL_INFO_LOG_LENGTH, &retval);
 
 		if (retval > 1) {
 			log = malloc(retval);
 			glGetProgramInfoLog(ret->program_shader, retval, NULL, log);
-			fprintf(stderr, "%s", log);
+			fprintf(spr->fReport, "%s", log);
 		}
 		goto qexit;
 	}
@@ -383,6 +382,12 @@ SpreadShader * SpreadLoadShader( Spreadgine * spr, const char * shadername, cons
 	ret->perspective_index = glGetUniformLocation( ret->program_shader, "pmatrix" );
 
 	glUseProgram(ret->program_shader);
+
+	int err = glGetError();
+	if( err )
+	{
+		fprintf( spr->fReport, "Hanging error on shader compile %d (0x%02x)\n", err, err );
+	}
 
 	spr->current_shader = ret->shader_in_parent;
 
@@ -548,6 +553,13 @@ SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, i
 			sizeof(uint32_t)*indices, SendIndexArray );
 	}
 
+
+	int err = glGetError();
+	if( err )
+	{
+		fprintf( spr->fReport, "Hanging error on geometry compile %d (0x%02x)\n", err, err );
+	}
+
 	return ret;
 }
 
@@ -555,14 +567,6 @@ void UpdateSpreadGeometry( SpreadGeometry * geo, int arrayno, void * arraydata )
 {
 	int arraysize = geo->strides[arrayno] * SpreadTypeSizes[ geo->types[arrayno] ] * geo->verts;
 	SpreadMessage( geo->parent, "geodata#_#", "bbbv", geo->geo_in_parent, arrayno, 88, geo->geo_in_parent, arrayno, arraysize, arraydata );
-
-/*	int arraysize = geo->strides[arrayno] * geo->typesizes[arrayno] * geo->verts;
-	uint8_t trray[arraysize + 8] __attribute__((aligned(32)));
-	memcpy( geo->arrays[arrayno], arraydata, arraysize );
-	((uint32_t*)trray)[0] = htonl( geo->geo_in_parent );
-	((uint32_t*)trray)[1] = htonl( arrayno );
-	memcpy( trray+8, arraydata, arraysize );
-	SpreadPushMessage(geo->parent, 88, arraysize+8, trray );*/
 }
 
 void SpreadRenderGeometry( SpreadGeometry * geo, const float * modelmatrix )
@@ -572,6 +576,7 @@ void SpreadRenderGeometry( SpreadGeometry * geo, const float * modelmatrix )
 	int vmatpos = ss->view_index;
 	int pmatpos = ss->perspective_index;
 	int mmatpos = ss->model_index;
+	int err;
 
 	glUniformMatrix4fv( mmatpos, 1, 0, modelmatrix );
 	//tdPrint( modelmatrix );
@@ -593,9 +598,12 @@ void SpreadRenderGeometry( SpreadGeometry * geo, const float * modelmatrix )
 		glUniformMatrix4fv( pmatpos, 1, 0, parent->vpperspectives[i] );
 		glViewport(vpedges[0],  vpedges[1], vpedges[2], vpedges[3]); 
 
+		err = glGetError();	if( err ){fprintf( parent->fReport, "B%dHanging error on render %d (0x%02x)\n", i, err, err );}
 		//glDrawArrays(geo->render_type, start, nr_emit);
-		glDrawElements(geo->render_type, geo->indices, GL_UNSIGNED_INT, 0);
+		glDrawElements(geo->render_type, geo->indices, GL_UNSIGNED_SHORT, 0);
+		err = glGetError();	if( err ){fprintf( parent->fReport, "C%dHanging error on render %d (0x%02x) => %d\n", i, err, err, geo->render_type );}
 	}
+	err = glGetError();	if( err ){fprintf( parent->fReport, "DHanging error on render %d (0x%02x)\n", err, err );}
 
 	uint32_t SpreadGeoInfo[1+16];
 	SpreadGeoInfo[0] = htonl( geo->geo_in_parent );

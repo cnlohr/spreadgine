@@ -1,6 +1,7 @@
 #include <spreadgine.h>
 #include <CNFG3D.h>
 #include <unistd.h>
+#include <os_generic.h>
 
 void HandleKey( int keycode, int bDown )
 {
@@ -31,9 +32,12 @@ int main()
 	float modelmatrix[16];
 	tdIdentity( modelmatrix );
 	tdTranslate( modelmatrix, 0., 0., -5. );
-	float f;
+
+	int frames;
+	double lastframetime = OGGetAbsoluteTime();
 	while(1)
 	{
+		double Now = OGGetAbsoluteTime();
 		spglClearColor( e, .2, 0.2, 0.2, 1.0 );
 		spglClear( e, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 		spglEnable( e, GL_DEPTH_TEST );
@@ -45,5 +49,13 @@ int main()
 
 		usleep(10000);
 		spglSwap( e );
+
+		frames++;
+		if( Now - lastframetime > 1 )
+		{
+			printf( "FPS: %d\n", frames );
+			frames = 0;
+			lastframetime++;
+		}
 	}
 }
