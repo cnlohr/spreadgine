@@ -103,7 +103,7 @@ Spreadgine * SpreadInit( int w, int h, const char * title, int httpport, int vps
 		#define SIMPLECUBE
 		#ifdef SIMPLECUBE
 		/* init_resources */
-		uint32_t CubeDataIndices[] = {
+		uint16_t CubeDataIndices[] = {
 			0, 1, 2,	2, 3, 0,	// front
 			1, 5, 6,	6, 2, 1,	// right
 			7, 6, 5,	5, 4, 7,	// back
@@ -149,7 +149,7 @@ Spreadgine * SpreadInit( int w, int h, const char * title, int httpport, int vps
 			1.,1.,0.,1.,	1.,1.,0.,1.,	1.,1.,0.,1.,	1.,1.,0.,1.,	1.,1.,0.,1.,	1.,1.,0.,1.,
 		};
 
-		static uint32_t CubeDataIndices[36];
+		static uint16_t CubeDataIndices[36];
 		for( i = 0; i < 36; i++ ) CubeDataIndices[i] = i;
 		int IndexQty = 36;
 
@@ -468,7 +468,7 @@ void SpreadFreeShader( SpreadShader * shd )
 
 }
 
-SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, int render_type, int indices, uint32_t * indexarray, int verts, int nr_arrays, const void ** arrays, int * strides, int * types )
+SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, int render_type, int indices, uint16_t * indexarray, int verts, int nr_arrays, const void ** arrays, int * strides, int * types )
 {
 
 	int i;
@@ -494,8 +494,8 @@ SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, i
 	}
 
 	ret->indices = indices;
-	ret->indexarray = malloc(indices*sizeof(uint32_t));
-	memcpy( ret->indexarray, indexarray, sizeof(uint32_t)*indices );
+	ret->indexarray = malloc(indices*sizeof(uint16_t));
+	memcpy( ret->indexarray, indexarray, sizeof(uint16_t)*indices );
 
 	ret->geo_in_parent = i;
 	ret->geoname = strdup( geoname );
@@ -509,7 +509,7 @@ SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, i
 	
 	glGenBuffers(1, &ret->ibo );
  	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ret->ibo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t)*indices, ret->indexarray, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t)*indices, ret->indexarray, GL_STATIC_DRAW);
 
 	ret->vbos = malloc( sizeof( uint32_t ) * nr_arrays );
 	glGenBuffers(nr_arrays, ret->vbos );
@@ -542,15 +542,15 @@ SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, i
 	}
 
 	{
-		uint32_t SendIndexArray[indices];
+		uint16_t SendIndexArray[indices];
 		for( i = 0; i < indices; i++ )
 		{
-			SendIndexArray[i] = htonl( ret->indexarray[i] );
+			SendIndexArray[i] = htons( ret->indexarray[i] );
 		}
 		SpreadMessage( spr, "geometry#", "bbsiibvvv", ret->geo_in_parent, 87, ret->geo_in_parent, geoname, render_type, verts, nr_arrays,
 			sizeof(uint8_t)*nr_arrays, ret->strides, 
 			sizeof(uint8_t)*nr_arrays, ret->types,
-			sizeof(uint32_t)*indices, SendIndexArray );
+			sizeof(uint16_t)*indices, SendIndexArray );
 	}
 
 
@@ -576,7 +576,6 @@ void SpreadRenderGeometry( SpreadGeometry * geo, const float * modelmatrix )
 	int vmatpos = ss->view_index;
 	int pmatpos = ss->perspective_index;
 	int mmatpos = ss->model_index;
-	int err;
 
 	glUniformMatrix4fv( mmatpos, 1, 0, modelmatrix );
 	//tdPrint( modelmatrix );
@@ -598,12 +597,9 @@ void SpreadRenderGeometry( SpreadGeometry * geo, const float * modelmatrix )
 		glUniformMatrix4fv( pmatpos, 1, 0, parent->vpperspectives[i] );
 		glViewport(vpedges[0],  vpedges[1], vpedges[2], vpedges[3]); 
 
-		err = glGetError();	if( err ){fprintf( parent->fReport, "B%dHanging error on render %d (0x%02x)\n", i, err, err );}
 		//glDrawArrays(geo->render_type, start, nr_emit);
 		glDrawElements(geo->render_type, geo->indices, GL_UNSIGNED_SHORT, 0);
-		err = glGetError();	if( err ){fprintf( parent->fReport, "C%dHanging error on render %d (0x%02x) => %d\n", i, err, err, geo->render_type );}
 	}
-	err = glGetError();	if( err ){fprintf( parent->fReport, "DHanging error on render %d (0x%02x)\n", err, err );}
 
 	uint32_t SpreadGeoInfo[1+16];
 	SpreadGeoInfo[0] = htonl( geo->geo_in_parent );

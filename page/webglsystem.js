@@ -185,12 +185,12 @@ function InternalProcessPack()
 			wggeos[gip].strides = PopMulti8Auto();
 			wggeos[gip].types = PopMulti8Auto();
 			wggeos[gip].arraybuffer = [];
-			var indices = wggeos[gip].indices = Pop32()/4;
+			var indices = wggeos[gip].indices = Pop32()/2;
 			var iarray = wggeos[gip].indexarray = new Uint16Array( indices );
 			console.log( "Indices: " + indices );
 			for( var i = 0; i < indices; i++ )
 			{
-				iarray[i] = Pop32();
+				iarray[i] = Pop16();
 			}
 			var ibo = wggeos[gip].indexbuffer = wgl.createBuffer();
 			wgl.bindBuffer(wgl.ELEMENT_ARRAY_BUFFER, ibo);

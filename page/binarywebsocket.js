@@ -26,6 +26,11 @@ function Pop32()
 	return packbuffer[packbufferp++]<<24 | packbuffer[packbufferp++]<<16 | packbuffer[packbufferp++]<<8 | packbuffer[packbufferp++];
 }
 
+function Pop16()
+{
+	return packbuffer[packbufferp++]<<8 | packbuffer[packbufferp++];
+}
+
 function PopMulti8Auto()
 {
 	nrtopop = Pop32();

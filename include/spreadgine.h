@@ -150,7 +150,7 @@ struct SpreadGeometry
 	//Array[4] = Normal
 
 	int indices;
-	uint32_t * indexarray;
+	uint16_t * indexarray;
 
 	uint32_t ibo;
 	uint32_t * vbos;
@@ -165,7 +165,7 @@ struct SpreadGeometry
 	int verts;
 };
 
-SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, int render_type, int indices, uint32_t * indexbuffer, int verts, int nr_arrays, const void ** arrays, int * strides, int * types );
+SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, int render_type, int indices, uint16_t * indexbuffer, int verts, int nr_arrays, const void ** arrays, int * strides, int * types );
 void UpdateSpreadGeometry( SpreadGeometry * geo, int arrayno, void * arraydata );
 void SpreadRenderGeometry( SpreadGeometry * geo, const float * modelmatrix ); 
 void SpreadFreeGeometry( SpreadGeometry * geo );

@@ -47,7 +47,6 @@ int main()
 		tdRotateEA( modelmatrix, 0,1,.2125 );		//Operates ON f
 		//tdTranslate( modelmatrix, 0, 0, .1 );
 
-		usleep(10000);
 		spglSwap( e );
 
 		frames++;
