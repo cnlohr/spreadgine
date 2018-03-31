@@ -23,6 +23,19 @@ typedef struct Spreadgine Spreadgine;
 #define SPREADGINE_CAMERAS   10
 #define SPREADGINE_CIRCBUF   65536*16	//A 1MB circular buffer.
 
+#define SPREADGINE_CACHEMAP_SIZE 1307
+
+struct SpreadHashEntry
+{
+	struct SpreadHashEntry * next;
+	char * key;
+	int payload_reserved;
+	uint32_t payloadlen;
+	uint8_t * payload;
+};
+
+typedef struct SpreadHashEntry SpreadHashEntry;
+
 
 struct Spreadgine
 {
@@ -49,6 +62,10 @@ struct Spreadgine
 	uint8_t * cbbuff;
 	void * spreadthread;
 	float  lastclearcolor[4];
+
+	//These are filled with messages that will be transferred to newly connected clients.
+	SpreadHashEntry * KEEPhash[SPREADGINE_CACHEMAP_SIZE];
+	void * KEEPmutex;
 };
 
 
@@ -58,7 +75,7 @@ struct Spreadgine
 //Also... 'fReport' can either be stderr or something you make with open_memstream
 Spreadgine * SpreadInit( int w, int h, const char * title, int httpport, int vps, FILE * fReport );
 void SpreadDestroy( Spreadgine * spr );
-void SpreadSetupCamera( Spreadgine * spr, int camid, const char * camname );
+void SpreadSetupCamera( Spreadgine * spr, uint8_t camid, float fov, float aspect, float near, float far, const char * camname );
 
 
 void spglEnable( Spreadgine * e, uint32_t en );
@@ -70,36 +87,6 @@ void spglClear( Spreadgine * e, uint32_t clearmask );
 //TODO: Add more GL stand-ins here.  Note that only functions available in GLES, GL and WebGL should be made available here.
 
 
-
-/////////////////////////////CORE TO-BROWSER///////////////////////
-//
-//Messages: [message size (Does not include opcode)] [opcode] [payload (optional)]
-//	64 range
-//		64 = InitializationPacket( uint32_t 
-//		65 = UpdateCameraName( uint8_t id, char name[...] );
-//		66 = UpdateCameraPerspective( uint8_t id, float perspective[16] );
-//		67 = UpdateCameraView( uint8_t id, float view[16] );
-//
-//		74 = glEnable( int )
-//		75 = glDisable( int )
-//		76 = glLineWidth( float )
-//		77 = glSwap
-//		78 = glClearColor( float, float, float, float )
-//		79 = glClear( int )
-//		80 = glUseProgram( Shader[int]->shader_in_parent );
-//		81 = glUniform4fv( float[4] + plan_text_uniform_name );
-//		82 = glUniformMatrix4fv( float[4] + plan_text_uniform_name );
-//		83..87 reserved for other uniform operations.
-//		88 = PushNewArrayData( int geono, int arrayno, [VOID*] data);
-//		89 = SpreadRenderGeometry( int geono, int offset_at, int nr_verts, float viewmatrix[16] );
-
-//  128+ = User functions
-void SpreadPushMessage( Spreadgine * e, uint8_t messageid, int payloadsize, void * payload );
-
-
-//Bump configuration means something about the overarching configuration has changed.
-//Tell clients to re-download the new, updated description.
-void SpreadBumpConfiguration( Spreadgine * e );
 
 /////////////////////////////SHADERS///////////////////////////////
 
@@ -146,12 +133,19 @@ struct SpreadGeometry
 	uint32_t geo_in_parent;
 	char * geoname;
 
+	//Array[0] = Position
+	//Array[1] = Color	
+	//Array[2] = Texutre Coordinates
+	//Array[3] = Normal
+
 	void ** arrays;
 	int * strides;
-	int * typesizes; //Almost always array of [4]'s
-	int * types; //always GL_FLOAT except in extreme cases.
-	int render_type; //GL_TRIANGLES, GL_POINTS, GL_LINES
-	int numarrays;	//First array is always; specifies the number of types of arays.
+	int * typesizes;	//Almost always array of [4]'s
+	int * types; 		//always GL_FLOAT, or GL_UNSIGNED_BYTE
+
+	int numarrays;
+
+	int render_type;	//GL_TRIANGLES, GL_POINTS, GL_LINES
 	int verts;
 };
 

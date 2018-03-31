@@ -1,64 +1,15 @@
 //Copyright <>< 2018 Charles Lohr, under the MIT-x11 or NewBSD licenses, you choose.
 
 #include <string.h>
-#include <arpa/inet.h> //For htonl
-
 #include <spreadgine.h>
+#include <spreadgine_remote.h>
 #include <os_generic.h>
+#include <arpa/inet.h> //For htonl
 
 //For rawdraw
 #include <CNFGFunctions.h>
 #include <CNFG3D.h>
 
-//For http/js forwarding
-#include <cnhttp.h>
-#include <http_bsd.h>
-
-
-//////////////////////////////////////////////////////////////////////////////
-///////  HTTP AREA ///////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-
-void CloseEvent()
-{
-}
-
-static void * SpreadHTTPThread( void * spread )
-{
-	Spreadgine * spr;
-	while( 1 )
-	{
-		//DO WORK HERE
-		//Also figure out a graceful way of quitting when spreadgine wants to shut down.
-		//...
-
-	}
-}
-
-void HTTPCustomStart( )
-{
-}
-
-void NewWebSocket()
-{
-}
-
-void WebSocketData( int len )
-{
-}
-
-void WebSocketTick()
-{
-}
-
-void HTTPCustomCallback( )
-{
-}
-
-
-//////////////////////////////////////////////////////////////////////////////
-///////  REST OF ENGINE //////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
 
 
 
@@ -66,7 +17,7 @@ Spreadgine * SpreadInit( int w, int h, const char * title, int httpport, int vps
 {
 	int i;
 	Spreadgine * ret;
-	RunHTTP( httpport );
+
 	if( CNFGSetup( title, w, h ) )
 	{
 		fprintf( fReport, "Error: Could not setup graphics frontend.\n" );
@@ -78,6 +29,8 @@ Spreadgine * SpreadInit( int w, int h, const char * title, int httpport, int vps
 	ret->vpperspectives = malloc( sizeof(float) * 16 * SPREADGINE_CAMERAS );
 	ret->vpviews = malloc( sizeof(float) * 16 * SPREADGINE_CAMERAS );
 	ret->vpnames = malloc( sizeof( char* ) * SPREADGINE_CAMERAS );
+
+
 	for( i = 0; i < SPREADGINE_CAMERAS; i++ )
 	{
 		tdIdentity( ret->vpperspectives[i] );
@@ -90,10 +43,15 @@ Spreadgine * SpreadInit( int w, int h, const char * title, int httpport, int vps
 		fprintf( fReport, "Error: SPREADGINE_VIEWPORTS insufficient for your system.\n" );
 		return 0;
 	}
+
+	SpreadRemoteInit( ret );
+
 	ret->setvps = vps;
 	for( i = 0; i < vps; i++ )
 	{
-		tdPerspective( 45, (float)w/vps/h, .01, 1000, ret->vpperspectives[i] );
+	//XXX TODO: Update with
+		char EyeName[5] = { 'E', 'y', 'e', '0'+i };
+		SpreadSetupCamera( ret, i, 75, (float)w/vps/h, .01, 1000, EyeName );
 		tdIdentity(ret->vpviews[i]);
 		ret->vpnames[i] = strdup( "EyeX" );
 		ret->vpnames[i][3] = '0' + i;
@@ -102,9 +60,6 @@ Spreadgine * SpreadInit( int w, int h, const char * title, int httpport, int vps
 		ret->vpedges[i][2] = w/vps;
 		ret->vpedges[i][3] = h;
 	}
-
-
-	ret->spreadthread = OGCreateThread( SpreadHTTPThread, ret );
 
 	{
 		//First: Add a defualt shader
@@ -126,7 +81,7 @@ Spreadgine * SpreadInit( int w, int h, const char * title, int httpport, int vps
 			"\n"
 			"void main()\n"
 			"{\n"
-			"    gl_FragColor = vvColor;\n"
+			"    gl_FragColor = vec4( vvColor.rgb, 1.0 );\n"
 			"}\n";
 	
 		const char * attribos[2] = { "vpos", "vcolor" };
@@ -175,13 +130,10 @@ Spreadgine * SpreadInit( int w, int h, const char * title, int httpport, int vps
 			fprintf( fReport, "Error making geometry.\n" );
 		}
 	}
+
 	return ret;
 }
 
-void SpreadBumpConfiguration( Spreadgine * e )
-{
-	//TODO Indicate that we need to bump the config.
-}
 
 void SpreadDestroy( Spreadgine * spr )
 {
@@ -206,7 +158,7 @@ void SpreadDestroy( Spreadgine * spr )
 	free( spr );
 }
 
-void SpreadSetupCamera( Spreadgine * spr, int camid, const char * camname )
+void SpreadSetupCamera( Spreadgine * spr, uint8_t camid, float fov, float aspect, float near, float far, const char * camname )
 {
 	if( camid >= SPREADGINE_CAMERAS )
 	{
@@ -218,7 +170,9 @@ void SpreadSetupCamera( Spreadgine * spr, int camid, const char * camname )
 	tdPerspective( 45, 1, .01, 1000, spr->vpperspectives[camid] );
 	tdIdentity(spr->vpviews[camid]);
 
-	SpreadBumpConfiguration( spr );
+	//XXX TODO ADD Update to network.
+//	( spr, camid );
+//	SpreadBumpConfiguration( spr );
 }
 
 void spglEnable( Spreadgine * e, uint32_t en )
@@ -263,45 +217,11 @@ void spglClear( Spreadgine * e, uint32_t clearmask )
 	glClear( clearmask );
 }
 
-void SpreadPushMessage( Spreadgine * e, uint8_t messageid, int payloadsize, void * payload )
-{
-	if( payloadsize > SPREADGINE_CIRCBUF/2 )
-	{
-		fprintf( e->fReport, "Error pushing message %d.  Size: %d\n", messageid, payloadsize );
-		return;
-	}
-	int modhead = e->cbhead % SPREADGINE_CIRCBUF;
-	int sent = 0;
-
-	e->cbbuff[modhead] = payloadsize>>24; modhead = (modhead+1)%SPREADGINE_CIRCBUF; sent++;
-	e->cbbuff[modhead] = payloadsize>>16; modhead = (modhead+1)%SPREADGINE_CIRCBUF; sent++;
-	e->cbbuff[modhead] = payloadsize>>8; modhead = (modhead+1)%SPREADGINE_CIRCBUF; sent++;
-	e->cbbuff[modhead] = payloadsize>>0; modhead = (modhead+1)%SPREADGINE_CIRCBUF; sent++;
-
-	e->cbbuff[modhead] = messageid;
-	modhead = (modhead+1)%SPREADGINE_CIRCBUF; sent++;
-
-	int endmod = modhead + payloadsize;
-	if( endmod > SPREADGINE_CIRCBUF )
-	{
-		int remain = SPREADGINE_CIRCBUF - modhead;
-		memcpy( e->cbbuff + modhead, payload, remain );
-		memcpy( e->cbbuff, payload + remain, payloadsize - remain );
-	}
-	else
-	{
-		memcpy( e->cbbuff + modhead, payload, payloadsize );
-	}
-	sent += payloadsize;
-
-	e->cbhead += sent;
-
-}
-
 
 SpreadShader * SpreadLoadShader( Spreadgine * spr, const char * shadername, const char * fragmentShader, const char * vertexShader, int attriblistlength, const char ** attriblist )
 {
 	int i;
+	int shaderindex = 0;
 	int retval;
 	SpreadShader * ret;
 
@@ -419,8 +339,7 @@ SpreadShader * SpreadLoadShader( Spreadgine * spr, const char * shadername, cons
 
 	spr->current_shader = ret->shader_in_parent;
 
-	SpreadBumpConfiguration( spr );
-
+	SpreadMessage( spr, "shader%d", "sssiS", ret->shader_in_parent, shadername, fragmentShader, vertexShader, attriblistlength, attriblistlength, attriblist );
 	return ret;
 
 
@@ -491,7 +410,7 @@ void SpreadFreeShader( SpreadShader * shd )
 	if( shd->fragment_shader_text )		{ free( shd->fragment_shader_text );	shd->fragment_shader_text = 0; }
 	if( shd->vertex_shader_text )		{ free( shd->vertex_shader_text );		shd->vertex_shader_text = 0; }
 
-	SpreadBumpConfiguration( shd->parent );
+//	SpreadBumpConfiguration( shd->parent );
 }
 
 
@@ -543,7 +462,7 @@ SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, i
 	}
 
 
-	SpreadBumpConfiguration( ret->parent );
+	//SpreadBumpConfiguration( ret->parent );
 
 	return ret;
 }

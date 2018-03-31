@@ -17,13 +17,13 @@ int main()
 {
 	Spreadgine * e = SpreadInit( 960, 640, "Spread Test", 8888, 2, stderr );
 
-	tdTranslate( e->vpviews[0], -1.5, 0, 0 );
-	tdTranslate( e->vpviews[1], 1.5, 0, 0 );
-	e->geos[0].render_type = GL_LINES;
+	tdTranslate( e->vpviews[0], -.5, 0, 0 );
+	tdTranslate( e->vpviews[1], .5, 0, 0 );
+	e->geos[0].render_type = GL_TRIANGLES;
 
 	float modelmatrix[16];
 	tdIdentity( modelmatrix );
-	tdTranslate( modelmatrix, 0., 0., -10. );
+	tdTranslate( modelmatrix, 0., 0., -5. );
 	float f;
 	while(1)
 	{
