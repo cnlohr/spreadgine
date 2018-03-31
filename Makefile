@@ -20,7 +20,7 @@ else
 	LDFLAGS:=-lm -lMali -lpthread
 endif
 
-testspread : testspread.c $(SPREADGINE_C) $(RESOUCE_O)
+testspread : testspread.o $(SPREADGINE_C) $(RESOUCE_O)
 	gcc -o $@ $^ $(CFLAGS) $(LDFLAGS)
 
 clean :

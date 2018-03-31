@@ -167,7 +167,7 @@ struct SpreadGeometry
 };
 
 SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, int render_type, int indices, uint16_t * indexbuffer, int verts, int nr_arrays, const void ** arrays, int * strides, int * types );
-void UpdateSpreadGeometry( SpreadGeometry * geo, int arrayno, void * arraydata );
+void UpdateSpreadGeometry( SpreadGeometry * geo, int arrayno, void * arraydata ); //If arrayno == -1, update everything.
 void SpreadRenderGeometry( SpreadGeometry * geo, const float * modelmatrix, int startv, int numv ); 	//If nv = -1, run until end of list.
 void SpreadFreeGeometry( SpreadGeometry * geo );
 

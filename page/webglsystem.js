@@ -175,7 +175,7 @@ function InternalProcessPack()
 			wgl.uniformMatrix4fv( loc, v );
 			break;
 
-		case 87:		//Update geo objec but not the geometry.
+		case 87:		//Update geo object but not the geometry.
 			var gip = Pop8();
 			while( wggeos.length <= gip ) wggeos.push( {} );
 			wggeos[gip].nam = PopStr();
@@ -244,14 +244,14 @@ function InternalProcessPack()
 					wgl.viewport( i*wgl.viewportWidth/2, 0, wgl.viewportWidth/2, wgl.viewportHeight );
 					wgl.uniformMatrix4fv( curshad.vindex, wgl.FALSE, viewmatrix[i]);
 					wgl.uniformMatrix4fv( curshad.pindex, wgl.FALSE, perspectivematrix[i] );			
-					wgl.drawElements(ge.rendertype,	(num>0)?num:ge.indices, wgl.UNSIGNED_SHORT, 0 );
+					wgl.drawElements(ge.rendertype,	(num!=65535)?num:ge.indices, wgl.UNSIGNED_SHORT, 0 );
 				}
 			}
 			else
 			{
 				wgl.uniformMatrix4fv( curshad.vindex, wgl.FALSE, viewmatrix[0]);
 				wgl.uniformMatrix4fv( curshad.pindex, wgl.FALSE, perspectivematrix[1] );			
-				wgl.drawElements(ge.rendertype,	(num>0)?num:ge.indices, wgl.UNSIGNED_SHORT, 0 );
+				wgl.drawElements(ge.rendertype,	(num!=65535)?num:ge.indices, wgl.UNSIGNED_SHORT, 0 );
 			}
 
 

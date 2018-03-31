@@ -52,7 +52,6 @@ Spreadgine * SpreadInit( int w, int h, const char * title, int httpport, int vps
 	ret->setvps = vps;
 	for( i = 0; i < vps; i++ )
 	{
-	//XXX TODO: Update with
 		char EyeName[5] = { 'E', 'y', 'e', '0'+i };
 		SpreadSetupCamera( ret, i, 75, (float)w/vps/h, .01, 1000, EyeName );
 		tdIdentity(ret->vpviews[i]);
@@ -542,18 +541,7 @@ SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, i
 		SpreadMessage( spr, "geodata#_#", "bbbv", ret->geo_in_parent, i, 88, ret->geo_in_parent, i, stride * typesize * verts, ret->arrays[i] );
 	}
 
-	{
-		uint16_t SendIndexArray[indices];
-		for( i = 0; i < indices; i++ )
-		{
-			SendIndexArray[i] = htons( ret->indexarray[i] );
-		}
-		SpreadMessage( spr, "geometry#", "bbsiibvvv", ret->geo_in_parent, 87, ret->geo_in_parent, geoname, render_type, verts, nr_arrays,
-			sizeof(uint8_t)*nr_arrays, ret->strides, 
-			sizeof(uint8_t)*nr_arrays, ret->types,
-			sizeof(uint16_t)*indices, SendIndexArray );
-	}
-
+	UpdateSpreadGeometry( ret, -1, 0 );
 
 	int err = glGetError();
 	if( err )
@@ -566,8 +554,31 @@ SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, i
 
 void UpdateSpreadGeometry( SpreadGeometry * geo, int arrayno, void * arraydata )
 {
-	int arraysize = geo->strides[arrayno] * SpreadTypeSizes[ geo->types[arrayno] ] * geo->verts;
-	SpreadMessage( geo->parent, "geodata#_#", "bbbv", geo->geo_in_parent, arrayno, 88, geo->geo_in_parent, arrayno, arraysize, arraydata );
+	if( arrayno == -1 )
+	{
+		int i;
+		for( arrayno = 0; arrayno < geo->numarrays; arrayno++ )
+		{
+			int arraysize = geo->strides[arrayno] * SpreadTypeSizes[ geo->types[arrayno] ] * geo->verts;
+			SpreadMessage( geo->parent, "geodata#_#", "bbbv", geo->geo_in_parent, arrayno, 88, geo->geo_in_parent, arrayno, arraysize, geo->arrays[arrayno] );
+		}
+		uint16_t SendIndexArray[geo->indices];
+		for( i = 0; i < geo->indices; i++ )
+		{
+			SendIndexArray[i] = htons( geo->indexarray[i] );
+		}
+		SpreadMessage( geo->parent, "geometry#", "bbsiibvvv", geo->geo_in_parent, 87, geo->geo_in_parent, geo->geoname, geo->render_type, geo->verts, geo->numarrays,
+			sizeof(uint8_t)*geo->numarrays, geo->strides, 
+			sizeof(uint8_t)*geo->numarrays, geo->types,
+			sizeof(uint16_t)*geo->indices, SendIndexArray );
+
+	}
+	else
+	{
+		int arraysize = geo->strides[arrayno] * SpreadTypeSizes[ geo->types[arrayno] ] * geo->verts;
+		memcpy( geo->arrays[arrayno], arraydata, arraysize );
+		SpreadMessage( geo->parent, "geodata#_#", "bbbv", geo->geo_in_parent, arrayno, 88, geo->geo_in_parent, arrayno, arraysize, arraydata );
+	}
 }
 
 void SpreadRenderGeometry( SpreadGeometry * geo, const float * modelmatrix, int startv, int numv )

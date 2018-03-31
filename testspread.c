@@ -23,31 +23,61 @@ int main()
 	Spreadgine * e = SpreadInit( 960, 640, "Spread Test", 8888, 2, stderr );
 #endif
 
-	tdTranslate( e->vpviews[0], -.5, 0, 0 );
-	tdTranslate( e->vpviews[1], .5, 0, 0 );
-	e->geos[0].render_type = GL_TRIANGLES;
+	float eye[3] = { .014, 5, 5 };
+	float at[3] =  { 0, 0, 0 };
+	float up[3] =  { 0, 0, 1 };
+	tdLookAt( e->vpviews[0], eye, at,up );
+	tdTranslate( e->vpviews[0], -.4, 0, 0 ); //Shift vanishing point
+	eye[0] = -.014;
+	tdLookAt( e->vpviews[1], eye, at,up );
+	tdTranslate( e->vpviews[1], .4, 0, 0 ); //Shift vanishing point
+
+
 	SpreadChangeCameaView(e, 0, e->vpviews[0] );
 	SpreadChangeCameaView(e, 1, e->vpviews[1] );
 
-	float modelmatrix[16];
-	tdIdentity( modelmatrix );
-	tdTranslate( modelmatrix, 0., 0., -5. );
+	e->geos[0].render_type = GL_LINES;
+	UpdateSpreadGeometry( &e->geos[0], -1, 0 );
+
+	tdMode( tdMODELVIEW );
+	tdIdentity( gSMatrix );
+	tdTranslate( gSMatrix, 0., 0., 0. );
+	tdScale( gSMatrix, .1, .1, .1 );		//Operates ON f
+	tdTranslate( gSMatrix, -30., -30., 0. );
+
+	int x, y;
 
 	int frames = 0, tframes = 0;
 	double lastframetime = OGGetAbsoluteTime();
 	while(1)
 	{
 		double Now = OGGetAbsoluteTime();
-		spglClearColor( e, .2, 0.2, 0.2, 1.0 );
+		spglClearColor( e, .0, 0.0, 0.0, 1.0 );
 		spglClear( e, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 		spglEnable( e, GL_DEPTH_TEST );
+
+		spglLineWidth( e, 4 );
+
 		SpreadApplyShader( &e->shaders[0] );
 
-		int rstart = ((tframes)*6)%36;
-		SpreadRenderGeometry( &e->geos[0], modelmatrix, rstart, 6 ); 
-
-		tdRotateEA( modelmatrix, 0,1,.2125 );		//Operates ON f
+		tdRotateEA( gSMatrix, 0,.2125,1 );		//Operates ON f
 		//tdTranslate( modelmatrix, 0, 0, .1 );
+
+
+		tdPush();
+		for( y = 0; y < 20; y++ )
+		{
+			tdTranslate( gSMatrix, 0.0, 3, 0 );
+			tdPush();
+			for( x = 0; x < 20; x++ )
+			{
+				tdTranslate( gSMatrix, 3, 0, 0 );
+				//int rstart = ((tframes)*6)%36;
+				SpreadRenderGeometry( &e->geos[0], gSMatrix, 0, -1 ); 
+			}
+			tdPop();
+		}
+		tdPop();
 
 		spglSwap( e );
 
