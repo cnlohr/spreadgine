@@ -17,8 +17,8 @@ int main()
 {
 	Spreadgine * e = SpreadInit( 960, 640, "Spread Test", 8888, 2, stderr );
 
-	tdTranslate( e->vpviews[0], -.5, 0, 0 );
-	tdTranslate( e->vpviews[1], .5, 0, 0 );
+	tdTranslate( e->vpviews[0], -.2, 0, 0 );
+	tdTranslate( e->vpviews[1], .2, 0, 0 );
 	e->geos[0].render_type = GL_TRIANGLES;
 
 	float modelmatrix[16];

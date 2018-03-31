@@ -8,41 +8,131 @@
 #include <spreadgine.h>
 #include <spreadgine_remote.h>
 
+static Spreadgine * SpreadForHTTP;
 
-void CloseEvent()
+static void huge()
 {
-}
+	uint8_t i = 0;
 
-void * SpreadHTTPThread( void * spread )
-{
-	Spreadgine * spr;
-	while( 1 )
+	DataStartPacket();
+	do
 	{
-		//DO WORK HERE
-		//Also figure out a graceful way of quitting when spreadgine wants to shut down.
-		//...
+		PushByte( 0 );
+		PushByte( i );
+	} while( ++i ); //Tricky:  this will roll-over to 0, and thus only execute 256 times.
 
-	}
+	EndTCPWrite( curhttp->socket );
 }
+
 
 void HTTPCustomStart( )
 {
+	if( strncmp( (const char*)curhttp->pathbuffer, "/d/huge", 7 ) == 0 )
+	{
+		curhttp->rcb = (void(*)())&huge;
+		curhttp->bytesleft = 0xffffffff;
+	}
+	else
+	{
+		curhttp->rcb = 0;
+		curhttp->bytesleft = 0;
+	}
+	curhttp->isfirst = 1;
+	HTTPHandleInternalCallback();
+
 }
+
+void CloseEvent()
+{
+	//No close event (no one cares when a client is done)
+}
+
+
+
+static void WSStreamData(  int len )
+{
+	char cbo[len];
+	int i;
+	for( i = 0; i < len; i++ )
+	{
+		cbo[i] = WSPOPMASK();
+	}
+}
+
+static void WSStreamOut( )
+{
+	char cbo[10];
+/*	WebSocketSend( cbo, 10 );
+
+SpreadForHTTP
+
+	union data_t
+	{
+
+		struct MFSFileInfo filedescriptor;
+		struct UserData { uint16_t a, b, c; } user;
+	} data;
+*/
+}
+
 
 void NewWebSocket()
 {
+	if( strcmp( (const char*)curhttp->pathbuffer, "/d/ws/streamdata" ) == 0 )
+	{
+		curhttp->rcb = (void*)&WSStreamOut;
+		curhttp->rcbDat = (void*)&WSStreamData;
+
+		curhttp->data.user.a = 0;
+		//curhttp->data.user.c = SpreadForHTTP->
+		//curhttp->
+	}
+	else
+	{
+		curhttp->is404 = 1;
+	}
+
 }
 
 void WebSocketData( int len )
 {
+	if( curhttp->rcbDat )
+	{
+		((void(*)( int ))curhttp->rcbDat)(  len ); 
+	}
 }
 
 void WebSocketTick()
 {
+	if( curhttp->rcb )
+	{
+		((void(*)())curhttp->rcb)();
+	}
 }
+
+
+
+
+void * SpreadHTTPThread( void * s )
+{
+	Spreadgine * spread = (Spreadgine*)s;
+	while( !spread->doexit  )
+	{
+		TickHTTP();
+		usleep( 3000 );
+		//DO WORK HERE
+		//Also figure out a graceful way of quitting when spreadgine wants to shut down.
+		//...
+	}
+}
+
 
 void HTTPCustomCallback( )
 {
+	if( curhttp->rcb )
+		((void(*)())curhttp->rcb)();
+	else
+		curhttp->isdone = 1;
 }
 
 
@@ -224,7 +314,9 @@ void SpreadMessage( Spreadgine * e, const char * entry, const char * format, ...
 void SpreadRemoteInit( Spreadgine * e )
 {
 	e->KEEPmutex = OGCreateMutex();
+	RunHTTP( 8888 );
 	e->spreadthread = OGCreateThread( SpreadHTTPThread, e );
+	SpreadForHTTP = e;
 }
 
 

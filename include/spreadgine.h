@@ -66,6 +66,7 @@ struct Spreadgine
 	//These are filled with messages that will be transferred to newly connected clients.
 	SpreadHashEntry * KEEPhash[SPREADGINE_CACHEMAP_SIZE];
 	void * KEEPmutex;
+	volatile int doexit;
 };
 
 
@@ -152,6 +153,7 @@ struct SpreadGeometry
 SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, int render_type, int verts, int nr_arrays, const void ** arrays, int * strides, int * types, int * typesizes );
 void UpdateSpreadGeometry( SpreadGeometry * geo, int arrayno, void * arraydata );
 void SpreadRenderGeometry( SpreadGeometry * geo, int start, int nr_emit, const float * modelmatrix ); 
+void SpreadFreeGeometry( SpreadGeometry * geo );
 
 //////////////////////////////TEXTURES//////////////////////////////
 

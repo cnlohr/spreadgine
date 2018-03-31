@@ -28,8 +28,9 @@
 //		83..86 reserved for other uniform operations.
 
 //		87 = Create new geometry (complicated fields, read in spreadgine.c)
-//		88 = PushNewArrayData( int geono, int arrayno, [VOID*] data);
-//		89 = SpreadRenderGeometry( int geono, int offset_at, int nr_verts, float viewmatrix[16] );
+//		88 = PushNewArrayData( uint8_t geono, int arrayno, [VOID*] data);
+//		89 = SpreadRenderGeometry( uint8_t geono, int offset_at, int nr_verts, float viewmatrix[16] );
+//		90 = RemoveGeometry( uint8_t geono );	//Tricky: There is no call to remove children of geometries.  Client must do that.
 //		
 //
 //		127 = Bump Configuration (re-download)

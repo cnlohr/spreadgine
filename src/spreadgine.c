@@ -139,8 +139,7 @@ void SpreadDestroy( Spreadgine * spr )
 {
 	if( !spr ) return;
 
-	//XXX TODO : Kill net thread
-	
+	spr->doexit = 1;
 	OGJoinThread( spr->spreadthread );
 
 	if( spr->shaders ) free( spr->shaders );
@@ -409,6 +408,7 @@ void SpreadFreeShader( SpreadShader * shd )
 
 	SpreadMessage( shd->parent, 0, "bb", 70, shd->shader_in_parent );
 	SpreadHashRemove( shd->parent, "shader%d", shd->shader_in_parent );
+
 }
 
 SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, int render_type, int verts, int nr_arrays, const void ** arrays, int * strides, int * types, int * typesizes )
@@ -514,5 +514,24 @@ void SpreadRenderGeometry( SpreadGeometry * geo, int start, int nr_emit, const f
 	SpreadPushMessage(geo->parent, 89, sizeof(SpreadGeoInfo), SpreadGeoInfo );
 }
 
+
+void SpreadFreeGeometry( SpreadGeometry * geo )
+{
+	if( geo->strides ) free( geo->strides );
+	if( geo->typesizes ) free( geo->typesizes );
+	if( geo->types ) free( geo->types );
+	if( geo->geoname ) free( geo->geoname );
+	geo->geoname = 0;
+
+	int i;
+	for( i = 0; i < geo->numarrays; i++ )
+	{
+		free( geo->arrays[i] );
+		SpreadHashRemove( geo->parent, "geodata%d_%d", geo->geo_in_parent, i );
+	}
+
+	SpreadMessage( geo->parent, "geometry%d", "bb", geo->geo_in_parent, 90, geo->geo_in_parent );
+	SpreadHashRemove( geo->parent, "geometry%d", geo->geo_in_parent );
+}
 
 
