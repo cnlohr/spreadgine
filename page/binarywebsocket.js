@@ -165,7 +165,7 @@ function CloseWS()
 	socket.close();
 	console.log( socket );
 	if( sockettimeout ) clearTimeout( sockettimeout );
-	sockettimeout = setTimeout( InitWebsocket(socket.url), 2000 );
+	sockettimeout = setTimeout( InitWebsocket(socket.url), 4000 );
 	document.title = "Spreadgine Offline";
 
 	processbuffer = new Uint8Array();

@@ -62,7 +62,7 @@ struct Spreadgine
 	FILE * fReport;
 
 	//Internal.  NO TOUCHIE!
-	int		cbhead;	//Head counts up all the way to int_max.  Be sure to modulus whenever indexing into spreadthread.
+	uint32_t		cbhead;	//Head counts up all the way to int_max.  Be sure to modulus whenever indexing into spreadthread.
 	uint8_t * cbbuff;
 	void * spreadthread;
 	float  lastclearcolor[4];

@@ -23,12 +23,27 @@ function InitSystem( addy, canvas )
 }
 
 var StoredSceneOperations = [];
+
+var TotalProcessedBytes = 0;
+var ProcessedBytesLastFrame = 0;
+var TotalProcessedMessages = 0;
+var ProcessedMessagesLastFrame = 0;
+
 function ProcessPack()
 {
 	//In calling this function, packbuffer = Uint8Array of packet and packbufferp should be 0.
 	//Queue up the messages until we see a 77 (page flip)
 	StoredSceneOperations.push( packbuffer );
+	TotalProcessedBytes += packbuffer.length;
+
 	if( packbuffer[0] != 77 ) return;
+
+	TotalProcessedMessages += StoredSceneOperations.length;
+	document.getElementById( "BytesProcessedDiv" ).innerHTML = Math.round(TotalProcessedBytes/1024) + " KB";
+	document.getElementById( "BytesProcessedFrameDiv" ).innerHTML = TotalProcessedBytes-ProcessedMessagesLastFrame;
+	document.getElementById( "MsgProcessedDiv" ).innerHTML = TotalProcessedMessages;
+	document.getElementById( "MsgProcessedFrameDiv" ).innerHTML = StoredSceneOperations.length;
+	ProcessedMessagesLastFrame = TotalProcessedBytes;
 
 	screenw = wgl.viewportWidth = wgcanvas.width;
 	screenh = wgl.viewportHeight = wgcanvas.height;

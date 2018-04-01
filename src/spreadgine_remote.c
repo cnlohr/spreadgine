@@ -197,7 +197,7 @@ void SpreadPushMessage( Spreadgine * e, uint8_t messageid, int payloadsize, void
 		fprintf( e->fReport, "Error pushing message %d.  Size: %d\n", messageid, payloadsize );
 		return;
 	}
-	int modhead = e->cbhead % SPREADGINE_CIRCBUF;
+	uint32_t modhead = e->cbhead % SPREADGINE_CIRCBUF;
 	int sent = 0;
 
 	payloadsize++;//For mesageid.
@@ -365,7 +365,7 @@ void SpreadMessage( Spreadgine * e, const char * entry, const char * format, ...
 	}
 	printf( "\n" );
 #endif
-	int modhead = e->cbhead % SPREADGINE_CIRCBUF;
+	uint32_t modhead = e->cbhead % SPREADGINE_CIRCBUF;
 	int sent = 0;
 	int endmod = modhead + he->payloadlen;
 
