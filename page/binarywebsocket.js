@@ -7,6 +7,7 @@
 } 
 */
 
+
 function concatenate(arr1, arr2) {
     let totalLength = arr1.length + arr2.length
     const result = new Uint8Array(totalLength);
@@ -17,7 +18,6 @@ function concatenate(arr1, arr2) {
 
 var processbuffer = new Uint8Array();
 var processbufferp = 0;
-
 var packbuffer = new Uint8Array();
 var packbufferp;
 
@@ -107,7 +107,7 @@ function handleReceive(message) {
 		if( len > 1000000 ) 
 		{
 			console.log( "Socket data stream disrupted." );
-			socket.close();
+			CloseWS();
 		}
 		if( processbuffer.length >= len + 4 + processbufferp )
 		{
@@ -117,7 +117,12 @@ function handleReceive(message) {
 			}
 			catch( e )
 			{
-				socket.close();
+				console.log( e );
+				console.log( processbuffer.length );
+				console.log( processbufferp );
+				console.log( len );
+				CloseWS();
+				break;
 			}
 			ProcessPack();
 			//console.log( packbuffer );
@@ -136,6 +141,9 @@ function handleReceive(message) {
 	processbufferp = 0;
 }
 
+
+var sockettimeout = null;
+
 function InitWebsocket( address )
 {
 	socket = new WebSocket(address);
@@ -147,7 +155,22 @@ function InitWebsocket( address )
 	socket.onmessage = handleReceive;
 	socket.onclose = function() {
 		console.log( "Socket failed." );
-		setTimeout( InitWebsocket(address), 2000 );
-		document.title = "Spreadgine Offline";
+		CloseWS();
 	}
+}
+
+
+function CloseWS()
+{
+	socket.close();
+	console.log( socket );
+	if( sockettimeout ) clearTimeout( sockettimeout );
+	sockettimeout = setTimeout( InitWebsocket(socket.url), 2000 );
+	document.title = "Spreadgine Offline";
+
+	processbuffer = new Uint8Array();
+	processbufferp = 0;
+	packbuffer = new Uint8Array();
+	packbufferp = 0;
+
 }

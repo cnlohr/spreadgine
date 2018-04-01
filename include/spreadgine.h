@@ -21,7 +21,7 @@ typedef struct Spreadgine Spreadgine;
 
 #define SPREADGINE_VIEWPORTS 2
 #define SPREADGINE_CAMERAS   10
-#define SPREADGINE_CIRCBUF   (65536*16)	//A 1MB circular buffer.
+#define SPREADGINE_CIRCBUF   (65536*32)	//A 2MB circular buffer.
 
 #define SPREADGINE_CACHEMAP_SIZE 1307
 
