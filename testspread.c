@@ -43,7 +43,7 @@ int main()
 	tdIdentity( gSMatrix );
 	tdTranslate( gSMatrix, 0., 0., 0. );
 	tdScale( gSMatrix, .1, .1, .1 );		//Operates ON f
-	tdTranslate( gSMatrix, -30., -30., 0. );
+	tdTranslate( gSMatrix, 00., 0., 0. );
 
 	int x, y;
 
@@ -65,6 +65,7 @@ int main()
 
 
 		tdPush();
+		tdTranslate( gSMatrix, -30., -30., 0. );
 		for( y = 0; y < 20; y++ )
 		{
 			tdTranslate( gSMatrix, 0.0, 3, 0 );

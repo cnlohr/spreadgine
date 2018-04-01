@@ -100,7 +100,6 @@ static void WSStreamOut( )
 		if( tos > SPREADGINE_CIRCBUF )
 		{
 			fprintf( SpreadForHTTP->fReport, "Error: Client would underflow circ buffer [%d %d %d]\n", tos, SpreadForHTTP->cbhead, cs->CircPtr );
-			curhttp->isdone = 1;
 			HTTPClose();
 			return;
 		}

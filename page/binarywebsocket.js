@@ -111,8 +111,14 @@ function handleReceive(message) {
 		}
 		if( processbuffer.length >= len + 4 + processbufferp )
 		{
-			packbuffer = new Uint8Array(processbuffer.buffer, processbufferp+4, len );
-			packbufferp = 0;
+			try {
+				packbuffer = new Uint8Array(processbuffer.buffer, processbufferp+4, len );
+				packbufferp = 0;
+			}
+			catch( e )
+			{
+				socket.close();
+			}
 			ProcessPack();
 			//console.log( packbuffer );
 			processbufferp += len+4;

@@ -39,12 +39,19 @@ function ProcessPack()
 
 	wgl.viewport( 0, 0, wgl.viewportWidth, wgl.viewportHeight );
 
-	for( var s in StoredSceneOperations )
-	{
-		packbuffer = StoredSceneOperations[s];
-		packbufferp = 0;
-		InternalProcessPack();
+	try {
+		for( var s in StoredSceneOperations )
+		{
+			packbuffer = StoredSceneOperations[s];
+			packbufferp = 0;
+			InternalProcessPack();
+		}
 	}
+	catch(error) {
+		console.error(error);
+	}
+
+
 	StoredSceneOperations = [];
 }
 
