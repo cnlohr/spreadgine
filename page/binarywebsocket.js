@@ -159,18 +159,23 @@ function InitWebsocket( address )
 	}
 }
 
+var retries = 0;
 
 function CloseWS()
 {
-	socket.close();
-	console.log( socket );
-	if( sockettimeout ) clearTimeout( sockettimeout );
-	sockettimeout = setTimeout( InitWebsocket(socket.url), 4000 );
-	document.title = "Spreadgine Offline";
+	//if( retries++ > 10 )
+	{
+	//	location.reload();
+	//} else {
+		socket.close();
+		console.log( socket );
+		if( sockettimeout ) clearTimeout( sockettimeout );
+		sockettimeout = setTimeout( InitWebsocket(socket.url), 4000 );
+		document.title = "Spreadgine Offline";
 
-	processbuffer = new Uint8Array();
-	processbufferp = 0;
-	packbuffer = new Uint8Array();
-	packbufferp = 0;
-
+		processbuffer = new Uint8Array();
+		processbufferp = 0;
+		packbuffer = new Uint8Array();
+		packbufferp = 0;
+	}
 }
