@@ -36,8 +36,8 @@ int main()
 	SpreadChangeCameaView(e, 0, e->vpviews[0] );
 	SpreadChangeCameaView(e, 1, e->vpviews[1] );
 
-	e->geos[0].render_type = GL_LINES;
-	UpdateSpreadGeometry( &e->geos[0], -1, 0 );
+	//e->geos[0].render_type = GL_LINES;
+	//UpdateSpreadGeometry( &e->geos[0], -1, 0 );
 
 	tdMode( tdMODELVIEW );
 	tdIdentity( gSMatrix );
@@ -81,6 +81,7 @@ int main()
 
 		spglSwap( e );
 
+		SpreadCheckShaders( e );
 		frames++;
 		tframes++;
 		if( Now - lastframetime > 1 )

@@ -106,8 +106,10 @@ struct SpreadShader
 	uint32_t shader_in_parent;
 	char * shadername;
 
-	char * fragment_shader_text;
-	char * vertex_shader_text;
+	char * fragment_shader_source;
+	char * vertex_shader_source;
+	double fragment_shader_time;
+	double vertex_shader_time;
 
 	//Need a way to translate uniform locations to client monitors...
 	//These use "index" as the slot.
@@ -126,6 +128,8 @@ struct SpreadShader
 	int vertex_shader;
 	int fragment_shader;
 	int program_shader;
+	int attriblistlength;
+	char ** attriblist;
 };
 
 //Attriblist == the positions of the geometry attributes in your geometry, usually [vpos] [vcolor] or something like that.
@@ -135,6 +139,7 @@ void SpreadUniform4f( SpreadShader * shd, int slot, const float * uni );
 void SpreadUniform16f( SpreadShader * shd, int slot, const float * uni );
 void SpreadFreeShader( SpreadShader * shd );
 void SpreadApplyShader( SpreadShader * shd );
+void SpreadCheckShaders( Spreadgine * spr );
 
 //////////////////////////////GEOMETRY/////////////////////////////
 struct SpreadGeometry

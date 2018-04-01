@@ -68,30 +68,8 @@ Spreadgine * SpreadInit( int w, int h, const char * title, int httpport, int vps
 
 	{
 		//First: Add a defualt shader
-		static const char *default_vertex_shader_source =
-			"attribute vec3 vpos;\n"
-			"attribute vec4 vcolor;\n"
-			"uniform mat4 pmatrix, vmatrix, mmatrix;\n"
-			"varying vec4 vvColor;\n"
-			"\n"
-			"void main()\n"
-			"{\n"
-			"    vvColor = vcolor;\n"
-			"    gl_Position = (pmatrix * (vmatrix * (mmatrix * vec4(vpos, 1.0)))); \n"
-			"}\n";
-		static const char *default_fragment_shader_source =
-			"#ifdef GL_ES\n"
-			"precision mediump float;\n"
-			"#endif\n"
-			"varying vec4 vvColor;\n"
-			"\n"
-			"void main()\n"
-			"{\n"
-			"    gl_FragColor = vec4( vvColor.rgb, 1.0 );\n"
-			"}\n";
-	
 		const char * attribos[2] = { "vpos", "vcolor" };
-		SpreadShader * shd0 = SpreadLoadShader( ret, "shd0", default_fragment_shader_source, default_vertex_shader_source, 2, attribos );
+		SpreadShader * shd0 = SpreadLoadShader( ret, "shd0", "assets/default.frag", "assets/default.vert", 2, attribos );
 		if( !shd0 )
 		{
 			fprintf( fReport, "Error making shader.\n" );
@@ -263,6 +241,174 @@ void spglClear( Spreadgine * e, uint32_t clearmask )
 	glClear( clearmask );
 }
 
+static SpreadShader * LoadShaderAtPlace( SpreadShader * ret, Spreadgine * spr )
+{
+	int i;
+	int retval;
+
+	int attriblistlength = ret->attriblistlength;
+	char ** attriblist = ret->attriblist;
+	const char * shadername = ret->shadername;
+	const char * fragmentShader = ret->fragment_shader_source;
+	const char * vertexShader = ret->vertex_shader_source;
+
+	char * fragmentShader_text = 0;
+	char * vertexShader_text = 0;
+
+	ret->fragment_shader_time = OGGetFileTime( fragmentShader );
+	ret->vertex_shader_time = OGGetFileTime( vertexShader );
+
+	FILE * f = fopen( fragmentShader, "rb" );
+	if( !f )
+	{
+		fprintf( spr->fReport, "Error: Could not load fragment shader \"%s\" [%p]\n", fragmentShader, ret );
+		goto qexit;
+	}
+	fseek( f, 0, SEEK_END );
+	int rl = ftell(f);
+	fseek( f, 0, SEEK_SET );
+	fragmentShader_text = malloc( rl+1 );
+	fread( fragmentShader_text, 1, rl, f );
+	fragmentShader_text[rl] = 0;
+	fclose( f );
+
+	f = fopen( vertexShader, "rb" );
+	if( !f )
+	{
+		fprintf( spr->fReport, "Error: Could not load vertex shader \"%s\"\n", vertexShader );
+		goto qexit;
+	}
+	fseek( f, 0, SEEK_END );
+	rl = ftell( f );
+	fseek( f, 0, SEEK_SET );
+	vertexShader_text = malloc( rl+1 );
+	fread( vertexShader_text, 1, rl, f );
+	vertexShader_text[rl] = 0;
+	fclose( f );
+
+
+	glUseProgram( 0 );
+
+	if( ret->program_shader && ret->vertex_shader && ret->fragment_shader )
+	{
+		glDetachShader(ret->program_shader, ret->vertex_shader);
+		glDetachShader(ret->program_shader, ret->fragment_shader);
+	}
+
+
+	if( ret->fragment_shader ) { glDeleteShader( ret->fragment_shader ); ret->fragment_shader = 0; }
+	if( ret->vertex_shader ) { glDeleteShader( ret->vertex_shader ); ret->vertex_shader = 0; }
+	if( ret->program_shader ) { glDeleteShader( ret->program_shader ); ret->program_shader = 0; }
+
+
+	if( !ret->vertex_shader ) ret->vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+	if (!ret->vertex_shader)
+	{
+		fprintf(spr->fReport, "Error: glCreateShader(GL_VERTEX_SHADER) failed: 0x%08X\n", glGetError());
+		goto qexit;
+	}
+
+	glShaderSource(ret->vertex_shader, 1, (const GLchar**)&vertexShader_text, NULL);
+	glCompileShader(ret->vertex_shader);
+
+	glGetShaderiv(ret->vertex_shader, GL_COMPILE_STATUS, &retval);
+	if (!retval) {
+		char *log;
+		fprintf(spr->fReport, "Error: vertex shader compilation failed!\n");
+		glGetShaderiv(ret->vertex_shader, GL_INFO_LOG_LENGTH, &retval);
+
+		if (retval > 1) {
+			log = malloc(retval);
+			glGetShaderInfoLog(ret->vertex_shader, retval, NULL, log);
+			fprintf(spr->fReport, "%s", log);
+			free( log );
+		}
+		goto qexit;
+	}
+
+	if( !ret->fragment_shader ) ret->fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+	if (!ret->fragment_shader) {
+		fprintf(spr->fReport, "Error: glCreateShader(GL_FRAGMENT_SHADER) failed: 0x%08X\n", glGetError());
+		goto qexit;
+	}
+
+
+	glShaderSource(ret->fragment_shader, 1, (const GLchar**)&fragmentShader_text, NULL);
+	glCompileShader(ret->fragment_shader);
+	glGetShaderiv(ret->fragment_shader, GL_COMPILE_STATUS, &retval);
+	if( !retval )
+	{
+		char *log;
+		fprintf(spr->fReport, "Error: fragment shader compilation failed!\n");
+		glGetShaderiv(ret->fragment_shader, GL_INFO_LOG_LENGTH, &retval);
+		if (retval > 1) {
+			log = malloc(retval);
+			glGetShaderInfoLog(ret->fragment_shader, retval, NULL, log);
+			fprintf(spr->fReport, "%s", log);
+			free( log );
+		}
+		goto qexit;
+	}
+
+	if( !ret->program_shader ) ret->program_shader = glCreateProgram();
+	if (!ret->program_shader) {
+		fprintf(spr->fReport, "Error: failed to create program!\n");
+		free( ret );
+		goto qexit;
+	}
+
+	glAttachShader(ret->program_shader, ret->vertex_shader);
+	glAttachShader(ret->program_shader, ret->fragment_shader);
+
+	for( i = 0; i < attriblistlength; i++ )
+	{
+		glBindAttribLocation( ret->program_shader, i, ret->attriblist[i] );
+	}
+
+	glLinkProgram(ret->program_shader);
+	glGetProgramiv(ret->program_shader, GL_LINK_STATUS, &retval);
+	if (!retval) {
+		char *log;
+		fprintf(spr->fReport, "Error: program linking failed!\n");
+		glGetProgramiv(ret->program_shader, GL_INFO_LOG_LENGTH, &retval);
+
+		if (retval > 1) {
+			log = malloc(retval);
+			glGetProgramInfoLog(ret->program_shader, retval, NULL, log);
+			fprintf(spr->fReport, "%s", log);
+			free( log );
+		}
+		goto qexit;
+	}
+
+	ret->known_uniform_slots = 0;
+
+	ret->model_index = glGetUniformLocation( ret->program_shader, "mmatrix" );
+	ret->view_index = glGetUniformLocation( ret->program_shader, "vmatrix" );
+	ret->perspective_index = glGetUniformLocation( ret->program_shader, "pmatrix" );
+
+	glUseProgram(ret->program_shader);
+	spr->current_shader = ret->shader_in_parent;
+
+	int err = glGetError();
+	if( err )
+	{
+		fprintf( spr->fReport, "Hanging error on shader compile %d (0x%02x)\n", err, err );
+	}
+
+	SpreadMessage( spr, "shader#", "bbsssS", ret->shader_in_parent, 69, ret->shader_in_parent, shadername, fragmentShader_text, vertexShader_text, attriblistlength, attriblist );
+	free( fragmentShader_text );
+	free( vertexShader_text );
+	return ret;
+
+qexit:
+	if( fragmentShader_text ) free( fragmentShader_text );
+	if( vertexShader_text ) free( vertexShader_text );
+	if( ret->fragment_shader ) { glDeleteShader( ret->fragment_shader ); ret->fragment_shader = 0; }
+	if( ret->vertex_shader ) { glDeleteShader( ret->vertex_shader ); ret->vertex_shader = 0; }
+	if( ret->program_shader ) { glDeleteShader( ret->program_shader ); ret->program_shader = 0; }
+	return 0;
+}
 
 SpreadShader * SpreadLoadShader( Spreadgine * spr, const char * shadername, const char * fragmentShader, const char * vertexShader, int attriblistlength, const char ** attriblist )
 {
@@ -281,123 +427,29 @@ SpreadShader * SpreadLoadShader( Spreadgine * spr, const char * shadername, cons
 	{
 		spr->shaders = realloc( spr->shaders, (spr->setshaders+1)* sizeof( SpreadShader ) );
 		ret = &spr->shaders[spr->setshaders];
-		memset( ret, 0, sizeof( SpreadShader ) );
 	}
 	else
 	{
 		ret = &spr->shaders[i];
 	}
 
+	memset( ret, 0, sizeof( SpreadShader ) );
+
 	ret->shader_in_parent = i;
 	ret->parent = spr;
-
-	ret->vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-	if (!ret->vertex_shader)
-	{
-		fprintf(spr->fReport, "Error: glCreateShader(GL_VERTEX_SHADER) failed: 0x%08X\n", glGetError());
-		goto qexit;
-	}
-
-	glShaderSource(ret->vertex_shader, 1, &vertexShader, NULL);
-	glCompileShader(ret->vertex_shader);
-
-	glGetShaderiv(ret->vertex_shader, GL_COMPILE_STATUS, &retval);
-	if (!retval) {
-		char *log;
-		fprintf(spr->fReport, "Error: vertex shader compilation failed!\n");
-		glGetShaderiv(ret->vertex_shader, GL_INFO_LOG_LENGTH, &retval);
-
-		if (retval > 1) {
-			log = malloc(retval);
-			glGetShaderInfoLog(ret->vertex_shader, retval, NULL, log);
-			fprintf(spr->fReport, "%s", log);
-		}
-		goto qexit;
-	}
-
-	ret->fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-	if (!ret->fragment_shader) {
-		fprintf(spr->fReport, "Error: glCreateShader(GL_FRAGMENT_SHADER) failed: 0x%08X\n", glGetError());
-		goto qexit;
-	}
-	glShaderSource(ret->fragment_shader, 1, &fragmentShader, NULL);
-	glCompileShader(ret->fragment_shader);
-	glGetShaderiv(ret->fragment_shader, GL_COMPILE_STATUS, &retval);
-	if( !retval )
-	{
-		char *log;
-		fprintf(spr->fReport, "Error: fragment shader compilation failed!\n");
-		glGetShaderiv(ret->fragment_shader, GL_INFO_LOG_LENGTH, &retval);
-		if (retval > 1) {
-			log = malloc(retval);
-			glGetShaderInfoLog(ret->fragment_shader, retval, NULL, log);
-			fprintf(spr->fReport, "%s", log);
-		}
-		goto qexit;
-	}
-
-
-	ret->program_shader = glCreateProgram();
-	if (!ret->program_shader) {
-		fprintf(spr->fReport, "Error: failed to create program!\n");
-		free( ret );
-		goto qexit;
-	}
-
-	glAttachShader(ret->program_shader, ret->vertex_shader);
-	glAttachShader(ret->program_shader, ret->fragment_shader);
-
-	for( i = 0; i < attriblistlength; i++ )
-	{
-		glBindAttribLocation( ret->program_shader, i, attriblist[i] );
-	}
-
-	glLinkProgram(ret->program_shader);
-
-	glGetProgramiv(ret->program_shader, GL_LINK_STATUS, &retval);
-	if (!retval) {
-		char *log;
-
-		fprintf(spr->fReport, "Error: program linking failed!\n");
-		glGetProgramiv(ret->program_shader, GL_INFO_LOG_LENGTH, &retval);
-
-		if (retval > 1) {
-			log = malloc(retval);
-			glGetProgramInfoLog(ret->program_shader, retval, NULL, log);
-			fprintf(spr->fReport, "%s", log);
-		}
-		goto qexit;
-	}
-
-	ret->known_uniform_slots = 0;
 	ret->shadername = strdup( shadername );
-	ret->fragment_shader_text = strdup( fragmentShader );
-	ret->vertex_shader_text = strdup( vertexShader );
-
-	spr->setshaders++;
-
-	ret->model_index = glGetUniformLocation( ret->program_shader, "mmatrix" );
-	ret->view_index = glGetUniformLocation( ret->program_shader, "vmatrix" );
-	ret->perspective_index = glGetUniformLocation( ret->program_shader, "pmatrix" );
-
-	glUseProgram(ret->program_shader);
-
-	int err = glGetError();
-	if( err )
+	ret->fragment_shader_source = strdup( fragmentShader );
+	ret->vertex_shader_source = strdup( vertexShader );
+	ret->attriblistlength = attriblistlength;
+	ret->attriblist = malloc( sizeof(char*) * attriblistlength );
+	for( i = 0 ; i < attriblistlength; i++ )
 	{
-		fprintf( spr->fReport, "Hanging error on shader compile %d (0x%02x)\n", err, err );
+		ret->attriblist[i] = strdup( attriblist[i] );
 	}
 
-	spr->current_shader = ret->shader_in_parent;
-
-	SpreadMessage( spr, "shader#", "bbsssS", ret->shader_in_parent, 69, ret->shader_in_parent, shadername, fragmentShader, vertexShader, attriblistlength, attriblist );
+	LoadShaderAtPlace( ret, spr );
+	spr->setshaders++;
 	return ret;
-
-qexit:
-	if( ret->fragment_shader ) glDeleteShader( ret->fragment_shader );
-	if( ret->vertex_shader ) glDeleteShader( ret->vertex_shader );
-	if( ret->program_shader ) glDeleteShader( ret->program_shader );
-	return 0;
 }
 
 int SpreadGetUniformSlot( SpreadShader * shd, const char * slotname )
@@ -459,12 +511,37 @@ void SpreadFreeShader( SpreadShader * shd )
 	if( shd->size_of_uniforms ) 		{ free( shd->size_of_uniforms ); 		shd->size_of_uniforms = 0; }
 	if( shd->uniforms_in_slots ) 		{ free( shd->uniforms_in_slots );		shd->uniforms_in_slots = 0; }
 	if( shd->shadername )				{ free( shd->shadername );				shd->shadername = 0; }
-	if( shd->fragment_shader_text )		{ free( shd->fragment_shader_text );	shd->fragment_shader_text = 0; }
-	if( shd->vertex_shader_text )		{ free( shd->vertex_shader_text );		shd->vertex_shader_text = 0; }
+	if( shd->fragment_shader_source )	{ free( shd->fragment_shader_source );	shd->fragment_shader_source = 0; }
+	if( shd->vertex_shader_source )		{ free( shd->vertex_shader_source );	shd->vertex_shader_source = 0; }
+	if( shd->attriblist )
+	{
+		int i;
+		for( i = 0; i < shd->attriblistlength; i++ )
+			free( shd->attriblist[i] );
+		free( shd->attriblist );
+		shd->attriblist = 0;
+	}
 
 	SpreadMessage( shd->parent, 0, "bb", 70, shd->shader_in_parent );
 	SpreadHashRemove( shd->parent, "shader#", shd->shader_in_parent );
 
+}
+
+void SpreadCheckShaders( Spreadgine * spr )
+{
+	int i;
+	for( i = 0; i < spr->setshaders; i++ )
+	{
+		SpreadShader * shd = &spr->shaders[i];
+		if( !shd->shadername ) continue;
+		double ft = OGGetFileTime( shd->fragment_shader_source );
+		double vt = OGGetFileTime( shd->vertex_shader_source );
+		if( ft != shd->fragment_shader_time ||  vt != shd->vertex_shader_time )
+		{
+			printf( "Recompiling shader %s\n", shd->shadername );
+			LoadShaderAtPlace( shd, spr );
+		}
+	}
 }
 
 SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, int render_type, int indices, uint16_t * indexarray, int verts, int nr_arrays, const void ** arrays, int * strides, int * types )
@@ -613,7 +690,6 @@ void SpreadRenderGeometry( SpreadGeometry * geo, const float * modelmatrix, int 
 		glUniformMatrix4fv( vmatpos, 1, 0, parent->vpviews[i] );
 		glUniformMatrix4fv( pmatpos, 1, 0, parent->vpperspectives[i] );
 		glViewport(vpedges[0],  vpedges[1], vpedges[2], vpedges[3]); 
-
 		glDrawElements(geo->render_type, (numv==-1)?geo->indices:numv, GL_UNSIGNED_SHORT, 0);
 	}
 

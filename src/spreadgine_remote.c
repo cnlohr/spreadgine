@@ -101,6 +101,7 @@ static void WSStreamOut( )
 		{
 			fprintf( SpreadForHTTP->fReport, "Error: Client would underflow circ buffer [%d %d %d]\n", tos, SpreadForHTTP->cbhead, cs->CircPtr );
 			curhttp->isdone = 1;
+			HTTPClose();
 			return;
 		}
 		uint32_t tplace = SpreadForHTTP->cbhead % SPREADGINE_CIRCBUF;
