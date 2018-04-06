@@ -24,8 +24,9 @@ SurvivePose wm0p;
 SurvivePose wm1p;
 Spreadgine * gspe;
 
-void my_raw_pose_process(SurviveObject *so, uint8_t lighthouse, SurvivePose *pose) {
-        survive_default_raw_pose_process(so, lighthouse, pose);
+void my_raw_pose_process(SurviveObject *so, uint32_t timecode, SurvivePose *pose)
+{
+        survive_default_raw_pose_process(so, timecode, pose);
 		if( strcmp( so->codename, "HMD" ) == 0 )
 	        memcpy( &phmd , pose, sizeof( phmd ) );
 		else if( strcmp( so->codename, "WM0" ) == 0 )
@@ -42,7 +43,7 @@ void * LibSurviveThread()
         if (ctx == 0) // implies -help or similiar
                 return 0;
 
-        survive_install_raw_pose_fn(ctx, my_raw_pose_process);
+        survive_install_pose_fn(ctx, my_raw_pose_process);
 
         survive_startup(ctx);
 
