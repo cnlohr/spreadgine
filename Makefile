@@ -20,7 +20,7 @@ else
 	LDFLAGS:=-lm -lMali -lpthread
 endif
 
-SURVIVE:=/root/git/libsurvive
+SURVIVE:=`echo ~`/git/libsurvive
 SURVIVE_CFLAGS:=-I$(SURVIVE)/include -I$(SURVIVE)/redist -DUSE_DOUBLE
 SURVIVE_LDFLAGS:=$(SURVIVE)/lib/libsurvive.so -lcblas -llapacke
 
@@ -32,4 +32,4 @@ testsurvive : testsurvive.c $(SPREADGINE_C) $(RESOURCE_O)
 
 
 clean :
-	rm -rf testspread $(RESOUCE_O)
+	rm -rf testspread testsurvive $(RESOUCE_O)

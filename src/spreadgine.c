@@ -268,7 +268,7 @@ static SpreadShader * LoadShaderAtPlace( SpreadShader * ret, Spreadgine * spr )
 	int rl = ftell(f);
 	fseek( f, 0, SEEK_SET );
 	fragmentShader_text = malloc( rl+1 );
-	fread( fragmentShader_text, 1, rl, f );
+	int _ignored_ = fread( fragmentShader_text, 1, rl, f );
 	fragmentShader_text[rl] = 0;
 	fclose( f );
 
@@ -282,7 +282,7 @@ static SpreadShader * LoadShaderAtPlace( SpreadShader * ret, Spreadgine * spr )
 	rl = ftell( f );
 	fseek( f, 0, SEEK_SET );
 	vertexShader_text = malloc( rl+1 );
-	fread( vertexShader_text, 1, rl, f );
+	_ignored_ = fread( vertexShader_text, 1, rl, f );
 	vertexShader_text[rl] = 0;
 	fclose( f );
 

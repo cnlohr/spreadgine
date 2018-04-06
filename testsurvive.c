@@ -26,6 +26,7 @@ Spreadgine * gspe;
 
 void my_raw_pose_process(SurviveObject *so, uint32_t timecode, SurvivePose *pose)
 {
+		printf( "%f %f %f\n", pose->Pos[0], pose->Pos[1], pose->Pos[2] );
         survive_default_raw_pose_process(so, timecode, pose);
 		if( strcmp( so->codename, "HMD" ) == 0 )
 	        memcpy( &phmd , pose, sizeof( phmd ) );
