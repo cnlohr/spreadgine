@@ -220,8 +220,8 @@ void spglLineWidth( Spreadgine * e,float wid )
 
 void spglSwap(Spreadgine * e)
 {
-	SpreadPushMessage(e, 77, 0, 0 );
 	CNFGSwapBuffers();
+	SpreadPushMessage(e, 77, 0, 0 );
 }
 
 void spglClearColor( Spreadgine * e, float r, float g, float b, float a )

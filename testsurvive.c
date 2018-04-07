@@ -157,6 +157,7 @@ int main( int argc, char ** argv )
 	double lastframetime = OGGetAbsoluteTime();
 	double TimeSinceStart = 0;
 	double Last = OGGetAbsoluteTime();
+	double TimeOfLastSwap = OGGetAbsoluteTime();
 	while(1)
 	{
 		double Now = OGGetAbsoluteTime();
@@ -211,7 +212,7 @@ int main( int argc, char ** argv )
 		}
 
 
-		tdTranslate( gSMatrix, -0., -0., -0. );
+		tdTranslate( gSMatrix, -15., -0., -0. );
 		for( z = 0; z < 5; z++ )
 		{
 			tdTranslate( gSMatrix, 0.0, 0, 3 );
@@ -239,7 +240,12 @@ int main( int argc, char ** argv )
 
 		tdPop();
 
+		glFlush();
+		double TWS = OGGetAbsoluteTime();
+		TWS = TimeOfLastSwap-TWS + 1.f/90.f - .0001;
+		if( TWS > 0 )	usleep(TWS*1000000);
 		spglSwap( e );
+		TimeOfLastSwap = OGGetAbsoluteTime();
 
 		SpreadCheckShaders( e );
 		frames++;
