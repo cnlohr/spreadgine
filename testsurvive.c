@@ -186,14 +186,17 @@ int main( int argc, char ** argv )
 */
 
 
+		//Draw watchmen
 		tdPush();
 		tdTranslate( gSMatrix, wm0p.Pos[0], wm0p.Pos[1], wm0p.Pos[2] );
+		tdRotateQuat( gSMatrix, wm0p.Rot[0], wm0p.Rot[1], wm0p.Rot[2], wm0p.Rot[3] );
 		tdScale( gSMatrix, .1, .1, .1 );
 		SpreadRenderGeometry( &e->geos[0], gSMatrix, 0, -1 ); 
 		tdPop();
 
 		tdPush();
 		tdTranslate( gSMatrix, wm1p.Pos[0], wm1p.Pos[1], wm1p.Pos[2] );
+		tdRotateQuat( gSMatrix, wm1p.Rot[0], wm1p.Rot[1], wm1p.Rot[2], wm1p.Rot[3] );
 		tdScale( gSMatrix, .1, .1, .1 );
 		SpreadRenderGeometry( &e->geos[0], gSMatrix, 0, -1 ); 
 		tdPop();
