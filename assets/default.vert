@@ -8,7 +8,7 @@ uniform vec4 timevec;
 
 void main()
 {
-    vvColor = vcolor;
+    vvColor = vec4(vcolor.xyz, 1.0 );
 
     gl_Position = (pmatrix * 
 		(vmatrix * 

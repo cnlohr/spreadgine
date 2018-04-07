@@ -197,6 +197,11 @@ SpreadTexture * SpreadLoadTexture( Spreadgine * spr, const char * tfile );
 void SpreadApplyTexture( SpreadTexture * tex, int slot );
 */
 
+
+//////////////////////////UTILITIES//////////////////////////////
+SpreadGeometry * LoadOBJ( Spreadgine * spr, const char * filename, int flipv, int make_wireframe );
+
+
 #endif
 
 

@@ -561,13 +561,16 @@ SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, i
 	if( i == spr->setgeos )
 	{
 		spr->geos = realloc( spr->geos, (spr->setgeos+1)* sizeof( SpreadGeometry ) );
-		ret = &spr->geos[spr->setgeos];
+		i = spr->setgeos;
+		spr->setgeos++;
+		ret = &spr->geos[i];
 		memset( ret, 0, sizeof( SpreadGeometry ) );
 	}
 	else
 	{
 		ret = &spr->geos[i];
 	}
+	printf( "IG: %d\n", i );
 
 	ret->indices = indices;
 	ret->indexarray = malloc(indices*sizeof(uint16_t));
@@ -719,5 +722,7 @@ void SpreadFreeGeometry( SpreadGeometry * geo )
 	SpreadMessage( geo->parent, "geometry#", "bb", geo->geo_in_parent, 90, geo->geo_in_parent );
 	SpreadHashRemove( geo->parent, "geometry#", geo->geo_in_parent );
 }
+
+
 
 

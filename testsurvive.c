@@ -151,6 +151,9 @@ int main( int argc, char ** argv )
 
 	tdMode( tdMODELVIEW );
 
+	SpreadGeometry * gun = LoadOBJ( gspe, "assets/gun.obj", 1, 0 );
+	//gun =  &e->geos[0];
+
 	int x, y, z;
 
 	int frames = 0, tframes = 0;
@@ -177,28 +180,27 @@ int main( int argc, char ** argv )
 		spglLineWidth( e, 4 );
 
 		SpreadApplyShader( &e->shaders[0] );
-
-/*		tdPush();
+#if 0
+		tdPush();
 		tdTranslate( gSMatrix, wm0p.Pos[0], wm0p.Pos[1], wm0p.Pos[2] );
 		tdScale( gSMatrix, .1, .1, .1 );
 		SpreadRenderGeometry( &e->geos[0], gSMatrix, 0, -1 ); 
 		tdPop();
-*/
 
-
+#endif
 		//Draw watchmen
 		tdPush();
 		tdTranslate( gSMatrix, wm0p.Pos[0], wm0p.Pos[1], wm0p.Pos[2] );
 		tdRotateQuat( gSMatrix, wm0p.Rot[0], wm0p.Rot[1], wm0p.Rot[2], wm0p.Rot[3] );
-		tdScale( gSMatrix, .1, .1, .1 );
-		SpreadRenderGeometry( &e->geos[0], gSMatrix, 0, -1 ); 
+		//tdScale( gSMatrix, .1, .1, .1 );
+		SpreadRenderGeometry( gun, gSMatrix, 0, -1 ); 
 		tdPop();
 
 		tdPush();
 		tdTranslate( gSMatrix, wm1p.Pos[0], wm1p.Pos[1], wm1p.Pos[2] );
 		tdRotateQuat( gSMatrix, wm1p.Rot[0], wm1p.Rot[1], wm1p.Rot[2], wm1p.Rot[3] );
-		tdScale( gSMatrix, .1, .1, .1 );
-		SpreadRenderGeometry( &e->geos[0], gSMatrix, 0, -1 ); 
+		//tdScale( gSMatrix, .1, .1, .1 );
+		//SpreadRenderGeometry( gun, gSMatrix, 0, -1 ); 
 		tdPop();
 
 //		printf( "%f %f %f / %f %f %f / %f %f %f\n", wm0p.Pos[0], wm0p.Pos[1], wm0p.Pos[2], wm1p.Pos[0], wm1p.Pos[1], wm1p.Pos[2], phmd.Pos[0], phmd.Pos[1], phmd.Pos[2] );

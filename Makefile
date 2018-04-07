@@ -5,7 +5,7 @@ uname_m := $(shell uname -m)
 
 ifeq ($(uname_m), x86_64)
 	CNHTTP:=cntools/http/http_bsd.c cntools/http/cnhttp.c cntools/http/mfs.c cntools/http/sha1.c
-	RAWDRAW:=rawdraw/CNFG3D.c rawdraw/CNFGXDriver.c rawdraw/CNFGFunctions.c
+	RAWDRAW:=rawdraw/CNFG3D.c rawdraw/CNFGXDriver.c rawdraw/CNFGFunctions.c src/objload.c
 	RESOURCE_O:=
 	SPREADGINE_C:=src/spreadgine.c src/spreadgine_remote.c $(CNHTTP) $(RAWDRAW)
 
@@ -14,7 +14,7 @@ ifeq ($(uname_m), x86_64)
 else
 	CNHTTP:=cntools/http/http_bsd.o cntools/http/cnhttp.o cntools/http/mfs.o cntools/http/sha1.o
 	RAWDRAW:=rawdraw/CNFG3D.o rawdraw/CNFGEGLDriver.o rawdraw/CNFGFunctions.o
-	RESOURCE_O:=$(CNHTTP) $(RAWDRAW) src/spreadgine.o src/spreadgine_remote.o
+	RESOURCE_O:=$(CNHTTP) $(RAWDRAW) src/spreadgine.o src/spreadgine_remote.o src/objload.o
 	SPREADGINE_C:=
 	CFLAGS:=-O2 -g -Iinclude -Icntools/http -Irawdraw -DHTTP_POLL_TIMEOUT=10 -DCNFG3D_USE_OGL_MAJOR -DMALI
 	LDFLAGS:=-lm -lMali -lpthread
