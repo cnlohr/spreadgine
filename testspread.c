@@ -23,6 +23,8 @@ int main()
 	Spreadgine * e = SpreadInit( 960, 640, "Spread Test", 8888, 2, stderr );
 #endif
 
+	SpreadGeometry * gun = LoadOBJ( e, "assets/simple_gun.obj", 0, 0 );
+
 	float eye[3] = { .014, 5, 5 };
 	float at[3] =  { 0, 0, 0 };
 	float up[3] =  { 0, 0, 1 };
@@ -58,15 +60,27 @@ int main()
 
 		spglLineWidth( e, 4 );
 
+		tdPush();
+		//tdScale( gSMatrix, .1, .1, .1 );
+		SpreadRenderGeometry( gun, gSMatrix, 0, -1 ); 
+		tdPop();
+
+
 		SpreadApplyShader( &e->shaders[0] );
 
 		tdRotateEA( gSMatrix, 0,.2125,1 );		//Operates ON f
 		//tdTranslate( modelmatrix, 0, 0, .1 );
 
+		tdPush();
+		tdScale( gSMatrix, 200., 200., 200. );
+		SpreadRenderGeometry( gun, gSMatrix, 0, -1 ); 
+		//SpreadRenderGeometry( &e->geos[0], gSMatrix, 0, -1 ); 
+		tdPop();
+
 
 		tdPush();
 		tdTranslate( gSMatrix, -30., -30., 0. );
-		for( y = 0; y < 20; y++ )
+		for( y = 0; y < 5; y++ )
 		{
 			tdTranslate( gSMatrix, 0.0, 3, 0 );
 			tdPush();
@@ -80,8 +94,8 @@ int main()
 		}
 		tdPop();
 
+		//usleep(200000);
 		spglSwap( e );
-
 		SpreadCheckShaders( e );
 		frames++;
 		tframes++;

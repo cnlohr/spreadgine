@@ -594,6 +594,18 @@ SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, i
 	ret->vbos = malloc( sizeof( uint32_t ) * nr_arrays );
 	glGenBuffers(nr_arrays, ret->vbos );
 
+
+	uint16_t SendIndexArray[ret->indices];
+	for( i = 0; i < ret->indices; i++ )
+	{
+		SendIndexArray[i] = htons( ret->indexarray[i] );
+	}
+
+	SpreadMessage( ret->parent, "geometry#", "bbsiibvvv", ret->geo_in_parent, 87, ret->geo_in_parent, ret->geoname, ret->render_type, ret->verts, ret->numarrays,
+		sizeof(uint8_t)*ret->numarrays, ret->strides, 
+		sizeof(uint8_t)*ret->numarrays, ret->types,
+		sizeof(uint16_t)*ret->indices, SendIndexArray );
+
 	for( i = 0; i < nr_arrays; i++ )
 	{
 		int typesize = 0;
@@ -637,20 +649,23 @@ void UpdateSpreadGeometry( SpreadGeometry * geo, int arrayno, void * arraydata )
 	if( arrayno == -1 )
 	{
 		int i;
-		for( arrayno = 0; arrayno < geo->numarrays; arrayno++ )
-		{
-			int arraysize = geo->strides[arrayno] * SpreadTypeSizes[ geo->types[arrayno] ] * geo->verts;
-			SpreadMessage( geo->parent, "geodata#_#", "bbbv", geo->geo_in_parent, arrayno, 88, geo->geo_in_parent, arrayno, arraysize, geo->arrays[arrayno] );
-		}
+
 		uint16_t SendIndexArray[geo->indices];
 		for( i = 0; i < geo->indices; i++ )
 		{
 			SendIndexArray[i] = htons( geo->indexarray[i] );
 		}
+
 		SpreadMessage( geo->parent, "geometry#", "bbsiibvvv", geo->geo_in_parent, 87, geo->geo_in_parent, geo->geoname, geo->render_type, geo->verts, geo->numarrays,
 			sizeof(uint8_t)*geo->numarrays, geo->strides, 
 			sizeof(uint8_t)*geo->numarrays, geo->types,
 			sizeof(uint16_t)*geo->indices, SendIndexArray );
+
+		for( arrayno = 0; arrayno < geo->numarrays; arrayno++ )
+		{
+			int arraysize = geo->strides[arrayno] * SpreadTypeSizes[ geo->types[arrayno] ] * geo->verts;
+			SpreadMessage( geo->parent, "geodata#_#", "bbbv", geo->geo_in_parent, arrayno, 88, geo->geo_in_parent, arrayno, arraysize, geo->arrays[arrayno] );
+		}
 
 	}
 	else

@@ -227,7 +227,7 @@ function InternalProcessPack()
 			var nrv = Pop32();
 			var ad = wggeos[gip].arraydata[arrayno] = PopMultiFloat(nrv/4);
 			console.log( wggeos[gip] );
-			if( !wggeos[gip].arraybuffer ) wggeos[gip].arraybuffer = [];
+			if( !wggeos[gip].arraybuffer ) { console.log( "Warning: Geometry updated on geo that was never initialized.\n" ); wggeos[gip].arraybuffer = []; }
 			if( !wggeos[gip].strides ) wggeos[gip].strides = [];
 			if( !wggeos[gip].arraybuffer[arrayno] ) wggeos[gip].arraybuffer[arrayno] = wgl.createBuffer();
 			var ab = wggeos[gip].arraybuffer[arrayno];

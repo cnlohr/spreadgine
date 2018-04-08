@@ -24,6 +24,7 @@ typedef struct Spreadgine Spreadgine;
 #define SPREADGINE_CIRCBUF   (65536*32)	//A 2MB circular buffer.
 
 #define SPREADGINE_CACHEMAP_SIZE 1307
+#define SPREADGINE_MAXKEEP 2048
 
 #define SPREADGINE_T_FLOAT 0
 #define SPREADGINE_T_UBYTE 1
@@ -34,6 +35,7 @@ struct SpreadHashEntry
 	struct SpreadHashEntry * next;
 	char * key;
 	int payload_reserved;
+	int entry_in_KEEPlist;
 	uint32_t payloadlen;
 	uint8_t * payload;
 };
@@ -69,6 +71,8 @@ struct Spreadgine
 
 	//These are filled with messages that will be transferred to newly connected clients.
 	SpreadHashEntry * KEEPhash[SPREADGINE_CACHEMAP_SIZE];
+	SpreadHashEntry * KEEPlist[SPREADGINE_MAXKEEP];
+	int KEEPlistnum;
 	void * KEEPmutex;
 	volatile int doexit;
 };
