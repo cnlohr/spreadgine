@@ -35,4 +35,4 @@ testgame : testgame.c $(SPREADGINE_C) $(RESOURCE_O)
 
 
 clean :
-	rm -rf testspread testsurvive $(RESOUCE_O)
+	rm -rf testspread testsurvive testgame $(RESOUCE_O)

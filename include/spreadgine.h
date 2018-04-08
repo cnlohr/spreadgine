@@ -45,11 +45,11 @@ typedef struct SpreadHashEntry SpreadHashEntry;
 
 struct Spreadgine
 {
-	SpreadShader * shaders;
+	SpreadShader ** shaders;
 	int setshaders;
-	SpreadGeometry * geos;
+	SpreadGeometry ** geos;
 	int setgeos;
-	SpreadTexture * textures;
+	SpreadTexture ** textures;
 	int settexs;
 
 	int current_shader;

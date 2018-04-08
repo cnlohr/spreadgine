@@ -37,7 +37,7 @@ struct OBJObject
 
 	unsigned int OGLList; //Optionally implemented by user, may have OpenGL List.
 
-	struct GPUGeometry * geometry;
+	//struct GPUGeometry * geometry;
 };
 
 struct OBJFile
@@ -475,7 +475,6 @@ SpreadGeometry * LoadOBJ( Spreadgine * spr, const char * filename, int flipv, in
 	if( Vertices ) { arrays[nrarray++] = Vertices; }
 	if( Normals )  { arrays[nrarray++] = Normals; }
 	if( Textures ) { arrays[nrarray++] = Textures; }
-printf( "CCGGGG %d\n", nrarray );
 
 	SpreadGeometry * ret = SpreadCreateGeometry( spr, filename, make_wireframe?GL_LINES:GL_TRIANGLES, icount, Indices, ivcount, nrarray, arrays, strides, types );
 

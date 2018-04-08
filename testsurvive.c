@@ -157,7 +157,7 @@ int main( int argc, char ** argv )
 
 		spglLineWidth( e, 4 );
 
-		SpreadApplyShader( &e->shaders[0] );
+		SpreadApplyShader( e->shaders[0] );
 #if 0
 		tdPush();
 		tdTranslate( gSMatrix, wm0p.Pos[0], wm0p.Pos[1], wm0p.Pos[2] );
@@ -185,11 +185,11 @@ int main( int argc, char ** argv )
 		tdScale( gSMatrix, .2, .2, .2 );		//Operates ON f
 
 		float ssf[4] = { TimeSinceStart, 0, 0, 0 };
-		int slot = SpreadGetUniformSlot( &e->shaders[0], "timevec");
+		int slot = SpreadGetUniformSlot( e->shaders[0], "timevec");
 		if( slot >= 0 )
 		{
 			//printf( "%f\n", ssf[0] );
-			SpreadUniform4f( &e->shaders[0], slot, ssf );
+			SpreadUniform4f( e->shaders[0], slot, ssf );
 		}
 
 
@@ -211,7 +211,7 @@ int main( int argc, char ** argv )
 					//tdScale( gSMatrix, sm, sm, sm );
 					//tdRotateEA( gSMatrix, tframes+z*10, tframes*3.+y*10, tframes*2+x*1 );
 					//tdScale( gSMatrix, .3, .3, .3 );
-					SpreadRenderGeometry( &e->geos[0], gSMatrix, 0, -1 ); 
+					SpreadRenderGeometry( e->geos[0], gSMatrix, 0, -1 ); 
 					tdPop();
 				}
 				tdPop();

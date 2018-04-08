@@ -154,14 +154,21 @@ void SpreadDestroy( Spreadgine * spr )
 	spr->doexit = 1;
 	OGJoinThread( spr->spreadthread );
 
-	if( spr->shaders ) free( spr->shaders );
-	if( spr->geos ) free( spr->geos );
-	if( spr->textures ) free( spr->textures );
 	int i;
-	for( i = 0; i < SPREADGINE_CAMERAS; i++ )
-	{
-		if( spr->vpnames[i] ) free( spr->vpnames[i] );
-	}
+	for( i = 0; i < spr->setshaders; i++ )
+		free( spr->shaders[i] );
+	if( spr->shaders )
+		free( spr->shaders );
+	for( i = 0; i < spr->setgeos; i++ )
+		free( spr->geos[i] );
+	if( spr->geos ) 
+		free( spr->geos );
+	for( i = 0; i < spr->settexs; i++ )
+		free( spr->textures[i] );
+	if( spr->textures )
+		free( spr->textures );
+	if( spr->vpnames[i] )
+		free( spr->vpnames[i] );
 	free( spr->vpnames );
 	free( spr->vpperspectives );
 	free( spr->vpviews );
@@ -420,17 +427,17 @@ SpreadShader * SpreadLoadShader( Spreadgine * spr, const char * shadername, cons
 	//First see if there are any free shaders available in the parent...
 	for( i = 0; i < spr->setshaders; i++ )
 	{
-		if( spr->shaders[i].shadername == 0 )
+		if( spr->shaders[i]->shadername == 0 )
 			break;
 	}
 	if( i == spr->setshaders )
 	{
-		spr->shaders = realloc( spr->shaders, (spr->setshaders+1)* sizeof( SpreadShader ) );
-		ret = &spr->shaders[spr->setshaders];
+		spr->shaders = realloc( spr->shaders, (spr->setshaders+1)* sizeof( SpreadShader* ) );
+		ret = spr->shaders[spr->setshaders] = calloc( sizeof( SpreadShader), 1 );
 	}
 	else
 	{
-		ret = &spr->shaders[i];
+		ret = spr->shaders[i];
 	}
 
 	memset( ret, 0, sizeof( SpreadShader ) );
@@ -532,7 +539,7 @@ void SpreadCheckShaders( Spreadgine * spr )
 	int i;
 	for( i = 0; i < spr->setshaders; i++ )
 	{
-		SpreadShader * shd = &spr->shaders[i];
+		SpreadShader * shd = spr->shaders[i];
 		if( !shd->shadername ) continue;
 		double ft = OGGetFileTime( shd->fragment_shader_source );
 		double vt = OGGetFileTime( shd->vertex_shader_source );
@@ -555,22 +562,20 @@ SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, i
 	//First see if there are any free geos available in the parent...
 	for( i = 0; i < spr->setgeos; i++ )
 	{
-		if( spr->geos[i].geoname == 0 )
+		if( spr->geos[i]->geoname == 0 )
 			break;
 	}
 	if( i == spr->setgeos )
 	{
-		spr->geos = realloc( spr->geos, (spr->setgeos+1)* sizeof( SpreadGeometry ) );
+		spr->geos = realloc( spr->geos, (spr->setgeos+1)* sizeof( SpreadGeometry * ) );
 		i = spr->setgeos;
 		spr->setgeos++;
-		ret = &spr->geos[i];
-		memset( ret, 0, sizeof( SpreadGeometry ) );
+		ret = spr->geos[i] = calloc( sizeof( SpreadGeometry ), 1 );
 	}
 	else
 	{
-		ret = &spr->geos[i];
+		ret = spr->geos[i];
 	}
-	printf( "IG: %d\n", i );
 
 	ret->indices = indices;
 	ret->indexarray = malloc(indices*sizeof(uint16_t));
@@ -634,7 +639,7 @@ SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, i
 	}
 
 	UpdateSpreadGeometry( ret, -1, 0 );
-
+	
 	int err = glGetError();
 	if( err )
 	{
@@ -679,7 +684,7 @@ void UpdateSpreadGeometry( SpreadGeometry * geo, int arrayno, void * arraydata )
 void SpreadRenderGeometry( SpreadGeometry * geo, const float * modelmatrix, int startv, int numv )
 {
 	Spreadgine * parent = geo->parent;
-	SpreadShader * ss = &parent->shaders[parent->current_shader];
+	SpreadShader * ss = parent->shaders[parent->current_shader];
 	int vmatpos = ss->view_index;
 	int pmatpos = ss->perspective_index;
 	int mmatpos = ss->model_index;
