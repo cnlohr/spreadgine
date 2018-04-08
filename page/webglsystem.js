@@ -226,6 +226,9 @@ function InternalProcessPack()
 			if( !wggeos[gip].arraydata ) wggeos[gip].arraydata = [];
 			var nrv = Pop32();
 			var ad = wggeos[gip].arraydata[arrayno] = PopMultiFloat(nrv/4);
+			console.log( wggeos[gip] );
+			if( !wggeos[gip].arraybuffer ) wggeos[gip].arraybuffer = [];
+			if( !wggeos[gip].strides ) wggeos[gip].strides = [];
 			if( !wggeos[gip].arraybuffer[arrayno] ) wggeos[gip].arraybuffer[arrayno] = wgl.createBuffer();
 			var ab = wggeos[gip].arraybuffer[arrayno];
 			wgl.bindBuffer(wgl.ARRAY_BUFFER, ab);
@@ -241,6 +244,8 @@ function InternalProcessPack()
 			var mmatrix = PopMultiFloat(16);
 
 			var curshad = wgshades[wgcurshad];
+			if( !curshad ) break;
+
 			wgl.useProgram(curshad.program);
 
 			//Now, how do we render this mess?
