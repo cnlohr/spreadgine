@@ -1,4 +1,4 @@
-all : testspread testsurvive
+all : testspread testsurvive testgame
 
 uname_m := $(shell uname -m)
 
@@ -28,6 +28,9 @@ testspread : testspread.o $(SPREADGINE_C) $(RESOURCE_O)
 	gcc -o $@ $^ $(CFLAGS) $(LDFLAGS)
 
 testsurvive : testsurvive.c $(SPREADGINE_C) $(RESOURCE_O)
+	gcc -o $@ $^ $(CFLAGS) $(LDFLAGS) $(SURVIVE_CFLAGS) $(SURVIVE_LDFLAGS)
+
+testgame : testgame.c $(SPREADGINE_C) $(RESOURCE_O)
 	gcc -o $@ $^ $(CFLAGS) $(LDFLAGS) $(SURVIVE_CFLAGS) $(SURVIVE_LDFLAGS)
 
 

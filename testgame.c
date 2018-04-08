@@ -88,30 +88,12 @@ void SetupEyes()
 		double * atb[2] = { &at1[0], &at2[0] };
 		double * eyeb[2] = { eye1, eye2 };
 
-#if 1
 		float leye[3] = { eyeb[i][0], eyeb[i][1], eyeb[i][2] };
 		float lat[3] = { atb[i][0], atb[i][1], atb[i][2] };
 		float lup[3] = { up[0], up[1], up[2] };
-#else
-		float leye[3] = { 1, 1, 1 };
-		float lat[3] = { 0, 0, 0};
-		float lup[3] = { 0, 0, 1 };
-#endif
-
-//		printf( "Eye: %f %f %f\n", leye[0], leye[1], leye[2] );
-//		printf( " At: %f %f %f\n", lat[0], lat[1], lat[2] );
-//		printf( " Up: %f %f %f\n", lup[0], lup[1], lup[2] );
-
-		//Shift vanishing point, since center-of-display is not center-of-vision.
-
 
 		tdIdentity( gspe->vpviews[i] );
-//		if( i == 0 )
-//			tdTranslate( gspe->vpviews[0], .2, 0, 0 ); 
-//		else
-//			tdTranslate( gspe->vpviews[1], -.2, 0, 0 ); 
 		tdLookAt( gspe->vpviews[i], leye, lat, lup );
-
 		SpreadChangeCameaView(gspe, i, gspe->vpviews[i] );
 	}
 
@@ -121,7 +103,7 @@ void SetupEyes()
 
 int main( int argc, char ** argv )
 {
-	Spreadgine * e = gspe = SpreadInit( 2160, 1200, "Spread Survive Test", 8889, 2, stderr );
+	Spreadgine * e = gspe = SpreadInit( 2160, 1200, "Spread Game Survive Test", 8889, 2, stderr );
 
 	gargc = argc;
 	gargv = argv;
@@ -131,6 +113,7 @@ int main( int argc, char ** argv )
 	tdMode( tdMODELVIEW );
 
 	SpreadGeometry * gun = LoadOBJ( gspe, "assets/simple_gun.obj", 1, 0 );
+	SpreadGeometry * platform = LoadOBJ( gspe, "assets/platform.obj", 1, 0 );
 
 	int x, y, z;
 
@@ -182,7 +165,7 @@ int main( int argc, char ** argv )
 //		printf( "%f %f %f / %f %f %f / %f %f %f\n", wm0p.Pos[0], wm0p.Pos[1], wm0p.Pos[2], wm1p.Pos[0], wm1p.Pos[1], wm1p.Pos[2], phmd.Pos[0], phmd.Pos[1], phmd.Pos[2] );
 
 		tdPush();
-		tdScale( gSMatrix, .2, .2, .2 );		//Operates ON f
+		//tdScale( gSMatrix, .2, .2, .2 );		//Operates ON f
 
 		float ssf[4] = { TimeSinceStart, 0, 0, 0 };
 		int slot = SpreadGetUniformSlot( &e->shaders[0], "timevec");
@@ -196,21 +179,21 @@ int main( int argc, char ** argv )
 		tdTranslate( gSMatrix, -1., -1., -1. );
 		for( z = 0; z < 5; z++ )
 		{
-			tdTranslate( gSMatrix, 0.0, 0, 3 );
+			tdTranslate( gSMatrix, 0.0, 0, 1 );
 			tdPush();
 			for( y = 0; y < 5; y++ )
 			{
-				tdTranslate( gSMatrix, 0.0, 3, 0 );
+				tdTranslate( gSMatrix, 0.0, 1, 0 );
 				tdPush();
 				for( x = 0; x < 5; x++ )
 				{
-					tdTranslate( gSMatrix, 3, 0, 0 );
+					tdTranslate( gSMatrix, 1, 0, 0 );
 					//int rstart = ((tframes)*6)%36;
 					tdPush();
 					//float sm = sin(x*1.2+y*.3+z*.8+tframes*.05);
 					//tdScale( gSMatrix, sm, sm, sm );
 					//tdRotateEA( gSMatrix, tframes+z*10, tframes*3.+y*10, tframes*2+x*1 );
-					//tdScale( gSMatrix, .3, .3, .3 );
+					tdScale( gSMatrix, .1, .1, .1 );
 					SpreadRenderGeometry( &e->geos[0], gSMatrix, 0, -1 ); 
 					tdPop();
 				}
