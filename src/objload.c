@@ -411,13 +411,13 @@ SpreadGeometry * LoadOBJ( Spreadgine * spr, const char * filename, int flipv, in
 	struct OBJFile * ofi = OpenOBJInternal( filename, flipv );
 	if( !ofi )
 	{
-		fprintf( spr->fReport, "Failed to open \"%s\".\n" );
+		fprintf( spr->fReport, "Failed to open \"%s\".\n", filename );
 		return 0;
 	}
 	struct TempObject * of = ofi->t;
 	if( !of )
 	{
-		fprintf( spr->fReport, "Failed to get object from \"%s\".\n" );
+		fprintf( spr->fReport, "Failed to get object from \"%s\".\n", filename );
 		return 0;
 	}
 
@@ -451,7 +451,7 @@ SpreadGeometry * LoadOBJ( Spreadgine * spr, const char * filename, int flipv, in
 		{
 			Indices[i] = i;
 		}
-		printf( "%d %d %d\n", iev, ien, iet );
+
 		if( Vertices ) memcpy( &Vertices[i*3], &of->CVerts[iev*3], sizeof(float)*3 );
 		if( Normals ) memcpy( &Normals[i*3], &of->CNormals[ien*3], sizeof(float)*3 );
 		if( Textures ) memcpy( &Textures[i*3], &of->CTexs[iet*3], sizeof(float)*3 );

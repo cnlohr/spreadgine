@@ -10,6 +10,8 @@
 
 static Spreadgine * SpreadForHTTP;
 
+void HTTPClose();
+
 struct ClientStruct
 {
 	uint8_t * KEEPbufferout;
@@ -475,7 +477,7 @@ int SpreadCreateDump( Spreadgine * spr, uint8_t ** ptrout )
 		SpreadHashEntry * ke = spr->KEEPhash[i];
 		do
 		{
-			if( poutsize + ke->payloadlen < poutreserved )
+			if( poutsize + ke->payloadlen > poutreserved )
 			{
 				poutreserved = poutsize + ke->payloadlen + 1024;
 				pout = realloc( pout, poutreserved );
