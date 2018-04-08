@@ -4,6 +4,7 @@
 #include <os_generic.h>
 #include <libsurvive/survive.h>
 #include <string.h>
+#include <math.h>
 
 void HandleKey( int keycode, int bDown )
 {
@@ -23,16 +24,40 @@ SurvivePose phmd;
 SurvivePose wm0p;
 SurvivePose wm1p;
 Spreadgine * gspe;
+SurviveObject * HMD;
+SurviveObject * WM0;
+SurviveObject * WM1;
+/*
+	int32_t buttonmask;
+	int16_t axis1;
+
+	int16_t axis2;
+	int16_t axis3;
+	int8_t charge;
+	int8_t charging : 1;
+	int8_t ison : 1;
+	int8_t additional_flags : 6;
+*/
 
 void my_raw_pose_process(SurviveObject *so, uint32_t timecode, SurvivePose *pose)
 {
         survive_default_raw_pose_process(so, timecode, pose);
 		if( strcmp( so->codename, "HMD" ) == 0 )
+		{
 	        memcpy( &phmd , pose, sizeof( phmd ) );
+			HMD = so;
+		}
 		else if( strcmp( so->codename, "WM0" ) == 0 )
+		{
 			memcpy( &wm0p, pose, sizeof( *pose ) );
+			WM0 = so;
+			
+		}
 		else if( strcmp( so->codename, "WM1" ) == 0 )
+		{
 			memcpy( &wm1p, pose, sizeof( *pose ) );
+			WM1 = so;
+		}
         //printf("%s POSE %0.6f %0.6f %0.6f %0.6f %0.6f %0.6f %0.6f\n", so->codename, pose->Pos[0], pose->Pos[1],       pose->Pos[2], p$
 }
 
@@ -51,6 +76,9 @@ void * LibSurviveThread()
         }
 }
 
+float diopter = 0.03;
+float disappearing = 0.08;
+float fovie = 75;
 
 void SetupEyes()
 {
@@ -62,10 +90,10 @@ void SetupEyes()
 	double up[3] = { 1, 1, 1 };
 
 	double pin[3] = {  0.0, 0., 0 }; //Left eye
-	double pineye1[3] = {  0.030, 0., 0 }; //Left eye
-	double pineye2[3] = { -0.030, 0., 0 };
-	double pinat1[3] = {  0.130, 0., 1 }; //Left eye
-	double pinat2[3] = { -0.130, 0., 1 };
+	double pineye1[3] = {  diopter, 0., 0 }; //Left eye
+	double pineye2[3] = { -diopter, 0., 0 };
+	double pinat1[3] = {  disappearing, 0., 1 }; //Left eye
+	double pinat2[3] = { -disappearing, 0., 1 };
 
 	double pinup[3] = { 0, 1., 0 };
 
@@ -100,6 +128,63 @@ void SetupEyes()
 
 }
 
+void HandleControllerInput()
+{
+	if( WM0 )
+	{
+		static int vsmode;
+		static double lasta1, lasta2;
+		static int last_bm;
+		int bm = WM0->buttonmask;
+		if( !(last_bm & 1 ) && (bm &1) )
+		{
+			vsmode = (vsmode+1)%3;
+		}
+		if( vsmode == 0 ) 
+			spglClearColor( gspe, .1, 0.2, 0.1, 1.0 );
+		else if( vsmode == 1)
+			spglClearColor( gspe, .2, 0.1, 0.1, 1.0 );
+		else
+			spglClearColor( gspe, .1, 0.1, 0.2, 1.0 );
+
+
+		if( !(last_bm & 2 ) && (bm &2) )
+		{
+			lasta1 = WM0->axis1;
+			lasta2 = WM0->axis2;
+		}
+		double x = WM0->axis2/32767.;
+		double y = WM0->axis3/32767.;
+		float last_ang = atan2( lasta1, lasta2 );
+		float cur_ang = atan2( x, y );
+		float delta = cur_ang - last_ang;
+		if( delta > 3.14159*2 ) delta -= 3.14159*2;
+		if( delta <-3.14159*2 ) delta += 3.14159*2;
+		float rang = sqrt(WM0->axis1*WM0->axis1 + WM0->axis2*WM0->axis2);
+
+		if( rang > 10000 && (bm &2) && (last_bm & 2 ) )
+		{
+			if( vsmode == 0 )
+			{
+				diopter += delta/1000;
+			}
+			else if( vsmode == 1 )
+			{
+				disappearing+= delta/1000;
+			}
+			else
+			{
+				fovie += delta/2.0;
+				SpreadSetupCamera( gspe, 0, fovie, (float)1080/1200, .01, 1000, "CAM0" );
+				SpreadSetupCamera( gspe, 1, fovie, (float)1080/1200, .01, 1000, "CAM1" );
+			}
+			printf( "WM0: %6.3f %6.3f %6.3f %d %d %f %f %d %f %f %f\n", last_ang, cur_ang, delta, WM0->buttonmask, WM0->axis1, x, y, WM0->charge, disappearing, diopter, fovie );
+		}
+		last_bm = bm;
+		lasta1 = x;
+		lasta2 = y;
+	}
+}
 
 int main( int argc, char ** argv )
 {
@@ -108,14 +193,17 @@ int main( int argc, char ** argv )
 	gargc = argc;
 	gargv = argv;
 
-	//OGCreateThread( LibSurviveThread, e );
+	OGCreateThread( LibSurviveThread, e );
 
 	tdMode( tdMODELVIEW );
 
-	SpreadGeometry * gun = LoadOBJ( gspe, "assets/simple_gun.obj", 1, 0 );
-	printf( "(%p)\n", gun->parent );
-	SpreadGeometry * platform = LoadOBJ( gspe, "assets/platform.obj", 1, 0 );
-	
+	SpreadGeometry * gun = LoadOBJ( gspe, "assets/simple_gun.obj", 1, 1 );
+	SpreadGeometry * platform = LoadOBJ( gspe, "assets/platform.obj", 1, 1 );
+	e->geos[0]->render_type = GL_LINES;
+	SpreadSetupCamera( e, 0, fovie, (float)1080/1200, .01, 1000, "CAM0" );
+	SpreadSetupCamera( e, 1, fovie, (float)1080/1200, .01, 1000, "CAM1" );
+
+
 	int x, y, z;
 
 	int frames = 0, tframes = 0;
@@ -127,6 +215,20 @@ int main( int argc, char ** argv )
 	{
 		double Now = OGGetAbsoluteTime();
 		spglClearColor( e, .1, 0.1, 0.1, 1.0 );
+
+/*
+	int32_t buttonmask;
+	int16_t axis1;
+	int16_t axis2;
+	int16_t axis3;
+	int8_t charge;
+	int8_t charging : 1;
+	int8_t ison : 1;
+	int8_t additional_flags : 6;
+*/
+		HandleControllerInput();
+
+
 		spglClear( e, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 		spglEnable( e, GL_DEPTH_TEST );
 
@@ -142,14 +244,10 @@ int main( int argc, char ** argv )
 		spglLineWidth( e, 4 );
 
 		SpreadApplyShader( e->shaders[0] );
-#if 0
-		tdPush();
-		tdTranslate( gSMatrix, wm0p.Pos[0], wm0p.Pos[1], wm0p.Pos[2] );
-		tdScale( gSMatrix, .1, .1, .1 );
-		SpreadRenderGeometry( &e->geos[0], gSMatrix, 0, -1 ); 
-		tdPop();
 
-#endif
+
+		tdPush();
+
 		//Draw watchmen
 		tdPush();
 		tdTranslate( gSMatrix, wm0p.Pos[0], wm0p.Pos[1], wm0p.Pos[2] );
