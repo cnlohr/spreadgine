@@ -79,7 +79,7 @@ void * LibSurviveThread()
 float diopter = 0.03;
 float disappearing = 0.08;
 float fovie = 75;
-
+float eyez = 0;
 void SetupEyes()
 {
 	double p[3] = { 1, 1, 1} ;
@@ -90,10 +90,10 @@ void SetupEyes()
 	double up[3] = { 1, 1, 1 };
 
 	double pin[3] = {  0.0, 0., 0 }; //Left eye
-	double pineye1[3] = {  diopter, 0., 0 }; //Left eye
-	double pineye2[3] = { -diopter, 0., 0 };
-	double pinat1[3] = {  disappearing, 0., 1 }; //Left eye
-	double pinat2[3] = { -disappearing, 0., 1 };
+	double pineye1[3] = {  diopter, 0., eyez }; //Left eye
+	double pineye2[3] = { -diopter, 0., eyez };
+	double pinat1[3] = {  disappearing, 0., 1+eyez }; //Left eye
+	double pinat2[3] = { -disappearing, 0., 1+eyez };
 
 	double pinup[3] = { 0, 1., 0 };
 
@@ -138,14 +138,17 @@ void HandleControllerInput()
 		int bm = WM0->buttonmask;
 		if( !(last_bm & 1 ) && (bm &1) )
 		{
-			vsmode = (vsmode+1)%3;
+			vsmode = (vsmode+1)%4;
 		}
 		if( vsmode == 0 ) 
 			spglClearColor( gspe, .1, 0.2, 0.1, 1.0 );
 		else if( vsmode == 1)
 			spglClearColor( gspe, .2, 0.1, 0.1, 1.0 );
-		else
+		else if( vsmode == 2 )
 			spglClearColor( gspe, .1, 0.1, 0.2, 1.0 );
+		else
+			spglClearColor( gspe, .2, 0.2, 0.2, 1.0 );
+			
 
 
 		if( !(last_bm & 2 ) && (bm &2) )
@@ -172,13 +175,17 @@ void HandleControllerInput()
 			{
 				disappearing+= delta/100;
 			}
-			else
+			else if( vsmode == 2 )
 			{
 				fovie += delta;
 				SpreadSetupCamera( gspe, 0, fovie, (float)1080/1200, .01, 1000, "CAM0" );
 				SpreadSetupCamera( gspe, 1, fovie, (float)1080/1200, .01, 1000, "CAM1" );
 			}
-			printf( "WM0: %6.3f %6.3f %6.3f %d %d %f %f %d %f %f %f\n", last_ang, cur_ang, delta, WM0->buttonmask, WM0->axis1, x, y, WM0->charge, disappearing, diopter, fovie );
+			else
+			{
+				eyez += delta/10.0;
+			}
+			printf( "WM0: %6.3f %6.3f %6.3f %d %d %f %f %d %f %f %f %f\n", last_ang, cur_ang, delta, WM0->buttonmask, WM0->axis1, x, y, WM0->charge, disappearing, diopter, fovie, eyez );
 		}
 		last_bm = bm;
 		lasta1 = x;
@@ -200,6 +207,7 @@ int main( int argc, char ** argv )
 	SpreadGeometry * gun = LoadOBJ( gspe, "assets/simple_gun.obj", 1, 1 );
 	SpreadGeometry * platform = LoadOBJ( gspe, "assets/platform.obj", 1, 1 );
 	e->geos[0]->render_type = GL_LINES;
+	UpdateSpreadGeometry( e->geos[0], -1, 0 );
 	SpreadSetupCamera( e, 0, fovie, (float)1080/1200, .01, 1000, "CAM0" );
 	SpreadSetupCamera( e, 1, fovie, (float)1080/1200, .01, 1000, "CAM1" );
 
