@@ -219,7 +219,7 @@ void SpreadPushMessage( Spreadgine * e, uint8_t messageid, int payloadsize, void
 		memcpy( e->cbbuff + modhead, payload, remain );
 		memcpy( e->cbbuff, payload + remain, payloadsize - remain );
 	}
-	else
+	else if(payloadsize)
 	{
 		memcpy( e->cbbuff + modhead, payload, payloadsize );
 	}

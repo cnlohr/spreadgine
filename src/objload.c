@@ -454,7 +454,7 @@ SpreadGeometry * LoadOBJ( Spreadgine * spr, const char * filename, int flipv, in
 
 		if( Vertices ) memcpy( &Vertices[i*3], &of->CVerts[iev*3], sizeof(float)*3 );
 		if( Normals ) memcpy( &Normals[i*3], &of->CNormals[ien*3], sizeof(float)*3 );
-		if( Textures ) memcpy( &Textures[i*3], &of->CTexs[iet*3], sizeof(float)*3 );
+		if( Textures && iet > 0 ) memcpy( &Textures[i*3], &of->CTexs[iet*3], sizeof(float)*3 );
 	}
 
 	//Free OBJ file
