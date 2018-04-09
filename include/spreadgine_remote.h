@@ -47,7 +47,7 @@ void SpreadPushMessage( Spreadgine * e, uint8_t messageid, int payloadsize, void
 //Internal, called only by spreadgine.
 void * SpreadHTTPThread( void * spread );
 
-void SpreadRemoteInit( Spreadgine * e );
+void SpreadRemoteInit( Spreadgine * e, int portno );
 
 
 //Don't call this unless you've already locked the common data mutex.

@@ -391,10 +391,10 @@ void SpreadMessage( Spreadgine * e, const char * entry, const char * format, ...
 	}
 }
 
-void SpreadRemoteInit( Spreadgine * e )
+void SpreadRemoteInit( Spreadgine * e, int port )
 {
 	e->KEEPmutex = OGCreateMutex();
-	RunHTTP( 8889 );
+	RunHTTP( 8888 );
 	e->spreadthread = OGCreateThread( SpreadHTTPThread, e );
 	SpreadForHTTP = e;
 }

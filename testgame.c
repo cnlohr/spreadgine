@@ -1,4 +1,4 @@
-#include <spreadgine.h>
+	#include <spreadgine.h>
 #include <CNFG3D.h>
 #include <unistd.h>
 #include <os_generic.h>
@@ -166,15 +166,15 @@ void HandleControllerInput()
 		{
 			if( vsmode == 0 )
 			{
-				diopter += delta/1000;
+				diopter += delta/100;
 			}
 			else if( vsmode == 1 )
 			{
-				disappearing+= delta/1000;
+				disappearing+= delta/100;
 			}
 			else
 			{
-				fovie += delta/2.0;
+				fovie += delta;
 				SpreadSetupCamera( gspe, 0, fovie, (float)1080/1200, .01, 1000, "CAM0" );
 				SpreadSetupCamera( gspe, 1, fovie, (float)1080/1200, .01, 1000, "CAM1" );
 			}
@@ -188,7 +188,7 @@ void HandleControllerInput()
 
 int main( int argc, char ** argv )
 {
-	Spreadgine * e = gspe = SpreadInit( 2160, 1200, "Spread Game Survive Test", 8889, 2, stderr );
+	Spreadgine * e = gspe = SpreadInit( 2160, 1200, "Spread Game Survive Test", 8888, 2, stderr );
 
 	gargc = argc;
 	gargv = argv;

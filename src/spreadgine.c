@@ -45,7 +45,7 @@ Spreadgine * SpreadInit( int w, int h, const char * title, int httpport, int vps
 		return 0;
 	}
 
-	SpreadRemoteInit( ret );
+	SpreadRemoteInit( ret, httpport );
 	SpreadMessage( ret, "setup", "biiis", 64, w, h, vps, title );
 
 
