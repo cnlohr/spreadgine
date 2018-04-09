@@ -38,26 +38,31 @@ SurviveObject * WM1;
 	int8_t ison : 1;
 	int8_t additional_flags : 6;
 */
+og_mutex_t poll_mutex;
 
 void my_raw_pose_process(SurviveObject *so, uint32_t timecode, SurvivePose *pose)
 {
         survive_default_raw_pose_process(so, timecode, pose);
-		if( strcmp( so->codename, "HMD" ) == 0 )
-		{
-	        memcpy( &phmd , pose, sizeof( phmd ) );
-			HMD = so;
-		}
-		else if( strcmp( so->codename, "WM0" ) == 0 )
-		{
-			memcpy( &wm0p, pose, sizeof( *pose ) );
-			WM0 = so;
+	OGLockMutex(poll_mutex);
+
+	if( strcmp( so->codename, "HMD" ) == 0 )
+	  {
+	    memcpy( &phmd , pose, sizeof( phmd ) );
+	    HMD = so;
+	  }
+	else if( strcmp( so->codename, "WM0" ) == 0 )
+	  {
+	    memcpy( &wm0p, pose, sizeof( *pose ) );
+	    WM0 = so;
 			
-		}
-		else if( strcmp( so->codename, "WM1" ) == 0 )
-		{
-			memcpy( &wm1p, pose, sizeof( *pose ) );
-			WM1 = so;
-		}
+	  }
+	else if( strcmp( so->codename, "WM1" ) == 0 )
+	  {
+	    memcpy( &wm1p, pose, sizeof( *pose ) );
+	    WM1 = so;
+	  }
+	OGUnlockMutex(poll_mutex);
+
         //printf("%s POSE %0.6f %0.6f %0.6f %0.6f %0.6f %0.6f %0.6f\n", so->codename, pose->Pos[0], pose->Pos[1],       pose->Pos[2], p$
 }
 
@@ -97,6 +102,7 @@ void SetupEyes()
 
 	double pinup[3] = { 0, 1., 0 };
 
+	OGLockMutex(poll_mutex);
 	ApplyPoseToPoint(p, &phmd, pin);
 	ApplyPoseToPoint(eye1, &phmd, pineye1);
 	ApplyPoseToPoint(eye2, &phmd, pineye2);
@@ -105,6 +111,7 @@ void SetupEyes()
 	ApplyPoseToPoint(at2, &phmd, pinat2);
 
 	ApplyPoseToPoint(up, &phmd, pinup);
+	OGUnlockMutex(poll_mutex);	
 	up[0] -= p[0];
 	up[1] -= p[1];
 	up[2] -= p[2];
@@ -200,6 +207,7 @@ int main( int argc, char ** argv )
 	gargc = argc;
 	gargv = argv;
 
+	poll_mutex = OGCreateMutex();
 	OGCreateThread( LibSurviveThread, e );
 
 	tdMode( tdMODELVIEW );
