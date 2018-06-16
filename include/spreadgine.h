@@ -5,13 +5,17 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#ifdef EGL
+
+#ifdef GLES2
+#include <GLES2/gl2.h>
+#elif defined( EGL )
 #include <EGL/egl.h>
 #else
 #define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
 #include <GL/glext.h>
 #endif
+
 
 typedef struct SpreadShader SpreadShader;
 typedef struct SpreadGeometry SpreadGeometry;

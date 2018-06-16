@@ -17,10 +17,10 @@ void HandleMotion( int x, int y, int mask )
 
 int main()
 {
-#ifdef MALI
+#if defined( MALI ) || defined( RASPI_GPU )
 	Spreadgine * e = SpreadInit( 2160, 1200, "Spread Test", 8888, 2, stderr );
 #else
-	Spreadgine * e = SpreadInit( 960, 640, "Spread Test", 8888, 2, stderr );
+	Spreadgine * e = SpreadInit( 800, 600, "Spread Test", 8888, 2, stderr );
 #endif
 
 	SpreadGeometry * gun = LoadOBJ( e, "assets/platform.obj", 0, 0 );
