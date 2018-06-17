@@ -5,6 +5,22 @@
 #include <math.h>
 #include <spread_vr.h>
 
+#define MAX_BOOLETS 1024
+#define MAX_BLOCKS 64
+
+float boolet_pos[MAX_BOOLETS*3];
+float boolet_vec[MAX_BOOLETS*3];
+float boolet_age[MAX_BOOLETS];
+
+float blocksplode[MAX_BLOCKS];
+float blockpos[MAX_BLOCKS*3];
+
+float boolets_arrayP[MAX_BOOLETS*6*2];
+float boolets_arrayC[MAX_BOOLETS*8*2];
+uint16_t boolets_ibo[MAX_BOOLETS*2*2];
+int numboolets;
+SpreadGeometry * boolets;
+
 void HandleKey( int keycode, int bDown )
 {
 }
@@ -19,71 +35,92 @@ void HandleMotion( int x, int y, int mask )
 
 void HandleControllerInput()
 {
-	if( WM0 )
+	int id = 0;
+	struct SurviveObject * w = WM0;
+	if( w == 0 ) { w = WM1; id = 1;}
+	while( w != 0 )
 	{
-		static int vsmode;
-		static double lasta1, lasta2;
-		static int last_bm;
-		int bm = WM0->buttonmask;
-		if( !(last_bm & 1 ) && (bm &1) )
-		{
-			vsmode = (vsmode+1)%4;
-		}
-		if( vsmode == 0 ) 
-			spglClearColor( gspe, .1, 0.2, 0.1, 1.0 );
-		else if( vsmode == 1)
-			spglClearColor( gspe, .2, 0.1, 0.1, 1.0 );
-		else if( vsmode == 2 )
-			spglClearColor( gspe, .1, 0.1, 0.2, 1.0 );
-		else
-			spglClearColor( gspe, .2, 0.2, 0.2, 1.0 );
-			
+		SurvivePose fvv = (id==0)?wm0p:wm1p;
+		static int wasdown[2];
+		int down = 0;
+		if( w->axis1 > 30000 )
+			down = 1;
 
-
-		if( !(last_bm & 2 ) && (bm &2) )
+		if( wasdown[id] == 0 && down )
 		{
-			lasta1 = WM0->axis1;
-			lasta2 = WM0->axis2;
-		}
-		double x = WM0->axis2/32767.;
-		double y = WM0->axis3/32767.;
-		float last_ang = atan2( lasta1, lasta2 );
-		float cur_ang = atan2( x, y );
-		float delta = cur_ang - last_ang;
-		if( delta > 3.14159*2 ) delta -= 3.14159*2;
-		if( delta <-3.14159*2 ) delta += 3.14159*2;
-		float rang = sqrt(WM0->axis1*WM0->axis1 + WM0->axis2*WM0->axis2);
+			FLT forward[3];
+			FLT forwardin[3] = { 0, 0, 1 };
+			quatrotatevector(forward, fvv.Rot, forwardin);
+			FLT up[3];
+			FLT upin[3] = { 0, 1, 0 };
+			quatrotatevector(up, fvv.Rot, upin);
 
-		if( rang > 10000 && (bm &2) && (last_bm & 2 ) )
-		{
-			if( vsmode == 0 )
-			{
-				diopter += delta/100;
-			}
-			else if( vsmode == 1 )
-			{
-				disappearing+= delta/100;
-			}
-			else if( vsmode == 2 )
-			{
-				fovie += delta;
-				SpreadSetupCamera( gspe, 0, fovie, (float)1080/1200, .01, 1000, "CAM0" );
-				SpreadSetupCamera( gspe, 1, fovie, (float)1080/1200, .01, 1000, "CAM1" );
-			}
-			else
-			{
-				eyez += delta/10.0;
-			}
-			printf( "WM0: %6.3f %6.3f %6.3f %d %d %f %f %d %f %f %f %f\n", last_ang, cur_ang, delta, WM0->buttonmask, WM0->axis1, x, y, WM0->charge, disappearing, diopter, fovie, eyez );
+			boolet_pos[numboolets*3+0] = fvv.Pos[0]+up[0]*.05;
+			boolet_pos[numboolets*3+1] = fvv.Pos[1]+up[1]*.05;
+			boolet_pos[numboolets*3+2] = fvv.Pos[2]+up[2]*.05;
+
+			boolet_vec[numboolets*3+0] = forward[0];
+			boolet_vec[numboolets*3+1] = forward[1];
+			boolet_vec[numboolets*3+2] = forward[2];
+			boolet_age[numboolets] = 0.1;
+			numboolets++;
 		}
-		last_bm = bm;
-		lasta1 = x;
-		lasta2 = y;
+		wasdown[id] = down;
+
+		id++;
+		if( w == WM0 ) w = WM1;
+		else w = 0;
 	}
+}
+
+void UpdateBoolets( float dtime )
+{
+	int i;
+	for( i = 0; i < numboolets;i++ )
+	{
+			if( boolet_age[i] == 0 ) continue;
+			if( boolet_age[i] > 20 ) continue;
+			boolets_arrayP[i*6+0] = boolet_pos[i*3+0]; 
+			boolets_arrayP[i*6+1] = boolet_pos[i*3+1]; 
+			boolets_arrayP[i*6+2] = boolet_pos[i*3+2]; 
+			boolets_arrayP[i*6+3] = boolet_pos[i*3+0] + boolet_vec[i*3+0]*.2; 
+			boolets_arrayP[i*6+4] = boolet_pos[i*3+1] + boolet_vec[i*3+1]*.2; 
+			boolets_arrayP[i*6+5] = boolet_pos[i*3+2] + boolet_vec[i*3+2]*.2; 
+
+			boolet_pos[i*3+0] += boolet_vec[i*3+0]*dtime*10;
+			boolet_pos[i*3+1] += boolet_vec[i*3+1]*dtime*10;
+			boolet_pos[i*3+2] += boolet_vec[i*3+2]*dtime*10;
+
+			int j;
+			for( j = 0; j < MAX_BLOCKS; j++ )
+			{
+				if( blocksplode[j] > 0.11 ) continue;
+
+				float * bp = &boolet_pos[i*3];
+				float * kp = &blockpos[j*3];
+				float dist = ((bp[0]-kp[0])*(bp[0]-kp[0])) + ((bp[1]-kp[1])*(bp[1]-kp[1])) + ((bp[2]-kp[2])*(bp[2]-kp[2]));
+
+				if( dist < 0.4*0.4 )
+				{
+					blocksplode[j] = 0.12;
+				}
+			}
+			boolets_arrayC[i*8+0] = 1; 
+			boolets_arrayC[i*8+1] = 1; 
+			boolets_arrayC[i*8+2] = 1; 
+			boolets_arrayC[i*8+3] = 1; 
+			boolets_arrayC[i*8+4] = 1; 
+			boolets_arrayC[i*8+5] = 1; 
+			boolets_arrayC[i*8+6] = 1; 
+			boolets_arrayC[i*8+7] = 1; 
+
+	}
+	UpdateSpreadGeometry( boolets, 0, boolets_arrayP ); //If arrayno == -1, update everything.
 }
 
 int main( int argc, char ** argv )
 {
+	int i;
 	gspe = SpreadInit( 2160, 1200, "Spread Game Survive Test", 8888, 2, stderr );
 
 	gargc = argc;
@@ -92,6 +129,55 @@ int main( int argc, char ** argv )
 	tdMode( tdMODELVIEW );
 
 	SpreadGeometry * gun = LoadOBJ( gspe, "assets/simple_gun.obj", 1, 1 );
+
+
+
+	{
+		int strides[] = { 3, 4 };
+		int types[] = {GL_FLOAT,GL_FLOAT};
+		float * arrays[] = { 
+			boolets_arrayP,
+			boolets_arrayC};
+
+		printf( "Making boolets\n" );
+		int i;
+		for( i = 0; i < MAX_BOOLETS*2; i++ )
+		{
+			boolets_ibo[i] = i;
+
+			boolets_arrayP[i*6+0] = (rand()%10)/100.; 
+			boolets_arrayP[i*6+1] = (rand()%10)/100.; 
+			boolets_arrayP[i*6+2] = (rand()%10)/100.; 
+			boolets_arrayP[i*6+3] = (rand()%10)/100.; 
+			boolets_arrayP[i*6+4] = (rand()%10)/100.; 
+			boolets_arrayP[i*6+5] = (rand()%10)/100.; 
+			boolets_arrayP[i*6+6] = (rand()%10)/100.; 
+
+			boolets_arrayC[i*8+0] = 1; 
+			boolets_arrayC[i*8+1] = 1; 
+			boolets_arrayC[i*8+2] = 1; 
+			boolets_arrayC[i*8+3] = 1; 
+			boolets_arrayC[i*8+4] = 1; 
+			boolets_arrayC[i*8+5] = 1; 
+			boolets_arrayC[i*8+6] = 1; 
+			boolets_arrayC[i*8+7] = 1; 
+		}
+		boolets =  
+			//LoadOBJ( gspe, "assets/simple_gun.obj", 1, 1 );
+			SpreadCreateGeometry( gspe, "boolets", GL_LINES, MAX_BOOLETS*2, boolets_ibo, MAX_BOOLETS*2, 2, arrays, strides, types);
+		printf( "Made boolets\n" );
+		numboolets = 0;
+	}
+
+	for( i = 0; i < MAX_BLOCKS; i++ )
+	{
+		blockpos[i*3+0] = rand()%10;
+		blockpos[i*3+1] = rand()%10;
+		blockpos[i*3+2] = rand()%10;
+		blocksplode[i] = 0.1;
+	}
+
+//exit(-1);
 	SpreadGeometry * platform = LoadOBJ( gspe, "assets/platform.obj", 1, 1 );
 	//e->geos[0]->render_type = GL_LINES;
 	UpdateSpreadGeometry( gspe->geos[0], -1, 0 );
@@ -108,6 +194,7 @@ int main( int argc, char ** argv )
 	while(1)
 	{
 		double Now = OGGetAbsoluteTime();
+		double Delta = Now - Last;
 		spglClearColor( gspe, .1, 0.1, 0.1, 1.0 );
 
 		HandleControllerInput();
@@ -161,26 +248,32 @@ int main( int argc, char ** argv )
 		}
 
 
-		for( z = -2; z < 3; z++ )
+
+		for( i = 0 ; i < MAX_BLOCKS; i++ )
 		{
-			for( y = -2; y < 3; y++ )
+			if( blocksplode[i] > 1 ) continue;
+			tdPush();
+			tdTranslate( gSMatrix, blockpos[i*3+0], blockpos[i*3+1], blockpos[i*3+2] );
+			//int rstart = ((tframes)*6)%36;
+			tdPush();
+			//float sm = sin(x*1.2+y*.3+z*.8+tframes*.05);
+			//tdScale( gSMatrix, sm, sm, sm );
+			tdScale( gSMatrix, blocksplode[i], blocksplode[i], blocksplode[i] );
+
+			if( blocksplode[i] > 0.11 )
 			{
-				for( x = -2; x < 3; x++ )
-				{
-					tdPush();
-					tdTranslate( gSMatrix, x, y, z );
-					//int rstart = ((tframes)*6)%36;
-					tdPush();
-					//float sm = sin(x*1.2+y*.3+z*.8+tframes*.05);
-					//tdScale( gSMatrix, sm, sm, sm );
-					//tdRotateEA( gSMatrix, tframes+z*10, tframes*3.+y*10, tframes*2+x*1 );
-					tdScale( gSMatrix, .1, .1, .1 );
-					SpreadRenderGeometry( gspe->geos[0], gSMatrix, 0, -1 ); 
-					tdPop();
-				}
+				tdRotateEA( gSMatrix, blocksplode[i]*10000, blocksplode[i]*1000, 0);
+				blocksplode[i] *= 1.01;
 			}
+
+			SpreadRenderGeometry( gspe->geos[0], gSMatrix, 0, -1 ); 
+
+			tdPop();
 		}
 
+//		SpreadRenderGeometry( gun, gSMatrix, 0, -1 ); 
+		UpdateBoolets( Delta );
+		SpreadRenderGeometry( boolets, gSMatrix, 0, numboolets*2 );
 		tdPop();
 
 #ifndef RASPI_GPU

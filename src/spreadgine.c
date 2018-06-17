@@ -679,13 +679,19 @@ void UpdateSpreadGeometry( SpreadGeometry * geo, int arrayno, void * arraydata )
 			int arraysize = geo->strides[arrayno] * SpreadTypeSizes[ geo->types[arrayno] ] * geo->verts;
 			SpreadMessage( geo->parent, "geodata#_#", "bbbv", geo->geo_in_parent, arrayno, 88, geo->geo_in_parent, arrayno, arraysize, geo->arrays[arrayno] );
 		}
-
 	}
 	else
 	{
 		int arraysize = geo->strides[arrayno] * SpreadTypeSizes[ geo->types[arrayno] ] * geo->verts;
 		memcpy( geo->arrays[arrayno], arraydata, arraysize );
 		SpreadMessage( geo->parent, "geodata#_#", "bbbv", geo->geo_in_parent, arrayno, 88, geo->geo_in_parent, arrayno, arraysize, arraydata );
+
+		int i = arrayno;
+		int stride = geo->strides[i];
+		int typesize = SpreadTypeSizes[geo->types[i]];
+		memcpy( geo->arrays[i], arraydata, stride * typesize * geo->verts );
+	 	glBindBuffer(GL_ARRAY_BUFFER, geo->vbos[i]);
+		glBufferData(GL_ARRAY_BUFFER, geo->strides[i] * typesize * geo->verts, geo->arrays[i], GL_STATIC_DRAW);
 	}
 }
 

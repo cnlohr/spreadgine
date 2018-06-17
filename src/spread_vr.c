@@ -2,9 +2,9 @@
 #include <string.h>
 
 
-float disappearing = 0.08;
+float disappearing = 0.06;
 float diopter = 0.032;
-float fovie = 80;
+float fovie = 73;
 float eyez = -.08;
 
 og_mutex_t poll_mutex;
