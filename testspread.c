@@ -72,7 +72,7 @@ int main()
 		//tdTranslate( modelmatrix, 0, 0, .1 );
 
 		tdPush();
-		tdScale( gSMatrix, 20., 20., 20. );
+		tdScale( gSMatrix, 40., 40., 40. );
 		SpreadRenderGeometry( gun, gSMatrix, 0, -1 ); 
 		//SpreadRenderGeometry( &e->geos[0], gSMatrix, 0, -1 ); 
 		tdPop();
@@ -80,11 +80,11 @@ int main()
 
 		tdPush();
 		tdTranslate( gSMatrix, -30., -30., 0. );
-		for( y = 0; y < 5; y++ )
+		for( y = 0; y < 8; y++ )
 		{
 			tdTranslate( gSMatrix, 0.0, 3, 0 );
 			tdPush();
-			for( x = 0; x < 20; x++ )
+			for( x = 0; x < 8; x++ )
 			{
 				tdTranslate( gSMatrix, 3, 0, 0 );
 				//int rstart = ((tframes)*6)%36;

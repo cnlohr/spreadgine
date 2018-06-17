@@ -703,7 +703,7 @@ void SpreadRenderGeometry( SpreadGeometry * geo, const float * modelmatrix, int 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, geo->ibo);
 	if( startv != geo->laststartv )
 	{
-	    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t)*geo->indices-startv, geo->indexarray+startv, GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t)*geo->indices-startv, geo->indexarray+startv, GL_STATIC_DRAW);
 		geo->laststartv = startv;
 	}
 
