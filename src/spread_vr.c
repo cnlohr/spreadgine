@@ -34,7 +34,6 @@ void my_raw_pose_process(SurviveObject *so, uint32_t timecode, SurvivePose *pose
 	  {
 	    memcpy( &wm0p, pose, sizeof( *pose ) );
 	    WM0 = so;
-			
 	  }
 	else if( strcmp( so->codename, "WM1" ) == 0 )
 	  {
@@ -67,8 +66,13 @@ void SpreadSetupVR()
 {
 	poll_mutex = OGCreateMutex();
 	OGCreateThread( LibSurviveThread, gspe );
-	SpreadSetupCamera( gspe, 0, fovie, (float)1080/1200, .01, 1000, "CAM0" );
-	SpreadSetupCamera( gspe, 1, fovie, (float)1080/1200, .01, 1000, "CAM1" );
+#ifdef RASPI_GPU
+	int act_w = 1024;
+#else
+	int act_w = 1080;
+#endif
+	SpreadSetupCamera( gspe, 0, fovie, (float)act_w/1200, .01, 1000, "CAM0" );
+	SpreadSetupCamera( gspe, 1, fovie, (float)act_w/1200, .01, 1000, "CAM1" );
 }
 
 //disappearing, diopter, fovie, eyez

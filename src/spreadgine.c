@@ -24,6 +24,14 @@ Spreadgine * SpreadInit( int w, int h, const char * title, int httpport, int vps
 		fprintf( fReport, "Error: Could not setup graphics frontend.\n" );
 		return 0;
 	}
+
+#ifdef RASPI_GPU
+	if( w > 2048 )
+	{
+		w = 2048;
+	}
+#endif
+
 	ret = calloc( 1, sizeof( Spreadgine ) );
 	ret->fReport = fReport;
 	ret->cbbuff = malloc( SPREADGINE_CIRCBUF );
