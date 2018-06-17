@@ -110,12 +110,13 @@ void UpdateBoolets( float dtime )
 			boolets_arrayC[i*8+2] = 1; 
 			boolets_arrayC[i*8+3] = 1; 
 			boolets_arrayC[i*8+4] = 1; 
-			boolets_arrayC[i*8+5] = 1; 
-			boolets_arrayC[i*8+6] = 1; 
+			boolets_arrayC[i*8+5] = 0; 
+			boolets_arrayC[i*8+6] = 0; 
 			boolets_arrayC[i*8+7] = 1; 
 
 	}
-	UpdateSpreadGeometry( boolets, 0, boolets_arrayP ); //If arrayno == -1, update everything.
+	UpdateSpreadGeometry( boolets, 0, boolets_arrayP );
+	UpdateSpreadGeometry( boolets, 1, boolets_arrayC );
 }
 
 int main( int argc, char ** argv )
@@ -130,8 +131,6 @@ int main( int argc, char ** argv )
 
 	SpreadGeometry * gun = LoadOBJ( gspe, "assets/simple_gun.obj", 1, 1 );
 
-
-
 	{
 		int strides[] = { 3, 4 };
 		int types[] = {GL_FLOAT,GL_FLOAT};
@@ -144,27 +143,8 @@ int main( int argc, char ** argv )
 		for( i = 0; i < MAX_BOOLETS*2; i++ )
 		{
 			boolets_ibo[i] = i;
-
-			boolets_arrayP[i*6+0] = (rand()%10)/100.; 
-			boolets_arrayP[i*6+1] = (rand()%10)/100.; 
-			boolets_arrayP[i*6+2] = (rand()%10)/100.; 
-			boolets_arrayP[i*6+3] = (rand()%10)/100.; 
-			boolets_arrayP[i*6+4] = (rand()%10)/100.; 
-			boolets_arrayP[i*6+5] = (rand()%10)/100.; 
-			boolets_arrayP[i*6+6] = (rand()%10)/100.; 
-
-			boolets_arrayC[i*8+0] = 1; 
-			boolets_arrayC[i*8+1] = 1; 
-			boolets_arrayC[i*8+2] = 1; 
-			boolets_arrayC[i*8+3] = 1; 
-			boolets_arrayC[i*8+4] = 1; 
-			boolets_arrayC[i*8+5] = 1; 
-			boolets_arrayC[i*8+6] = 1; 
-			boolets_arrayC[i*8+7] = 1; 
 		}
-		boolets =  
-			//LoadOBJ( gspe, "assets/simple_gun.obj", 1, 1 );
-			SpreadCreateGeometry( gspe, "boolets", GL_LINES, MAX_BOOLETS*2, boolets_ibo, MAX_BOOLETS*2, 2, arrays, strides, types);
+		boolets = SpreadCreateGeometry( gspe, "boolets", GL_LINES, MAX_BOOLETS*2, boolets_ibo, MAX_BOOLETS*2, 2, arrays, strides, types);
 		printf( "Made boolets\n" );
 		numboolets = 0;
 	}
