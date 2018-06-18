@@ -19,6 +19,7 @@ Spreadgine * gspe;
 SurviveObject * HMD;
 SurviveObject * WM0;
 SurviveObject * WM1;
+SurvivePose shift_gun;
 
 void my_raw_pose_process(SurviveObject *so, uint32_t timecode, SurvivePose *pose)
 {
@@ -32,12 +33,13 @@ void my_raw_pose_process(SurviveObject *so, uint32_t timecode, SurvivePose *pose
 	  }
 	else if( strcmp( so->codename, "WM0" ) == 0 )
 	  {
-	    memcpy( &wm0p, pose, sizeof( *pose ) );
+		ApplyPoseToPose(&wm0p, pose, &shift_gun);
 	    WM0 = so;
 	  }
 	else if( strcmp( so->codename, "WM1" ) == 0 )
 	  {
-	    memcpy( &wm1p, pose, sizeof( *pose ) );
+		ApplyPoseToPose(&wm1p, pose, &shift_gun);
+	    //memcpy( &wm1p, pose, sizeof( *pose ) );
 	    WM1 = so;
 	  }
 	OGUnlockMutex(poll_mutex);
@@ -73,6 +75,10 @@ void SpreadSetupVR()
 #endif
 	SpreadSetupCamera( gspe, 0, fovie, (float)act_w/1200, .01, 1000, "CAM0" );
 	SpreadSetupCamera( gspe, 1, fovie, (float)act_w/1200, .01, 1000, "CAM1" );
+
+	memcpy( &shift_gun, &LinmathPose_Identity, sizeof(LinmathPose_Identity) ); 
+	LinmathEulerAngle euler = { -.15, 0, 0 };
+	quatfromeuler( &shift_gun.Rot, &euler );
 }
 
 //disappearing, diopter, fovie, eyez

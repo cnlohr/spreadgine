@@ -80,11 +80,11 @@ int main()
 
 		tdPush();
 		tdTranslate( gSMatrix, -30., -30., 0. );
-		for( y = 0; y < 8; y++ )
+		for( y = 0; y < 16; y++ )
 		{
 			tdTranslate( gSMatrix, 0.0, 3, 0 );
 			tdPush();
-			for( x = 0; x < 8; x++ )
+			for( x = 0; x < 16; x++ )
 			{
 				tdTranslate( gSMatrix, 3, 0, 0 );
 				//int rstart = ((tframes)*6)%36;

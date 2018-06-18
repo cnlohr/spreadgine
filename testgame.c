@@ -14,6 +14,8 @@ float boolet_age[MAX_BOOLETS];
 
 float blocksplode[MAX_BLOCKS];
 float blockpos[MAX_BLOCKS*3];
+float blockco[MAX_BLOCKS*3];
+
 
 float boolets_arrayP[MAX_BOOLETS*6*2];
 float boolets_arrayC[MAX_BOOLETS*8*2];
@@ -78,8 +80,16 @@ void UpdateBoolets( float dtime )
 	int i;
 	for( i = 0; i < numboolets;i++ )
 	{
-			if( boolet_age[i] == 0 ) continue;
-			if( boolet_age[i] > 20 ) continue;
+			if( boolet_age[i] == 0 || boolet_age[i] > 20 ) {
+				boolets_arrayC[i*8+0] = 0; 
+				boolets_arrayC[i*8+1] = 0; 
+				boolets_arrayC[i*8+2] = 0; 
+				boolets_arrayC[i*8+3] = 0; 
+				boolets_arrayC[i*8+4] = 0; 
+				boolets_arrayC[i*8+5] = 0; 
+				boolets_arrayC[i*8+6] = 0; 
+				boolets_arrayC[i*8+7] = 0; 
+			}
 			boolets_arrayP[i*6+0] = boolet_pos[i*3+0]; 
 			boolets_arrayP[i*6+1] = boolet_pos[i*3+1]; 
 			boolets_arrayP[i*6+2] = boolet_pos[i*3+2]; 
@@ -100,8 +110,9 @@ void UpdateBoolets( float dtime )
 				float * kp = &blockpos[j*3];
 				float dist = ((bp[0]-kp[0])*(bp[0]-kp[0])) + ((bp[1]-kp[1])*(bp[1]-kp[1])) + ((bp[2]-kp[2])*(bp[2]-kp[2]));
 
-				if( dist < 0.4*0.4 )
+				if( dist < 0.2*0.2 )
 				{
+					boolet_age[i] = 0;
 					blocksplode[j] = 0.12;
 				}
 			}
@@ -117,6 +128,20 @@ void UpdateBoolets( float dtime )
 	}
 	UpdateSpreadGeometry( boolets, 0, boolets_arrayP );
 	UpdateSpreadGeometry( boolets, 1, boolets_arrayC );
+
+	int j;
+	static double tt = 0;
+	tt+=dtime;
+	for( j = 0; j < MAX_BLOCKS; j++ )
+	{
+		if( blocksplode[j] > 0.11 ) continue;
+		float * kp = &blockpos[j*3];
+		float * vv = &blockco[j*3];
+
+		kp[2] = vv[2];
+		kp[0] = sin( vv[0] + tt*.3 )*vv[1]; 
+		kp[1] = cos( vv[0] + tt*.3 )*vv[2]; 
+	}
 }
 
 int main( int argc, char ** argv )
@@ -151,9 +176,9 @@ int main( int argc, char ** argv )
 
 	for( i = 0; i < MAX_BLOCKS; i++ )
 	{
-		blockpos[i*3+0] = rand()%10;
-		blockpos[i*3+1] = rand()%10;
-		blockpos[i*3+2] = rand()%10;
+		blockco[i*3+0] = blockpos[i*3+0] = rand()%10;
+		blockco[i*3+1] = blockpos[i*3+1] = rand()%10;
+		blockco[i*3+2] = blockpos[i*3+2] = rand()%10;
 		blocksplode[i] = 0.1;
 	}
 
