@@ -21,12 +21,12 @@ void HandleMotion( int x, int y, int mask )
 
 void HandleControllerInput()
 {
-	if( WM0 )
+	if( WM[0] )
 	{
 		static int vsmode;
 		static double lasta1, lasta2;
 		static int last_bm;
-		int bm = WM0->buttonmask;
+		int bm = WM[0]->buttonmask;
 		if( !(last_bm & 1 ) && (bm &1) )
 		{
 			vsmode = (vsmode+1)%4;
@@ -44,17 +44,17 @@ void HandleControllerInput()
 
 		if( !(last_bm & 2 ) && (bm &2) )
 		{
-			lasta1 = WM0->axis1;
-			lasta2 = WM0->axis2;
+			lasta1 = WM[0]->axis1;
+			lasta2 = WM[0]->axis2;
 		}
-		double x = WM0->axis2/32767.;
-		double y = WM0->axis3/32767.;
+		double x = WM[0]->axis2/32767.;
+		double y = WM[0]->axis3/32767.;
 		float last_ang = atan2( lasta1, lasta2 );
 		float cur_ang = atan2( x, y );
 		float delta = cur_ang - last_ang;
 		if( delta > 3.14159*2 ) delta -= 3.14159*2;
 		if( delta <-3.14159*2 ) delta += 3.14159*2;
-		float rang = sqrt(WM0->axis1*WM0->axis1 + WM0->axis2*WM0->axis2);
+		float rang = sqrt(WM[0]->axis1*WM[0]->axis1 + WM[0]->axis2*WM[0]->axis2);
 
 		if( rang > 10000 && (bm &2) && (last_bm & 2 ) )
 		{
@@ -76,7 +76,7 @@ void HandleControllerInput()
 			{
 				eyez += delta/10.0;
 			}
-			printf( "WM0: %6.3f %6.3f %6.3f %d %d %f %f %d %f %f %f %f\n", last_ang, cur_ang, delta, WM0->buttonmask, WM0->axis1, x, y, WM0->charge, disappearing, diopter, fovie, eyez );
+			printf( "WM0: %6.3f %6.3f %6.3f %d %d %f %f %d %f %f %f %f\n", last_ang, cur_ang, delta, WM[0]->buttonmask, WM[0]->axis1, x, y, WM[0]->charge, disappearing, diopter, fovie, eyez );
 		}
 		last_bm = bm;
 		lasta1 = x;
@@ -150,20 +150,20 @@ int main( int argc, char ** argv )
 
 		//Draw watchmen
 		tdPush();
-		tdTranslate( gSMatrix, wm0p.Pos[0], wm0p.Pos[1], wm0p.Pos[2] );
-		tdRotateQuat( gSMatrix, wm0p.Rot[0], wm0p.Rot[1], wm0p.Rot[2], wm0p.Rot[3] );
+		tdTranslate( gSMatrix, wmp[0].Pos[0], wmp[0].Pos[1], wmp[0].Pos[2] );
+		tdRotateQuat( gSMatrix, wmp[0].Rot[0], wmp[0].Rot[1], wmp[0].Rot[2], wmp[0].Rot[3] );
 		SpreadRenderGeometry( gun, gSMatrix, 0, -1 ); 
 		tdPop();
 
 		tdPush();
-		tdTranslate( gSMatrix, wm1p.Pos[0], wm1p.Pos[1], wm1p.Pos[2] );
-		tdRotateQuat( gSMatrix, wm1p.Rot[0], wm1p.Rot[1], wm1p.Rot[2], wm1p.Rot[3] );
+		tdTranslate( gSMatrix, wmp[1].Pos[0], wmp[1].Pos[1], wmp[1].Pos[2] );
+		tdRotateQuat( gSMatrix, wmp[1].Rot[0], wmp[1].Rot[1], wmp[1].Rot[2], wmp[1].Rot[3] );
 		SpreadRenderGeometry( gun, gSMatrix, 0, -1 ); 
 		tdPop();
 
 		SpreadRenderGeometry( platform, gSMatrix, 0, -1 ); 
 
-//		printf( "%f %f %f / %f %f %f / %f %f %f\n", wm0p.Pos[0], wm0p.Pos[1], wm0p.Pos[2], wm1p.Pos[0], wm1p.Pos[1], wm1p.Pos[2], phmd.Pos[0], phmd.Pos[1], phmd.Pos[2] );
+//		printf( "%f %f %f / %f %f %f / %f %f %f\n", wmp[0].Pos[0], wmp[0].Pos[1], wmp[0].Pos[2], wmp[1].Pos[0], wmp[1].Pos[1], wmp[1].Pos[2], phmd.Pos[0], phmd.Pos[1], phmd.Pos[2] );
 
 		tdPush();
 		//tdScale( gSMatrix, .2, .2, .2 );		//Operates ON f

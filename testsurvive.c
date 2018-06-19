@@ -60,7 +60,7 @@ int main( int argc, char ** argv )
 		SpreadApplyShader( e->shaders[0] );
 #if 0
 		tdPush();
-		tdTranslate( gSMatrix, wm0p.Pos[0], wm0p.Pos[1], wm0p.Pos[2] );
+		tdTranslate( gSMatrix, wmp[0].Pos[0], wmp[0].Pos[1], wmp[0].Pos[2] );
 		tdScale( gSMatrix, .1, .1, .1 );
 		SpreadRenderGeometry( &e->geos[0], gSMatrix, 0, -1 ); 
 		tdPop();
@@ -68,18 +68,18 @@ int main( int argc, char ** argv )
 #endif
 		//Draw watchmen
 		tdPush();
-		tdTranslate( gSMatrix, wm0p.Pos[0], wm0p.Pos[1], wm0p.Pos[2] );
-		tdRotateQuat( gSMatrix, wm0p.Rot[0], wm0p.Rot[1], wm0p.Rot[2], wm0p.Rot[3] );
+		tdTranslate( gSMatrix, wmp[0].Pos[0], wmp[0].Pos[1], wmp[0].Pos[2] );
+		tdRotateQuat( gSMatrix, wmp[0].Rot[0], wmp[0].Rot[1], wmp[0].Rot[2], wmp[0].Rot[3] );
 		SpreadRenderGeometry( gun, gSMatrix, 0, -1 ); 
 		tdPop();
 
 		tdPush();
-		tdTranslate( gSMatrix, wm1p.Pos[0], wm1p.Pos[1], wm1p.Pos[2] );
-		tdRotateQuat( gSMatrix, wm1p.Rot[0], wm1p.Rot[1], wm1p.Rot[2], wm1p.Rot[3] );
+		tdTranslate( gSMatrix, wmp[1].Pos[0], wmp[1].Pos[1], wmp[1].Pos[2] );
+		tdRotateQuat( gSMatrix, wmp[1].Rot[0], wmp[1].Rot[1], wmp[1].Rot[2], wmp[1].Rot[3] );
 		SpreadRenderGeometry( gun, gSMatrix, 0, -1 ); 
 		tdPop();
 
-//		printf( "%f %f %f / %f %f %f / %f %f %f\n", wm0p.Pos[0], wm0p.Pos[1], wm0p.Pos[2], wm1p.Pos[0], wm1p.Pos[1], wm1p.Pos[2], phmd.Pos[0], phmd.Pos[1], phmd.Pos[2] );
+//		printf( "%f %f %f / %f %f %f / %f %f %f\n", wmp[0].Pos[0], wmp[0].Pos[1], wmp[0].Pos[2], wmp[1].Pos[0], wmp[1].Pos[1], wmp[1].Pos[2], phmd.Pos[0], phmd.Pos[1], phmd.Pos[2] );
 
 		tdPush();
 		tdScale( gSMatrix, .2, .2, .2 );		//Operates ON f

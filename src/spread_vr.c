@@ -12,14 +12,17 @@ og_mutex_t poll_mutex;
 
 int gargc;
 char ** gargv;
+SurvivePose phmdC;
 SurvivePose phmd;
-SurvivePose wm0p;
-SurvivePose wm1p;
+SurvivePose phmdlast; //Actually raw pose.
+SurvivePose wmpC[2];
+SurvivePose wmp[2];
+SurvivePose wmplast[2];
+
 Spreadgine * gspe;
 SurviveObject * HMD;
-SurviveObject * WM0;
-SurviveObject * WM1;
-SurvivePose shift_gun;
+SurviveObject * WM[2];
+SurvivePose shift_gun, shift_hmd;
 
 void my_raw_pose_process(SurviveObject *so, uint32_t timecode, SurvivePose *pose)
 {
@@ -28,23 +31,17 @@ void my_raw_pose_process(SurviveObject *so, uint32_t timecode, SurvivePose *pose
 
 	if( strcmp( so->codename, "HMD" ) == 0 )
 	  {
-	    memcpy( &phmd , pose, sizeof( phmd ) );
+		memcpy( &phmdC, pose, sizeof( SurvivePose ) ); 
 	    HMD = so;
 	  }
-	else if( strcmp( so->codename, "WM0" ) == 0 )
+	else if( strcmp( so->codename, "WM0" ) == 0 || strcmp( so->codename, "WM1" ) == 0 )
 	  {
-		ApplyPoseToPose(&wm0p, pose, &shift_gun);
-	    WM0 = so;
+		int id = so->codename[2]-'0';
+		memcpy( &wmpC[id], pose, sizeof( SurvivePose ) ); 
+	    WM[id] = so;
 	  }
-	else if( strcmp( so->codename, "WM1" ) == 0 )
-	  {
-		ApplyPoseToPose(&wm1p, pose, &shift_gun);
-	    //memcpy( &wm1p, pose, sizeof( *pose ) );
-	    WM1 = so;
-	  }
-	OGUnlockMutex(poll_mutex);
 
-        //printf("%s POSE %0.6f %0.6f %0.6f %0.6f %0.6f %0.6f %0.6f\n", so->codename, pose->Pos[0], pose->Pos[1],       pose->Pos[2], p$
+	OGUnlockMutex(poll_mutex);
 }
 
 
@@ -77,9 +74,31 @@ void SpreadSetupVR()
 	SpreadSetupCamera( gspe, 1, fovie, (float)act_w/1200, .01, 1000, "CAM1" );
 
 	memcpy( &shift_gun, &LinmathPose_Identity, sizeof(LinmathPose_Identity) ); 
-	LinmathEulerAngle euler = { -.15, 0, 0 };
-	quatfromeuler( &shift_gun.Rot, &euler );
+	LinmathEulerAngle euler = { -.55, 0, 0 };
+	quatfromeuler( shift_gun.Rot, euler );
+
+	memcpy( &shift_hmd, &LinmathPose_Identity, sizeof(LinmathPose_Identity) ); 
 }
+
+void UpdateRots( SurvivePose * out, SurvivePose * last, SurvivePose * raw, SurvivePose * shift )
+{
+	LinmathQuat TempRot;
+
+	//Find differential from last frame to this one.
+	LinmathQuat invertedlast, differential_rotation;
+	quatgetreciprocal( invertedlast, last->Rot );
+	quatrotateabout( differential_rotation, invertedlast, raw->Rot );
+
+	quatslerp( differential_rotation, LinmathQuat_Identity, differential_rotation, 2 ); //Account for latency and advance motion feed forward. 
+
+	memcpy( out, raw, sizeof(SurvivePose) );
+	quatrotateabout( out->Rot, out->Rot, differential_rotation );
+	//ApplyPoseToPose( out, out, shift );
+
+	//Keep current value.
+	memcpy( last, raw, sizeof( SurvivePose ) );
+}
+
 
 //disappearing, diopter, fovie, eyez
 
@@ -105,6 +124,11 @@ void SpreadSetupEyes()
 		diopter = HMD->axis1 / 200000.0f;
 		//printf( "%d %d %d\n", HMD->axis1, HMD->axis2, HMD->axis3 );
 	}
+
+	/* Process positional updates */
+	UpdateRots( &phmd, &phmdlast, &phmdC, &shift_hmd );
+	UpdateRots( &wmp[0], &wmplast[0], &wmpC[0], &shift_gun );
+	UpdateRots( &wmp[1], &wmplast[1], &wmpC[1], &shift_gun );
 
 	OGLockMutex(poll_mutex);
 	ApplyPoseToPoint(p, &phmd, pin);

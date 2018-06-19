@@ -14,12 +14,10 @@ extern float eyez;
 extern int gargc;
 extern char ** gargv;
 extern SurvivePose phmd;
-extern SurvivePose wm0p;
-extern SurvivePose wm1p;
+extern SurvivePose wmp[2];
 extern Spreadgine * gspe;
 extern SurviveObject * HMD;
-extern SurviveObject * WM0;
-extern SurviveObject * WM1;
+extern SurviveObject * WM[2];
 
 
 extern og_mutex_t poll_mutex;

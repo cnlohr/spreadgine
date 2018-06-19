@@ -38,11 +38,12 @@ void HandleMotion( int x, int y, int mask )
 void HandleControllerInput()
 {
 	int id = 0;
-	struct SurviveObject * w = WM0;
-	if( w == 0 ) { w = WM1; id = 1;}
-	while( w != 0 )
+
+	for( id = 0; id < 2; id++ )
 	{
-		SurvivePose fvv = (id==0)?wm0p:wm1p;
+		struct SurviveObject * w = WM[id];
+		if( !w ) continue;
+		SurvivePose fvv = wmp[id];
 		static int wasdown[2];
 		int down = 0;
 		if( w->axis1 > 30000 )
@@ -69,9 +70,6 @@ void HandleControllerInput()
 		}
 		wasdown[id] = down;
 
-		id++;
-		if( w == WM0 ) w = WM1;
-		else w = 0;
 	}
 }
 
@@ -226,20 +224,20 @@ int main( int argc, char ** argv )
 
 		//Draw watchmen
 		tdPush();
-		tdTranslate( gSMatrix, wm0p.Pos[0], wm0p.Pos[1], wm0p.Pos[2] );
-		tdRotateQuat( gSMatrix, wm0p.Rot[0], wm0p.Rot[1], wm0p.Rot[2], wm0p.Rot[3] );
+		tdTranslate( gSMatrix, wmp[0].Pos[0], wmp[0].Pos[1], wmp[0].Pos[2] );
+		tdRotateQuat( gSMatrix, wmp[0].Rot[0], wmp[0].Rot[1], wmp[0].Rot[2], wmp[0].Rot[3] );
 		SpreadRenderGeometry( gun, gSMatrix, 0, -1 ); 
 		tdPop();
 
 		tdPush();
-		tdTranslate( gSMatrix, wm1p.Pos[0], wm1p.Pos[1], wm1p.Pos[2] );
-		tdRotateQuat( gSMatrix, wm1p.Rot[0], wm1p.Rot[1], wm1p.Rot[2], wm1p.Rot[3] );
+		tdTranslate( gSMatrix, wmp[1].Pos[0], wmp[1].Pos[1], wmp[1].Pos[2] );
+		tdRotateQuat( gSMatrix, wmp[1].Rot[0], wmp[1].Rot[1], wmp[1].Rot[2], wmp[1].Rot[3] );
 		SpreadRenderGeometry( gun, gSMatrix, 0, -1 ); 
 		tdPop();
 
 		SpreadRenderGeometry( platform, gSMatrix, 0, -1 ); 
 
-//		printf( "%f %f %f / %f %f %f / %f %f %f\n", wm0p.Pos[0], wm0p.Pos[1], wm0p.Pos[2], wm1p.Pos[0], wm1p.Pos[1], wm1p.Pos[2], phmd.Pos[0], phmd.Pos[1], phmd.Pos[2] );
+//		printf( "%f %f %f / %f %f %f / %f %f %f\n", wmp[0].Pos[0], wmp[0].Pos[1], wmp[0].Pos[2], wmp[1].Pos[0], wmp[1].Pos[1], wmp[1].Pos[2], phmd.Pos[0], phmd.Pos[1], phmd.Pos[2] );
 
 		tdPush();
 		//tdScale( gSMatrix, .2, .2, .2 );		//Operates ON f
