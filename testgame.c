@@ -5,7 +5,7 @@
 #include <math.h>
 #include <spread_vr.h>
 
-#define MAX_BOOLETS 2048
+#define MAX_BOOLETS 4096
 #define MAX_BLOCKS 48
 
 float boolet_pos[MAX_BOOLETS*3];
