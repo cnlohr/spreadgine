@@ -5,8 +5,8 @@
 #include <math.h>
 #include <spread_vr.h>
 
-#define MAX_BOOLETS 1024
-#define MAX_BLOCKS 64
+#define MAX_BOOLETS 2048
+#define MAX_BLOCKS 48
 
 float boolet_pos[MAX_BOOLETS*3];
 float boolet_vec[MAX_BOOLETS*3];
@@ -16,7 +16,6 @@ float blocksplode[MAX_BLOCKS];
 float blockpos[MAX_BLOCKS*3];
 float blockco[MAX_BLOCKS*3];
 
-int highest_boolet;
 int boolet_in_use[MAX_BOOLETS];
 float boolet_speed[MAX_BOOLETS];
 float boolets_arrayP[MAX_BOOLETS*6*2];
@@ -84,11 +83,12 @@ void HandleControllerInput()
 void UpdateBoolets( float dtime )
 {
 	int i;
-	highest_boolet = 0;
+
 	for( i = 0; i < MAX_BOOLETS;i++ )
 	{
+
 		if( !boolet_in_use[i] ) continue;
-		if( boolet_age[i] == 0 || boolet_age[i] > 5 ) {
+		if( boolet_age[i] == 0 || boolet_age[i] > 20 ) {
 			boolets_arrayC[i*8+0] = 0; 
 			boolets_arrayC[i*8+1] = 0; 
 			boolets_arrayC[i*8+2] = 0; 
@@ -103,7 +103,6 @@ void UpdateBoolets( float dtime )
 		}
 		boolet_age[i] += dtime;
 
-		if( i > highest_boolet ) highest_boolet = i;
 
 		boolets_arrayP[i*6+0] = boolet_pos[i*3+0]; 
 		boolets_arrayP[i*6+1] = boolet_pos[i*3+1]; 
@@ -117,6 +116,7 @@ void UpdateBoolets( float dtime )
 		boolet_pos[i*3+0] += boolet_vec[i*3+0]*dtime*boolet_speed[i];
 		boolet_pos[i*3+1] += boolet_vec[i*3+1]*dtime*boolet_speed[i];
 		boolet_pos[i*3+2] += boolet_vec[i*3+2]*dtime*boolet_speed[i];
+		boolet_vec[i*3+2] -= dtime*.02*boolet_speed[i];
 
 		int j;
 		for( j = 0; j < MAX_BLOCKS; j++ )
@@ -134,18 +134,9 @@ void UpdateBoolets( float dtime )
 				boolet_in_use[i] = 0;
 			}
 		}
-		boolets_arrayC[i*8+0] = 1; 
-		boolets_arrayC[i*8+1] = 1; 
-		boolets_arrayC[i*8+2] = 1; 
-		boolets_arrayC[i*8+3] = 1; 
-		boolets_arrayC[i*8+4] = 1; 
-		boolets_arrayC[i*8+5] = 0; 
-		boolets_arrayC[i*8+6] = 0; 
-		boolets_arrayC[i*8+7] = 1; 
 
 	}
 	UpdateSpreadGeometry( boolets, 0, boolets_arrayP );
-	UpdateSpreadGeometry( boolets, 1, boolets_arrayC );
 
 	int j;
 	static double tt = 0;
@@ -187,7 +178,22 @@ int main( int argc, char ** argv )
 		{
 			boolets_ibo[i] = i;
 		}
+
 		boolets = SpreadCreateGeometry( gspe, "boolets", GL_LINES, MAX_BOOLETS*2, boolets_ibo, MAX_BOOLETS*2, 2, arrays, strides, types);
+
+
+		for( i = 0; i < MAX_BOOLETS; i++ )
+		{
+			boolets_arrayC[i*8+0] = 1; 
+			boolets_arrayC[i*8+1] = 1; 
+			boolets_arrayC[i*8+2] = 1; 
+			boolets_arrayC[i*8+3] = 1; 
+			boolets_arrayC[i*8+4] = 1; 
+			boolets_arrayC[i*8+5] = 0; 
+			boolets_arrayC[i*8+6] = 0; 
+			boolets_arrayC[i*8+7] = 1; 
+		}
+			UpdateSpreadGeometry( boolets, 1, boolets_arrayC );
 		printf( "Made boolets\n" );
 	}
 
@@ -295,7 +301,7 @@ int main( int argc, char ** argv )
 
 //		SpreadRenderGeometry( gun, gSMatrix, 0, -1 ); 
 		UpdateBoolets( Delta );
-		SpreadRenderGeometry( boolets, gSMatrix, 0, highest_boolet*2);
+		SpreadRenderGeometry( boolets, gSMatrix, 0, MAX_BOOLETS*2);
 		tdPop();
 
 #ifndef RASPI_GPU
