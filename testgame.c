@@ -219,7 +219,7 @@ int main( int argc, char ** argv )
 	{
 		double Now = OGGetAbsoluteTime();
 		double Delta = Now - Last;
-		spglClearColor( gspe, .1, 0.1, 0.1, 1.0 );
+		spglClearColor( gspe, .01, 0.01, 0.01, 1.0 );
 
 		HandleControllerInput();
 
