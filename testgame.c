@@ -4,6 +4,7 @@
 #include <string.h>
 #include <math.h>
 #include <spread_vr.h>
+#include <spreadgine_remote.h>
 
 #define MAX_BOOLETS 4096
 #define MAX_BLOCKS 48
@@ -21,7 +22,7 @@ float boolet_speed[MAX_BOOLETS];
 float boolets_arrayP[MAX_BOOLETS*6*2];
 float boolets_arrayC[MAX_BOOLETS*8*2];
 uint16_t boolets_ibo[MAX_BOOLETS*2*2];
-//int numboolets;
+int freebid;
 SpreadGeometry * boolets;
 
 void HandleKey( int keycode, int bDown )
@@ -49,13 +50,7 @@ void HandleControllerInput()
 		int down = 0;
 		if( w->axis1 > 30000 )
 			down = 1;
-		int freebid;
-		for( freebid = 0; freebid < MAX_BOOLETS; freebid++ )
-		{
-			if( !boolet_in_use[freebid] ) break;
-		}
-
-		if( down && freebid != MAX_BOOLETS )
+		if( down )
 		{
 			FLT forward[3];
 			FLT forwardin[3] = { 0, 0, 1 };
@@ -74,6 +69,7 @@ void HandleControllerInput()
 			boolet_age[freebid] = 0.1;
 			boolet_in_use[freebid] = 1;
 			boolet_speed[freebid] = 10;
+			freebid = (freebid+1)%MAX_BOOLETS;
 		}
 		wasdown[id] = down;
 
@@ -179,7 +175,7 @@ int main( int argc, char ** argv )
 			boolets_ibo[i] = i;
 		}
 
-		boolets = SpreadCreateGeometry( gspe, "boolets", GL_LINES, MAX_BOOLETS*2, boolets_ibo, MAX_BOOLETS*2, 2, arrays, strides, types);
+		boolets = SpreadCreateGeometry( gspe, "boolets", GL_LINES, MAX_BOOLETS*2, boolets_ibo, MAX_BOOLETS*2, 2, (const void**)arrays, strides, types);
 
 
 		for( i = 0; i < MAX_BOOLETS; i++ )
@@ -324,5 +320,6 @@ int main( int argc, char ** argv )
 			lastframetime++;
 		}
 		Last = Now;
+		enable_spread_remote = !enable_spread_remote;
 	}
 }
