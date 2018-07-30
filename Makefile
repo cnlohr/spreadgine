@@ -13,7 +13,6 @@ SURVIVE:=`echo ~`/git/libsurvive
 SURVIVE_CFLAGS:=-I$(SURVIVE)/include -I$(SURVIVE)/redist -DUSE_DOUBLE
 SURVIVE_LDFLAGS:=$(SURVIVE)/lib/libsurvive.so -lcblas -llapacke
 
-
 ifeq ($(uname_m), x86_64)
 	CNHTTP:=cntools/http/http_bsd.c cntools/http/cnhttp.c cntools/http/mfs.c cntools/http/sha1.c
 	RAWDRAW:=rawdraw/CNFG3D.c rawdraw/CNFGXDriver.c rawdraw/CNFGFunctions.c src/objload.c
@@ -45,6 +44,10 @@ testgame : testgame.c $(SPREADGINE_C) $(RESOURCE_O)
 
 set_optical_calibrations : set_optical_calibrations.c $(SPREADGINE_C) $(RESOURCE_O)
 	gcc -o $@ $^ $(CFLAGS) $(LDFLAGS) $(SURVIVE_LDFLAGS)
+
+
+cntools/http/http_bsd.c :
+	git submodule update --init --recursive
 
 
 clean :
