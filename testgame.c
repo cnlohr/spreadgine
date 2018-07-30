@@ -4,9 +4,10 @@
 #include <string.h>
 #include <math.h>
 #include <spread_vr.h>
+#include <spreadgine_remote.h>
 
-#define MAX_BOOLETS 1024
-#define MAX_BLOCKS 64
+#define MAX_BOOLETS 4096
+#define MAX_BLOCKS 48
 
 float boolet_pos[MAX_BOOLETS*3];
 float boolet_vec[MAX_BOOLETS*3];
@@ -16,11 +17,12 @@ float blocksplode[MAX_BLOCKS];
 float blockpos[MAX_BLOCKS*3];
 float blockco[MAX_BLOCKS*3];
 
-
+int boolet_in_use[MAX_BOOLETS];
+float boolet_speed[MAX_BOOLETS];
 float boolets_arrayP[MAX_BOOLETS*6*2];
 float boolets_arrayC[MAX_BOOLETS*8*2];
 uint16_t boolets_ibo[MAX_BOOLETS*2*2];
-int numboolets;
+int freebid;
 SpreadGeometry * boolets;
 
 void HandleKey( int keycode, int bDown )
@@ -48,8 +50,7 @@ void HandleControllerInput()
 		int down = 0;
 		if( w->axis1 > 30000 )
 			down = 1;
-
-		if( wasdown[id] == 0 && down )
+		if( down )
 		{
 			FLT forward[3];
 			FLT forwardin[3] = { 0, 0, 1 };
@@ -58,15 +59,17 @@ void HandleControllerInput()
 			FLT upin[3] = { 0, 1, 0 };
 			quatrotatevector(up, fvv.Rot, upin);
 
-			boolet_pos[numboolets*3+0] = fvv.Pos[0]+up[0]*.05;
-			boolet_pos[numboolets*3+1] = fvv.Pos[1]+up[1]*.05;
-			boolet_pos[numboolets*3+2] = fvv.Pos[2]+up[2]*.05;
+			boolet_pos[freebid*3+0] = fvv.Pos[0]+up[0]*.05;
+			boolet_pos[freebid*3+1] = fvv.Pos[1]+up[1]*.05;
+			boolet_pos[freebid*3+2] = fvv.Pos[2]+up[2]*.05;
 
-			boolet_vec[numboolets*3+0] = forward[0];
-			boolet_vec[numboolets*3+1] = forward[1];
-			boolet_vec[numboolets*3+2] = forward[2];
-			boolet_age[numboolets] = 0.1;
-			numboolets++;
+			boolet_vec[freebid*3+0] = forward[0];
+			boolet_vec[freebid*3+1] = forward[1];
+			boolet_vec[freebid*3+2] = forward[2];
+			boolet_age[freebid] = 0.1;
+			boolet_in_use[freebid] = 1;
+			boolet_speed[freebid] = 10;
+			freebid = (freebid+1)%MAX_BOOLETS;
 		}
 		wasdown[id] = down;
 
@@ -76,56 +79,60 @@ void HandleControllerInput()
 void UpdateBoolets( float dtime )
 {
 	int i;
-	for( i = 0; i < numboolets;i++ )
+
+	for( i = 0; i < MAX_BOOLETS;i++ )
 	{
-			if( boolet_age[i] == 0 || boolet_age[i] > 20 ) {
-				boolets_arrayC[i*8+0] = 0; 
-				boolets_arrayC[i*8+1] = 0; 
-				boolets_arrayC[i*8+2] = 0; 
-				boolets_arrayC[i*8+3] = 0; 
-				boolets_arrayC[i*8+4] = 0; 
-				boolets_arrayC[i*8+5] = 0; 
-				boolets_arrayC[i*8+6] = 0; 
-				boolets_arrayC[i*8+7] = 0; 
-			}
-			boolets_arrayP[i*6+0] = boolet_pos[i*3+0]; 
-			boolets_arrayP[i*6+1] = boolet_pos[i*3+1]; 
-			boolets_arrayP[i*6+2] = boolet_pos[i*3+2]; 
-			boolets_arrayP[i*6+3] = boolet_pos[i*3+0] + boolet_vec[i*3+0]*.2; 
-			boolets_arrayP[i*6+4] = boolet_pos[i*3+1] + boolet_vec[i*3+1]*.2; 
-			boolets_arrayP[i*6+5] = boolet_pos[i*3+2] + boolet_vec[i*3+2]*.2; 
 
-			boolet_pos[i*3+0] += boolet_vec[i*3+0]*dtime*10;
-			boolet_pos[i*3+1] += boolet_vec[i*3+1]*dtime*10;
-			boolet_pos[i*3+2] += boolet_vec[i*3+2]*dtime*10;
-
-			int j;
-			for( j = 0; j < MAX_BLOCKS; j++ )
-			{
-				if( blocksplode[j] > 0.11 ) continue;
-
-				float * bp = &boolet_pos[i*3];
-				float * kp = &blockpos[j*3];
-				float dist = ((bp[0]-kp[0])*(bp[0]-kp[0])) + ((bp[1]-kp[1])*(bp[1]-kp[1])) + ((bp[2]-kp[2])*(bp[2]-kp[2]));
-
-				if( dist < 0.2*0.2 )
-				{
-					boolet_age[i] = 0;
-					blocksplode[j] = 0.12;
-				}
-			}
-			boolets_arrayC[i*8+0] = 1; 
-			boolets_arrayC[i*8+1] = 1; 
-			boolets_arrayC[i*8+2] = 1; 
-			boolets_arrayC[i*8+3] = 1; 
-			boolets_arrayC[i*8+4] = 1; 
+		if( !boolet_in_use[i] ) continue;
+		if( boolet_age[i] == 0 || boolet_age[i] > 20 ) {
+			boolets_arrayC[i*8+0] = 0; 
+			boolets_arrayC[i*8+1] = 0; 
+			boolets_arrayC[i*8+2] = 0; 
+			boolets_arrayC[i*8+3] = 0; 
+			boolets_arrayC[i*8+4] = 0; 
 			boolets_arrayC[i*8+5] = 0; 
 			boolets_arrayC[i*8+6] = 0; 
-			boolets_arrayC[i*8+7] = 1; 
+			boolets_arrayC[i*8+7] = 0; 
+			
+			boolet_in_use[i] = 0;
+			continue;
+		}
+		boolet_age[i] += dtime;
+
+
+		boolets_arrayP[i*6+0] = boolet_pos[i*3+0]; 
+		boolets_arrayP[i*6+1] = boolet_pos[i*3+1]; 
+		boolets_arrayP[i*6+2] = boolet_pos[i*3+2]; 
+		boolets_arrayP[i*6+3] = boolet_pos[i*3+0] + boolet_vec[i*3+0]*.2; 
+		boolets_arrayP[i*6+4] = boolet_pos[i*3+1] + boolet_vec[i*3+1]*.2; 
+		boolets_arrayP[i*6+5] = boolet_pos[i*3+2] + boolet_vec[i*3+2]*.2;
+
+		if( boolet_pos[i*3+2] < 0 ) boolet_speed[i] = 0;
+
+		boolet_pos[i*3+0] += boolet_vec[i*3+0]*dtime*boolet_speed[i];
+		boolet_pos[i*3+1] += boolet_vec[i*3+1]*dtime*boolet_speed[i];
+		boolet_pos[i*3+2] += boolet_vec[i*3+2]*dtime*boolet_speed[i];
+		boolet_vec[i*3+2] -= dtime*.02*boolet_speed[i];
+
+		int j;
+		for( j = 0; j < MAX_BLOCKS; j++ )
+		{
+			if( blocksplode[j] > 0.11 ) continue;
+
+			float * bp = &boolet_pos[i*3];
+			float * kp = &blockpos[j*3];
+			float dist = ((bp[0]-kp[0])*(bp[0]-kp[0])) + ((bp[1]-kp[1])*(bp[1]-kp[1])) + ((bp[2]-kp[2])*(bp[2]-kp[2]));
+
+			if( dist < 0.2*0.2 )
+			{
+				boolet_age[i] = 0;
+				blocksplode[j] = 0.12;
+				boolet_in_use[i] = 0;
+			}
+		}
 
 	}
 	UpdateSpreadGeometry( boolets, 0, boolets_arrayP );
-	UpdateSpreadGeometry( boolets, 1, boolets_arrayC );
 
 	int j;
 	static double tt = 0;
@@ -167,9 +174,23 @@ int main( int argc, char ** argv )
 		{
 			boolets_ibo[i] = i;
 		}
-		boolets = SpreadCreateGeometry( gspe, "boolets", GL_LINES, MAX_BOOLETS*2, boolets_ibo, MAX_BOOLETS*2, 2, arrays, strides, types);
+
+		boolets = SpreadCreateGeometry( gspe, "boolets", GL_LINES, MAX_BOOLETS*2, boolets_ibo, MAX_BOOLETS*2, 2, (const void**)arrays, strides, types);
+
+
+		for( i = 0; i < MAX_BOOLETS; i++ )
+		{
+			boolets_arrayC[i*8+0] = 1; 
+			boolets_arrayC[i*8+1] = 1; 
+			boolets_arrayC[i*8+2] = 1; 
+			boolets_arrayC[i*8+3] = 1; 
+			boolets_arrayC[i*8+4] = 1; 
+			boolets_arrayC[i*8+5] = 0; 
+			boolets_arrayC[i*8+6] = 0; 
+			boolets_arrayC[i*8+7] = 1; 
+		}
+			UpdateSpreadGeometry( boolets, 1, boolets_arrayC );
 		printf( "Made boolets\n" );
-		numboolets = 0;
 	}
 
 	for( i = 0; i < MAX_BLOCKS; i++ )
@@ -198,7 +219,7 @@ int main( int argc, char ** argv )
 	{
 		double Now = OGGetAbsoluteTime();
 		double Delta = Now - Last;
-		spglClearColor( gspe, .1, 0.1, 0.1, 1.0 );
+		spglClearColor( gspe, .01, 0.01, 0.01, 1.0 );
 
 		HandleControllerInput();
 
@@ -276,7 +297,7 @@ int main( int argc, char ** argv )
 
 //		SpreadRenderGeometry( gun, gSMatrix, 0, -1 ); 
 		UpdateBoolets( Delta );
-		SpreadRenderGeometry( boolets, gSMatrix, 0, numboolets*2 );
+		SpreadRenderGeometry( boolets, gSMatrix, 0, MAX_BOOLETS*2);
 		tdPop();
 
 #ifndef RASPI_GPU
@@ -299,5 +320,6 @@ int main( int argc, char ** argv )
 			lastframetime++;
 		}
 		Last = Now;
+		enable_spread_remote = !enable_spread_remote;
 	}
 }

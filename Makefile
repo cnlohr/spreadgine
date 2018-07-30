@@ -19,14 +19,14 @@ ifeq ($(uname_m), x86_64)
 	RESOURCE_O:=
 	SPREADGINE_C:=src/spreadgine.c src/spreadgine_remote.c src/spread_vr.c $(CNHTTP) $(RAWDRAW)
 
-	CFLAGS:=-O0 -g -Iinclude -Icntools/http -Irawdraw -DCNFGOGL -DHTTP_POLL_TIMEOUT=10 -DCNFG3D_USE_OGL_MAJOR
+	CFLAGS:=-Os -g -Iinclude -Icntools/http -Irawdraw -DCNFGOGL -DHTTP_POLL_TIMEOUT=10 -DCNFG3D_USE_OGL_MAJOR
 	LDFLAGS:=-lm -lX11 -lXext -lGL -lpthread
 else
 	CNHTTP:=cntools/http/http_bsd.o cntools/http/cnhttp.o cntools/http/mfs.o cntools/http/sha1.o
 	RAWDRAW:=rawdraw/CNFG3D.o rawdraw/CNFGEGLDriver.o rawdraw/CNFGFunctions.o
 	RESOURCE_O:=$(CNHTTP) $(RAWDRAW) src/spreadgine.o src/spreadgine_remote.o src/objload.o src/spread_vr.o
 	SPREADGINE_C:=
-	CFLAGS:=-O0 -g -Iinclude -Icntools/http -Irawdraw -DHTTP_POLL_TIMEOUT=10 -DCNFG3D_USE_OGL_MAJOR $(USE_GPU)
+	CFLAGS:=-Os -g -Iinclude -Icntools/http -Irawdraw -DHTTP_POLL_TIMEOUT=10 -DCNFG3D_USE_OGL_MAJOR $(USE_GPU)
 	LDFLAGS:=-lm -lpthread $(LINK_GPU)
 endif
 

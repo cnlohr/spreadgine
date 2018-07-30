@@ -84,7 +84,7 @@ int main()
 		{
 			tdTranslate( gSMatrix, 0.0, 3, 0 );
 			tdPush();
-			for( x = 0; x < 16; x++ )
+			for( x = 0; x < 2; x++ )
 			{
 				tdTranslate( gSMatrix, 3, 0, 0 );
 				//int rstart = ((tframes)*6)%36;

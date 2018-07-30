@@ -74,10 +74,12 @@ void SpreadSetupVR()
 	SpreadSetupCamera( gspe, 1, fovie, (float)act_w/1200, .01, 1000, "CAM1" );
 
 	memcpy( &shift_gun, &LinmathPose_Identity, sizeof(LinmathPose_Identity) ); 
-	LinmathEulerAngle euler = { -.55, 0, 0 };
+	LinmathEulerAngle euler = { -.15, 0, 0 };
 	quatfromeuler( shift_gun.Rot, euler );
 
 	memcpy( &shift_hmd, &LinmathPose_Identity, sizeof(LinmathPose_Identity) ); 
+	LinmathEulerAngle euler2 = { -.00, 0, 0 };
+	quatfromeuler( shift_hmd.Rot, euler2 );
 }
 
 void UpdateRots( SurvivePose * out, SurvivePose * last, SurvivePose * raw, SurvivePose * shift )
@@ -93,7 +95,9 @@ void UpdateRots( SurvivePose * out, SurvivePose * last, SurvivePose * raw, Survi
 
 	memcpy( out, raw, sizeof(SurvivePose) );
 	quatrotateabout( out->Rot, out->Rot, differential_rotation );
-	//ApplyPoseToPose( out, out, shift );
+
+	quatrotateabout( out->Rot, out->Rot, shift->Rot );
+	//ApplyPoseToPose( out, shift, out );
 
 	//Keep current value.
 	memcpy( last, raw, sizeof( SurvivePose ) );

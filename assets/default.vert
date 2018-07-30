@@ -18,7 +18,13 @@ void main()
 	vvPos = (mmatrix * vec4(vpos, 1.0));
 
 	vec2 rscreenpos = gl_Position.xy/gl_Position.w;
-	//Do wacky stuff to screenpos here if you want.
+
+	//My awful method for trying to correct for lens warp.
+	float compb = dot(rscreenpos,rscreenpos);
+	compb = min( compb, 2.0 );
+	rscreenpos *= (1.0-  compb*.1);
+
+	//vvColor.rgb = vec3( vec2(compb), 1.0 );
 	gl_Position.xy = rscreenpos * gl_Position.w;
 
 //Only needed on orange pi

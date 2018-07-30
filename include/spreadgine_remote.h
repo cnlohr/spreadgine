@@ -3,6 +3,8 @@
 
 #include <spreadgine.h>
 
+extern int enable_spread_remote;
+
 /////////////////////////////CORE TO-BROWSER///////////////////////
 //
 //Messages: [message size (Does not include opcode)] [opcode] [payload (optional)]
