@@ -757,6 +757,145 @@ void SpreadFreeGeometry( SpreadGeometry * geo )
 	SpreadHashRemove( geo->parent, "geometry#", geo->geo_in_parent );
 }
 
+static const int chanmode[] = { 0, GL_RED, GL_RG, GL_RGB, GL_RGBA };
+
+SpreadTexture * SpreadCreateTexture( Spreadgine * spr, const char * texname, int w, int h, int chan, int mode )
+{
+	int i;
+
+	if( mode != GL_FLOAT && mode != GL_UNSIGNED_BYTE )
+	{
+		fprintf( stderr, "Error: mode must be GL_FLOAT or GL_UNSIGNED_BYTE\n" );
+		return 0;
+	}
+	if( chan < 1 || chan > 4 )
+	{
+		fprintf( stderr, "Error: chan must be between 1 and 4\n" );
+		return 0;
+	}
+
+	SpreadTexture * ret;
+
+	//First see if there are any free textures available in the parent...
+	for( i = 0; i < spr->settexs; i++ )
+	{
+		if( spr->textures[i]->texname == 0 )
+			break;
+	}
+	if( i == spr->settexs )
+	{
+		spr->textures = realloc( spr->textures, (spr->settexs+1)* sizeof( SpreadTexture * ) );
+		i = spr->settexs;
+		spr->settexs++;
+		ret = spr->textures[i] = calloc( sizeof( SpreadTexture ), 1 );
+	}
+	else
+	{
+		ret = spr->textures[i];
+	}
+
+	ret->w = w;
+	ret->h = h;
+	ret->parent = spr;
+	ret->texture_in_parent = i;
+	ret->channels = chan;
+	ret->type = mode;
+	ret->texname = strdup( texname );
+	int pxsiz = ret->pixwid = chan*((mode==GL_FLOAT)?4:1);
+	ret->pixeldata = calloc( w*h,pxsiz );
+
+	glGenTextures(1, &ret->textureID);
+	glBindTexture(GL_TEXTURE_2D, ret->textureID);
+	glTexImage2D( GL_TEXTURE_2D, 0, pxsiz, w, h, 0, chanmode[ret->channels], GL_UNSIGNED_BYTE, ret->pixeldata );
+
+	SpreadMessage( ret->parent, "texture#", "bbsiiii", ret->texture_in_parent, 97, ret->texture_in_parent, ret->texname, ret->type, ret->channels, ret->w, ret->h);
+	return ret;
+}
+
+void SpreadUpdateSubTexture( SpreadTexture * tex, void * texdat, int x, int y, int w, int h )
+{
+	glEnable( GL_TEXTURE_2D );
+	glBindTexture(GL_TEXTURE_2D, tex->textureID);
+	glTexSubImage2D( GL_TEXTURE_2D, 0, x, y, w, h, chanmode[tex->channels], tex->type, texdat );
+	int csz = tex->pixwid;
+	int l;
+	//Copy data one line-at-a-time.
+	for( l = 0; l < h; l++ )
+	{
+		memcpy( tex->pixeldata + csz*x + tex->w*csz * ( l + y ), ((uint8_t*)texdat) + l * w * csz, w * csz ); 
+	}
+	if( w*h*csz < 65500 )
+	{
+		SpreadMessage( tex->parent, 0, "bbiiiiv", 98, tex->texture_in_parent, x, y, w, h, w*h*csz, texdat );
+	}
+}
+
+void SpreadApplyTexture( SpreadTexture * tex, int slot )
+{
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, tex->textureID);
+	SpreadMessage( tex->parent, 0, "bbb", 99, tex->texture_in_parent, slot );
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+}
+
+void SpreadFreeTexture( SpreadTexture * tex )
+{
+	SpreadMessage( tex->parent, "texture#", "b", tex->texture_in_parent, 100 );
+	SpreadHashRemove( tex->parent, "texture#", tex->texture_in_parent );
+	glDeleteTextures( 1, &tex->textureID );
+}
 
 
+
+
+
+
+
+
+
+SpreadGeometry * MakeSquareMesh( Spreadgine * e, int w, int h )
+{
+	int i;
+	int x, y;
+	int c = w * h;
+	int v = (w+1)*(h+1);
+	uint16_t indices[6*c];
+	float points[v*4];
+	float colors[v*4];
+	float texcoord[v*4];
+
+
+	for( y = 0; y < h; y++ )
+	for( x = 0; x < w; x++ )
+	{
+		int i = x + y * w;
+		indices[i*6+0] = x + y * (w+1);
+		indices[i*6+1] = (x+1) + y * (w+1);
+		indices[i*6+2] = (x+1) + (y+1) * (w+1);
+		indices[i*6+3] = (x) + (y) * (w+1);
+		indices[i*6+4] = (x+1) + (y+1) * (w+1);
+		indices[i*6+5] = (x) + (y+1) * (w+1);
+	}
+	for( y = 0; y <= h; y++ )
+	for( x = 0; x <= w; x++ )
+	{
+		int p = x+y*(w+1);
+
+		colors[p*4+0] = texcoord[p*4+0] = points[p*4+0] = x/(float)w;
+		colors[p*4+1] = texcoord[p*4+1] = points[p*4+1] = y/(float)w;
+		colors[p*4+2] = texcoord[p*4+2] = points[p*4+2] = 0;
+		colors[p*4+3] = texcoord[p*4+3] = points[p*4+3] = 1;
+
+		colors[p*4+2] = 1;
+	}
+
+	const void * arrays[3] = { (void*)points, (void*)colors, (void*)texcoord };
+	int strides[3] = { 4, 4, 4 };
+	int types[3] = { GL_FLOAT, GL_FLOAT, GL_FLOAT };
+
+	return SpreadCreateGeometry( e, "plat2", GL_TRIANGLES, 6*c, indices, v, 3, arrays, strides, types );
+}
 

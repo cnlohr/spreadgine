@@ -188,26 +188,31 @@ void SpreadFreeGeometry( SpreadGeometry * geo );
 //////////////////////////////TEXTURES//////////////////////////////
 
 //Not implementing textures yet.
-/*
-typedef struct
+
+struct SpreadTexture
 {
 	Spreadgine * parent;
 	uint32_t texture_in_parent;
 	char * texname;
 
-	int channels;
-	int mode;
+	GLuint textureID;
+	int pixwid;				//# of bytes per pixel.
+	int channels; 			//Becomes GL_RED, GL_RG, GL_RGB, GL_RGBA
+	int type;				//Supported: GL_FLOAT and GL_UNSIGNED_BYTE
 	uint8_t * pixeldata;
-} SpreadTexture;
+	int w, h;
+};
 
-SpreadTexture * SpreadCreateTexture( Spreadgine * spr, int x, int y, int chan, int mode );
-SpreadTexture * SpreadLoadTexture( Spreadgine * spr, const char * tfile );
+typedef struct SpreadTexture SpreadTexture;
+
+SpreadTexture * SpreadCreateTexture( Spreadgine * spr, const char * texname, int w, int h, int chan, int mode );
+void SpreadUpdateSubTexture( SpreadTexture * tex, void * texdat, int x, int y, int w, int h );
 void SpreadApplyTexture( SpreadTexture * tex, int slot );
-*/
-
+void SpreadFreeTexture( SpreadTexture * tex );
 
 //////////////////////////UTILITIES//////////////////////////////
 SpreadGeometry * LoadOBJ( Spreadgine * spr, const char * filename, int flipv, int make_wireframe );
+SpreadGeometry * MakeSquareMesh( Spreadgine * e, int w, int h );
 
 
 #endif

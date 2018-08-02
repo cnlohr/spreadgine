@@ -5,6 +5,7 @@ var wgcams = [];
 var wgshades = [];
 var wgcurshad = 0;
 var wggeos = [];
+var wgtexs = [];
 
 var perspectivematrix = [];
 var viewmatrix = [];
@@ -270,7 +271,7 @@ function InternalProcessPack()
 				{
 					wgl.viewport( i*wgl.viewportWidth/2, 0, wgl.viewportWidth/2, wgl.viewportHeight );
 					wgl.uniformMatrix4fv( curshad.vindex, wgl.FALSE, viewmatrix[i]);
-					wgl.uniformMatrix4fv( curshad.pindex, wgl.FALSE, perspectivematrix[i] );			
+					wgl.uniformMatrix4fv( curshad.pindex, wgl.FALSE, perspectivematrix[i] );		
 					wgl.drawElements(ge.rendertype,	(num!=65535)?num:ge.indices, wgl.UNSIGNED_SHORT, 0 );
 				}
 			}
@@ -286,6 +287,65 @@ function InternalProcessPack()
 		case 90:
 			var gip = Pop8();
 			wggeos[gip] = null;
+			break;
+
+		case 97:
+			var tip = Pop8();
+			while( wgtexs.length <= tip ) wgtexs.push( {} );
+			wgtexs[tip].nam = PopStr();
+			var typ = wgtexs[tip].typ = Pop32();
+			var cs = wgtexs[tip].channels  = Pop32();
+			var fmt = 0;
+			switch( cs )
+			{
+				default: fmt = 0;
+				case 1: fmt = wgl.RED; break;
+				case 2: fmt = wgl.RG; break;
+				case 3: fmt = wgl.RGB; break;
+				case 4: fmt = wgl.RGBA; break;
+			}
+			wgtexs[tip].fmt = fmt;
+			var w = wgtexs[tip].w = Pop32();
+			var h = wgtexs[tip].h = Pop32();
+
+			var tex = wgtexs[tip].tex = wgl.createTexture();
+			wgl.bindTexture(wgl.TEXTURE_2D,tex);
+
+			var pxsiz = cs*((typ==wgl.GL_FLOAT)?4:1);
+			var buff = new Uint8Array( pxsiz*w*h );
+			wgl.texImage2D( wgl.TEXTURE_2D, 0, fmt, w, h, 0, fmt, typ, buff );
+			//console.log( fmt, typ, wgl.RGBA, wgl.UNSIGNED_BYTE, wgl.RGBA );
+			break;
+		case 99:
+			var tip = Pop8();
+			var slot = Pop8();
+			var wgt = wgtexs[tip];
+			//wgl.enable(wgl.TEXTURE_2D);
+			wgl.activeTexture(wgl.TEXTURE0+slot);
+			wgl.bindTexture( wgl.TEXTURE_2D, wgt.tex );
+			wgl.texParameteri(wgl.TEXTURE_2D, wgl.TEXTURE_MAG_FILTER, wgl.NEAREST);
+			wgl.texParameteri(wgl.TEXTURE_2D, wgl.TEXTURE_MIN_FILTER, wgl.NEAREST);
+			wgl.texParameteri(wgl.TEXTURE_2D, wgl.TEXTURE_WRAP_S, wgl.CLAMP_TO_EDGE);
+			wgl.texParameteri(wgl.TEXTURE_2D, wgl.TEXTURE_WRAP_T, wgl.CLAMP_TO_EDGE);
+			// Tell the shader we bound the texture to texture unit...
+			//console.log( wgshades[wgcurshad].program );
+			//wgl.uniform1i(wgshades[wgcurshad].program.programInfo.uniformLocations.uSampler, slot);
+			break;
+		case 98:
+			var tip = Pop8();
+			var x = Pop32();
+			var y = Pop32();
+			var w = Pop32();
+			var h = Pop32();
+			var wgt = wgtexs[tip];
+			wgl.bindTexture( wgl.TEXTURE_2D, wgt.tex );
+			var ntopop = Pop32();
+			var buff = PopMulti8( ntopop );
+			wgl.texSubImage2D( wgl.TEXTURE_2D, 0,  x, y, w, h, wgt.fmt, wgt.typ, buff );
+			break;
+		case 100:
+			var tip = Pop8();
+			wgtexs[tip] = null;
 			break;
 		default:
 			break;

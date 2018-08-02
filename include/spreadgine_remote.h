@@ -33,7 +33,11 @@ extern int enable_spread_remote;
 //		88 = PushNewArrayData( uint8_t geono, int arrayno, [VOID*] data);
 //		89 = SpreadRenderGeometry( uint8_t geono, int offset_at, int nr_verts, float modelmatrix[16] );
 //		90 = RemoveGeometry( uint8_t geono );	//Tricky: There is no call to remove children of geometries.  Client must do that.
-//		
+//	
+//		97 = Create new texture ( complicated fields, see spreadgine.c)
+//		98 = Push new sub image( uint8_t texno, int x, int y, int w, int h, uint8_t * data );
+//		99 = Activate texture( uint8_t texno, uint8_t slot );
+//		100 = Remove Textures( uint8_t texno );
 //
 //  128+ = User functions
 
