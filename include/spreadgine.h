@@ -170,17 +170,19 @@ struct SpreadGeometry
 
 	void ** arrays;
 	uint8_t * strides;
-	uint8_t * types; 		//always GL_FLOAT (0), GL_UNSIGNED_BYTE (1)
+	uint8_t * types; 		//always GL_FLOAT (0), GL_UNSIGNED_BYTE (1), must be numerically 0 or 1.
 	int laststartv;
 
 	int numarrays;
 
 	int render_type;	//GL_TRIANGLES, GL_POINTS, GL_LINES, etc.
 	int verts;
+
+	int max_set; //Not used inside core spreadgine, more for immediate mode.
 };
 
 SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, int render_type, int indices, uint16_t * indexbuffer, int verts, int nr_arrays, const void ** arrays, int * strides, int * types );
-void UpdateSpreadGeometry( SpreadGeometry * geo, int arrayno, void * arraydata ); //If arrayno == -1, update everything.
+void UpdateSpreadGeometry( SpreadGeometry * geo, int arrayno, void * arraydata ); //If arrayno == -1, update everything.  -2 = update everything AND update VBOs
 void SpreadRenderGeometry( SpreadGeometry * geo, const float * modelmatrix, int startv, int numv ); 	//If nv = -1, run until end of list.
 void SpreadFreeGeometry( SpreadGeometry * geo );
 
@@ -203,7 +205,6 @@ struct SpreadTexture
 	int w, h;
 };
 
-typedef struct SpreadTexture SpreadTexture;
 
 SpreadTexture * SpreadCreateTexture( Spreadgine * spr, const char * texname, int w, int h, int chan, int mode );
 void SpreadUpdateSubTexture( SpreadTexture * tex, void * texdat, int x, int y, int w, int h );
@@ -211,6 +212,13 @@ void SpreadApplyTexture( SpreadTexture * tex, int slot );
 void SpreadFreeTexture( SpreadTexture * tex );
 
 //////////////////////////UTILITIES//////////////////////////////
+int ImmediateModeMesh( struct SpreadGeometry * geo, float * trans44, float * coloroff, float * colorscale, float * tcoff, float * tcscale );
+SpreadGeometry * CreateMeshGen( Spreadgine * spr, const char * geoname, int render_type, int max_iset );
+void StartImmediateMode( SpreadGeometry * geo );
+void UpdateMeshToGen( SpreadGeometry * geo );
+
+
+
 SpreadGeometry * LoadOBJ( Spreadgine * spr, const char * filename, int flipv, int make_wireframe );
 SpreadGeometry * MakeSquareMesh( Spreadgine * e, int w, int h );
 

@@ -659,7 +659,7 @@ SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, i
 
 void UpdateSpreadGeometry( SpreadGeometry * geo, int arrayno, void * arraydata )
 {
-	if( arrayno == -1 )
+	if( arrayno == -1 || arrayno == -2 )
 	{
 		int i;
 
@@ -674,11 +674,30 @@ void UpdateSpreadGeometry( SpreadGeometry * geo, int arrayno, void * arraydata )
 			sizeof(uint8_t)*geo->numarrays, geo->types,
 			sizeof(uint16_t)*geo->indices, SendIndexArray );
 
+		if( arrayno == -2 )
+		{
+			for( i = 0; i < geo->numarrays; i++ )
+			{
+			 	glBindBuffer(GL_ARRAY_BUFFER, geo->vbos[i]);
+				int typesize = SpreadTypeSizes[geo->types[i]];
+				glBufferData(GL_ARRAY_BUFFER, geo->strides[i] * typesize * geo->verts, geo->arrays[i], GL_STATIC_DRAW);
+				printf( "Attaching %d: %p [%d %d %d]\n", geo->vbos[i], geo->arrays[i], geo->verts, geo->strides[i], typesize );
+				int k;
+				for( k = 0; k < geo->strides[i] * geo->verts; k++ )
+				{
+					printf( "%f - ", ((float*)geo->arrays[i])[k] );
+				}
+				printf( "\n\n" );
+			}
+		}
+
+
 		for( arrayno = 0; arrayno < geo->numarrays; arrayno++ )
 		{
 			int arraysize = geo->strides[arrayno] * SpreadTypeSizes[ geo->types[arrayno] ] * geo->verts;
 			SpreadMessage( geo->parent, "geodata#_#", "bbbv", geo->geo_in_parent, arrayno, 88, geo->geo_in_parent, arrayno, arraysize, geo->arrays[arrayno] );
 		}
+
 	}
 	else
 	{
@@ -837,8 +856,8 @@ void SpreadApplyTexture( SpreadTexture * tex, int slot )
 	SpreadMessage( tex->parent, 0, "bbb", 99, tex->texture_in_parent, slot );
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 }
 
 void SpreadFreeTexture( SpreadTexture * tex )
@@ -851,51 +870,4 @@ void SpreadFreeTexture( SpreadTexture * tex )
 
 
 
-
-
-
-
-
-SpreadGeometry * MakeSquareMesh( Spreadgine * e, int w, int h )
-{
-	int i;
-	int x, y;
-	int c = w * h;
-	int v = (w+1)*(h+1);
-	uint16_t indices[6*c];
-	float points[v*4];
-	float colors[v*4];
-	float texcoord[v*4];
-
-
-	for( y = 0; y < h; y++ )
-	for( x = 0; x < w; x++ )
-	{
-		int i = x + y * w;
-		indices[i*6+0] = x + y * (w+1);
-		indices[i*6+1] = (x+1) + y * (w+1);
-		indices[i*6+2] = (x+1) + (y+1) * (w+1);
-		indices[i*6+3] = (x) + (y) * (w+1);
-		indices[i*6+4] = (x+1) + (y+1) * (w+1);
-		indices[i*6+5] = (x) + (y+1) * (w+1);
-	}
-	for( y = 0; y <= h; y++ )
-	for( x = 0; x <= w; x++ )
-	{
-		int p = x+y*(w+1);
-
-		colors[p*4+0] = texcoord[p*4+0] = points[p*4+0] = x/(float)w;
-		colors[p*4+1] = texcoord[p*4+1] = points[p*4+1] = y/(float)w;
-		colors[p*4+2] = texcoord[p*4+2] = points[p*4+2] = 0;
-		colors[p*4+3] = texcoord[p*4+3] = points[p*4+3] = 1;
-
-		colors[p*4+2] = 1;
-	}
-
-	const void * arrays[3] = { (void*)points, (void*)colors, (void*)texcoord };
-	int strides[3] = { 4, 4, 4 };
-	int types[3] = { GL_FLOAT, GL_FLOAT, GL_FLOAT };
-
-	return SpreadCreateGeometry( e, "plat2", GL_TRIANGLES, 6*c, indices, v, 3, arrays, strides, types );
-}
 

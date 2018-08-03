@@ -33,6 +33,7 @@ int main()
 
 	SpreadGeometry * platform = LoadOBJ( e, "assets/platform.obj", 0, 0 );
 	SpreadGeometry * plat2 = MakeSquareMesh( e, 6, 6 );
+	SpreadGeometry * batchedTri = CreateMeshGen( e, "batchedTri", GL_TRIANGLES, 65535 );
 
 
 	float eye[3] = { .014, 5, 5 };
@@ -108,22 +109,26 @@ int main()
 		SpreadApplyTexture( tex, 0 );
 		SpreadApplyShader( shd1 );
 
+/*
 		tdPush();
 		//tdScale( gSMatrix, .1, .1, .1 );
 		SpreadRenderGeometry( plat2, gSMatrix, 0, -1 ); 
 		tdPop();
+*/
 
 		tdRotateEA( gSMatrix, 0,.2125,1 );		//Operates ON f
 		//tdTranslate( modelmatrix, 0, 0, .1 );
 
 		tdPush();
-		tdScale( gSMatrix, 40., 40., 40. );
+		tdScale( gSMatrix, 1., 1., 1. );
 		SpreadRenderGeometry( plat2, gSMatrix, 0, -1 ); 
 		//SpreadRenderGeometry( &e->geos[0], gSMatrix, 0, -1 ); 
 		tdPop();
 
-/*
+		StartImmediateMode( batchedTri );
+
 		tdPush();
+		tdIdentity( gSMatrix );
 		tdTranslate( gSMatrix, -30., -30., 0. );
 		for( y = 0; y < 16; y++ )
 		{
@@ -133,12 +138,18 @@ int main()
 			{
 				tdTranslate( gSMatrix, 3, 0, 0 );
 				//int rstart = ((tframes)*6)%36;
-				SpreadRenderGeometry( e->geos[0], gSMatrix, 0, -1 ); 
+				//				SpreadRenderGeometry( e->geos[0], gSMatrix, 0, -1 ); 
+				ImmediateModeMesh( e->geos[0], gSMatrix, 0, 0, 0, 0 );
 			}
 			tdPop();
 		}
 		tdPop();
-*/
+
+		UpdateMeshToGen( batchedTri );
+		SpreadRenderGeometry( batchedTri, gSMatrix, 0, -1 ); 
+		//SpreadRenderGeometry( e->geos[0], gSMatrix, 0, -1 ); 
+
+
 		usleep(20000);
 		spglSwap( e );
 		SpreadCheckShaders( e );

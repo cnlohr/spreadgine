@@ -325,8 +325,8 @@ function InternalProcessPack()
 			wgl.bindTexture( wgl.TEXTURE_2D, wgt.tex );
 			wgl.texParameteri(wgl.TEXTURE_2D, wgl.TEXTURE_MAG_FILTER, wgl.NEAREST);
 			wgl.texParameteri(wgl.TEXTURE_2D, wgl.TEXTURE_MIN_FILTER, wgl.NEAREST);
-			wgl.texParameteri(wgl.TEXTURE_2D, wgl.TEXTURE_WRAP_S, wgl.CLAMP_TO_EDGE);
-			wgl.texParameteri(wgl.TEXTURE_2D, wgl.TEXTURE_WRAP_T, wgl.CLAMP_TO_EDGE);
+			wgl.texParameteri(wgl.TEXTURE_2D, wgl.TEXTURE_WRAP_S, wgl.REPEAT);
+			wgl.texParameteri(wgl.TEXTURE_2D, wgl.TEXTURE_WRAP_T, wgl.REPEAT);
 			// Tell the shader we bound the texture to texture unit...
 			//console.log( wgshades[wgcurshad].program );
 			//wgl.uniform1i(wgshades[wgcurshad].program.programInfo.uniformLocations.uSampler, slot);
