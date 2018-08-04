@@ -107,6 +107,12 @@ Spreadgine * SpreadInit( int w, int h, const char * title, int httpport, int vps
 			1.0, 0.0, 0.0, 1.0,		0.0, 1.0, 0.0, 1.0,		0.0, 0.0, 1.0, 1.0,		1.0, 1.0, 1.0, 1.0,			// back colors
 		};
 
+		static const float CubeDataTCs[] = {
+			1.0, 0.0, 0.0, 1.0,		0.0, 1.0, 0.0, 1.0,		0.0, 0.0, 1.0, 1.0,		1.0, 1.0, 1.0, 1.0,			// front vecs
+			1.0, 0.0, 0.0, 1.0,		0.0, 1.0, 0.0, 1.0,		0.0, 0.0, 1.0, 1.0,		1.0, 1.0, 1.0, 1.0,			// back vecs
+		};
+
+
 		#else
 		static const float CubeDataVerts[36*3] = {
 			-1.0f,-1.0f,-1.0f,	-1.0f,-1.0f, 1.0f,	-1.0f, 1.0f, 1.0f,
@@ -134,17 +140,26 @@ Spreadgine * SpreadInit( int w, int h, const char * title, int httpport, int vps
 			1.,1.,0.,1.,	1.,1.,0.,1.,	1.,1.,0.,1.,	1.,1.,0.,1.,	1.,1.,0.,1.,	1.,1.,0.,1.,
 		};
 
+		static const float CubeDataTCs[36*4] = {
+			1.,0.,0.,1.,	1.,0.,0.,1.,	1.,0.,0.,1.,	1.,0.,0.,1.,	1.,0.,0.,1.,	1.,0.,0.,1.,
+			0.,1.,0.,1.,	0.,1.,0.,1.,	0.,1.,0.,1.,	0.,1.,0.,1.,	0.,1.,0.,1.,	0.,1.,0.,1.,
+			0.,0.,1.,1.,	0.,0.,1.,1.,	0.,0.,1.,1.,	0.,0.,1.,1.,	0.,0.,1.,1.,	0.,0.,1.,1.,
+			0.,1.,1.,1.,	0.,1.,1.,1.,	0.,1.,1.,1.,	0.,1.,1.,1.,	0.,1.,1.,1.,	0.,1.,1.,1.,
+			1.,0.,1.,1.,	1.,0.,1.,1.,	1.,0.,1.,1.,	1.,0.,1.,1.,	1.,0.,1.,1.,	1.,0.,1.,1.,
+			1.,1.,0.,1.,	1.,1.,0.,1.,	1.,1.,0.,1.,	1.,1.,0.,1.,	1.,1.,0.,1.,	1.,1.,0.,1.,
+		};
+
 		static uint16_t CubeDataIndices[36];
 		for( i = 0; i < 36; i++ ) CubeDataIndices[i] = i;
 		int IndexQty = 36;
 
 		#endif
 
-		static int strides[2] = { 3, 4 };
-		static int types[2] = { GL_FLOAT, GL_FLOAT };
-		const float * arrays[] = { CubeDataVerts, CubeDataColors };
+		static int strides[3] = { 3, 4, 4 };
+		static int types[3] = { GL_FLOAT, GL_FLOAT, GL_FLOAT };
+		const float * arrays[] = { CubeDataVerts, CubeDataColors, CubeDataTCs };
 
-		SpreadGeometry * geo0 = SpreadCreateGeometry( ret, "geo1", GL_TRIANGLES, IndexQty, CubeDataIndices, VertQty, 2, (const void **)arrays, strides, types  );
+		SpreadGeometry * geo0 = SpreadCreateGeometry( ret, "geo1", GL_TRIANGLES, IndexQty, CubeDataIndices, VertQty, 3, (const void **)arrays, strides, types  );
 		if( !geo0 )
 		{
 			fprintf( fReport, "Error making geometry.\n" );
@@ -676,18 +691,14 @@ void UpdateSpreadGeometry( SpreadGeometry * geo, int arrayno, void * arraydata )
 
 		if( arrayno == -2 )
 		{
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, geo->ibo);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t)*geo->indices, geo->indexarray, GL_STATIC_DRAW);
+
 			for( i = 0; i < geo->numarrays; i++ )
 			{
 			 	glBindBuffer(GL_ARRAY_BUFFER, geo->vbos[i]);
 				int typesize = SpreadTypeSizes[geo->types[i]];
 				glBufferData(GL_ARRAY_BUFFER, geo->strides[i] * typesize * geo->verts, geo->arrays[i], GL_STATIC_DRAW);
-				printf( "Attaching %d: %p [%d %d %d]\n", geo->vbos[i], geo->arrays[i], geo->verts, geo->strides[i], typesize );
-				int k;
-				for( k = 0; k < geo->strides[i] * geo->verts; k++ )
-				{
-					printf( "%f - ", ((float*)geo->arrays[i])[k] );
-				}
-				printf( "\n\n" );
 			}
 		}
 

@@ -32,7 +32,7 @@ int main()
 	}
 
 	SpreadGeometry * platform = LoadOBJ( e, "assets/platform.obj", 0, 0 );
-	SpreadGeometry * plat2 = MakeSquareMesh( e, 6, 6 );
+	SpreadGeometry * plat2 = MakeSquareMesh( e, 2, 2 );
 	SpreadGeometry * batchedTri = CreateMeshGen( e, "batchedTri", GL_TRIANGLES, 65535 );
 
 
@@ -129,17 +129,22 @@ int main()
 
 		tdPush();
 		tdIdentity( gSMatrix );
-		tdTranslate( gSMatrix, -30., -30., 0. );
-		for( y = 0; y < 16; y++ )
+		tdTranslate( gSMatrix, -5., -5., 0. );
+		for( y = 0; y < 40; y++ )
 		{
-			tdTranslate( gSMatrix, 0.0, 3, 0 );
+			tdTranslate( gSMatrix, 0.0, 2, 0 );
 			tdPush();
-			for( x = 0; x < 2; x++ )
+			for( x = 0; x < 40; x++ )
 			{
-				tdTranslate( gSMatrix, 3, 0, 0 );
+				tdTranslate( gSMatrix, 2, 0, 0 );
+				tdPush();
+				tdTranslate( gSMatrix, 0, 0, sin(x*.3+y*.2+tframes*.1)*5 );
 				//int rstart = ((tframes)*6)%36;
 				//				SpreadRenderGeometry( e->geos[0], gSMatrix, 0, -1 ); 
-				ImmediateModeMesh( e->geos[0], gSMatrix, 0, 0, 0, 0 );
+				float tcoff[4] = { x/40., y/40., 0, 0 };
+				float tcscale[4] = { .025, .025, 0, 0 };
+				ImmediateModeMesh( plat2, gSMatrix, 0, 0, tcoff, tcscale );
+				tdPop();
 			}
 			tdPop();
 		}

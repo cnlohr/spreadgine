@@ -10,8 +10,8 @@ varying vec4 vv0Pos;
 
 void main()
 {
-	gl_FragColor = vec4( vv2Tex.xy, 1., 1. );
-	return;
+//	gl_FragColor = vec4( vv2Tex.xy, 1., 1. );
+//	return;
 	vec4 init_tex = texture2D( texture0, vv2Tex.xy );
 //	gl_FragColor = vec4( init_tex.rg,0.5, 1. );
 //	return;

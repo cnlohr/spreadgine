@@ -39,8 +39,6 @@ int ImmediateModeMesh( struct SpreadGeometry * geo, float * trans44, float * col
 			posout[0] = posin[0] * trans44[0] + posin[1] * trans44[4] + posin[2] * trans44[8] + trans44[12];
 			posout[1] = posin[0] * trans44[1] + posin[1] * trans44[5] + posin[2] * trans44[9] + trans44[13];
 			posout[2] = posin[0] * trans44[2] + posin[1] * trans44[6] + posin[2] * trans44[10] + trans44[14];
-
-			printf( "%d - %f %f %f\n", v*3, posout[0], posout[1], posout[2] );
 		}
 		else
 		{
@@ -163,7 +161,7 @@ SpreadGeometry * CreateMeshGen( Spreadgine * spr, const char * geoname, int rend
 	void * arrays[4];
 	int i;
 	int TVstrideset[4] = { 3, 4, 4, 3 };
-	int Types[4] = { 0, 0, 0, 0 };
+	int Types[4] = { GL_FLOAT, GL_FLOAT, GL_FLOAT, GL_FLOAT };
 	arrays[0] = malloc( 3 * 4 * max_iset ); 
 	arrays[1] = malloc( 4 * 4 * max_iset ); 
 	arrays[2] = malloc( 4 * 4 * max_iset ); 
