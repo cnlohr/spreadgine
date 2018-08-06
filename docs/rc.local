@@ -1,0 +1,25 @@
+#!/bin/sh -e
+#
+# rc.local
+#
+# This script is executed at the end of each multiuser runlevel.
+# Make sure that the script will "exit 0" on success or any other
+# value on error.
+#
+# In order to enable or disable this script just change the execution
+# bits.
+#
+# By default this script does nothing.
+
+# Print the IP address
+_IP=$(hostname -I) || true
+if [ "$_IP" ]; then
+  printf "My IP address is %s\n" "$_IP"
+fi
+
+# You MUST change the hdmi_timings AFTER boot, otherwise the Vive will not see the pi.
+
+vcgencmd hdmi_timings 2160 1 40 20 46 1200 1 28 2 234 0 0 0 90 0 297000000 5 && tvservice -e "DMT 87"
+echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+
+exit 0
