@@ -1,0 +1,117 @@
+# For more options and information see
+# http://rpf.io/configtxt
+# Some settings may impact device functionality. See link above for details
+
+# uncomment if you get no picture on HDMI for a default "safe" mode
+# hdmi_safe=1
+
+# uncomment this if your display has a black border of unused pixels visible
+# and your display can output without overscan
+#disable_overscan=1
+
+# uncomment the following to adjust overscan. Use positive numbers if console
+# goes off screen, and negative if there is too much border
+#overscan_left=16
+#overscan_right=16
+#overscan_top=16
+#overscan_bottom=16
+
+# uncomment to force a console size. By default it will be display's size minus
+# overscan.
+#framebuffer_width=1280
+#framebuffer_height=720
+
+# uncomment if hdmi display is not detected and composite is being output
+hdmi_force_hotplug=1
+
+# uncomment to force a specific HDMI mode (this will force VGA)
+hdmi_group=2
+hdmi_mode=87
+
+# uncomment to force a HDMI mode rather than DVI. This can make audio work in
+# DMT (computer monitor) modes
+#hdmi_drive=2
+
+# uncomment to increase signal to HDMI, if you have interference, blanking, or
+# no display
+#config_hdmi_boost=4
+
+# uncomment for composite PAL
+#sdtv_mode=2
+
+#uncomment to overclock the arm. 700 MHz is the default.
+#arm_freq=800
+
+# Uncomment some or all of these to enable the optional hardware interfaces
+#dtparam=i2c_arm=on
+#dtparam=i2s=on
+#dtparam=spi=on
+
+
+# Uncomment this to enable the lirc-rpi module
+#dtoverlay=lirc-rpi
+
+# Additional overlays and parameters are documented /boot/overlays/README
+
+# Enable audio (loads snd_bcm2835)
+dtparam=audio=on
+
+
+hdmi_pixel_freq_limit=400000000
+hvs_priority=0x32ff
+gpu_mem=256
+#hdmi_ignore_edid=0xa5000080
+
+max_framebuffer_width=2160
+max_framebuffer_height=1200
+framebuffer_width=2160
+framebuffer_height=1200
+
+hdmi_force_hotplug=1
+config_hdmi_boost=6  #0..11
+
+dpi_group=2
+dpi_mode=87
+hdmi_drive=2  #Must be 2!
+hdmi_group=2  #DMT
+#hdmi_mode=4
+hdmi_mode=87
+
+#hdmi_timings=
+#   <h_active_pixels> 
+#         <h_sync_polarity <h_front_porch> <h_sync_pulse> <h_back_porch>
+#         <v_active_lines> <v_sync_polarity> <v_front_porch> <v_sync_pulse> <v_back_porch> <v_sync_offset_a> 
+#	  <v_sync_offset_b> <pixel_rep> <frame_rate> <interlaced> <pixel_freq> <aspect_ratio>
+
+#hdmi_timings=2160 1 40 20 66 1200 0 28 2 234 0 0 0 90 0 297000000 5
+
+#hdmi_timings=2160 1 20 40 66 1200 0 2 28 234 0 0 0 90 0 297000000 5
+#hdmi_timings=2160 0 40 20 46 1200 0 28 2 234 0 0 0 90 0 297000000 5
+#hdmi_timings=2160 1 40 20 46 1200 1 28 2 234 0 0 0 90 0 297000000 5
+#hdmi_timings=2160 1 40 20 46 1200 1 28 2 234 0 0 0 90 0 297000000 5
+#hdmi_timings=2160 1 40 20 46 1200 1 28 2 234 0 0 0 89 0 297000000 5
+
+#OK NEW
+#hdmi_timings=2160 1 40 20 46 1200 1 28 2 234 0 0 0 90 0 297000000 5
+
+
+
+#Modeline "Mode 3" 27.027 720 736 798 858 480 489 495 525 -hsync -vsync
+hdmi_timings=720 1 16 62 60 480 1 9 6 36 0 0 0 60 0 27027000 5
+
+#x11 modeline: 297.000 2160 2200 2220 2266 1200 1228 1230 1464 -hsync -vsync
+
+
+
+core_freq=500 # GPU Frequency 
+#arm_freq=1000 # CPU Frequency 
+sdram_freq=600
+sdram_schmoo=0x02000020
+#over_voltage=4 #Electric power sent to CPU / GPU (4 = 1.3V) 
+#disable_splash=1 # Disables the display of the electric alert screen
+#gpu_freq=550
+
+
+#dtoverlay=vc4-fkms-v3d
+#dtoverlay=vc4-kms-v3d 
+
