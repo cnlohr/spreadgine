@@ -787,6 +787,10 @@ void SpreadFreeGeometry( SpreadGeometry * geo )
 	SpreadHashRemove( geo->parent, "geometry#", geo->geo_in_parent );
 }
 
+#ifndef GL_RED
+#define GL_RED 0x1903
+#define GL_RG 0x8227
+#endif
 static const int chanmode[] = { 0, GL_RED, GL_RG, GL_RGB, GL_RGBA };
 
 SpreadTexture * SpreadCreateTexture( Spreadgine * spr, const char * texname, int w, int h, int chan, int mode )
