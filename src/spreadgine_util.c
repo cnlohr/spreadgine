@@ -204,7 +204,7 @@ SpreadGeometry * MakeSquareMesh( Spreadgine * e, int w, int h )
 	int c = w * h;
 	int v = (w+1)*(h+1);
 	uint16_t indices[6*c];
-	float points[v*4];
+	float points[v*3];
 	float colors[v*4];
 	float texcoord[v*4];
 
@@ -225,16 +225,15 @@ SpreadGeometry * MakeSquareMesh( Spreadgine * e, int w, int h )
 	{
 		int p = x+y*(w+1);
 
-		colors[p*4+0] = texcoord[p*4+0] = points[p*4+0] = x/(float)w;
-		colors[p*4+1] = texcoord[p*4+1] = points[p*4+1] = y/(float)w;
-		colors[p*4+2] = texcoord[p*4+2] = points[p*4+2] = 0;
-		colors[p*4+3] = texcoord[p*4+3] = points[p*4+3] = 1;
+		colors[p*4+0] = texcoord[p*4+0] = points[p*3+0] = x/(float)w;
+		colors[p*4+1] = texcoord[p*4+1] = points[p*3+1] = y/(float)h;
+		colors[p*4+2] = texcoord[p*4+2] = points[p*3+2] = 0;
 
 		colors[p*4+2] = 1;
 	}
 
 	const void * arrays[3] = { (void*)points, (void*)colors, (void*)texcoord };
-	int strides[3] = { 4, 4, 4 };
+	int strides[3] = { 3, 4, 4 };
 	int types[3] = { GL_FLOAT, GL_FLOAT, GL_FLOAT };
 
 	return SpreadCreateGeometry( e, "plat2", GL_TRIANGLES, 6*c, indices, v, 3, arrays, strides, types );

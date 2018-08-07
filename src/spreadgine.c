@@ -693,7 +693,6 @@ void UpdateSpreadGeometry( SpreadGeometry * geo, int arrayno, void * arraydata )
 		{
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, geo->ibo);
 			glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t)*geo->indices, geo->indexarray, GL_STATIC_DRAW);
-
 			for( i = 0; i < geo->numarrays; i++ )
 			{
 			 	glBindBuffer(GL_ARRAY_BUFFER, geo->vbos[i]);
@@ -701,7 +700,6 @@ void UpdateSpreadGeometry( SpreadGeometry * geo, int arrayno, void * arraydata )
 				glBufferData(GL_ARRAY_BUFFER, geo->strides[i] * typesize * geo->verts, geo->arrays[i], GL_STATIC_DRAW);
 			}
 		}
-
 
 		for( arrayno = 0; arrayno < geo->numarrays; arrayno++ )
 		{
@@ -840,15 +838,15 @@ SpreadTexture * SpreadCreateTexture( Spreadgine * spr, const char * texname, int
 
 	glGenTextures(1, &ret->textureID);
 	glBindTexture(GL_TEXTURE_2D, ret->textureID);
-	glTexImage2D( GL_TEXTURE_2D, 0, pxsiz, w, h, 0, chanmode[ret->channels], GL_UNSIGNED_BYTE, ret->pixeldata );
+	glTexImage2D( GL_TEXTURE_2D, 0, chanmode[ret->channels], w, h, 0, chanmode[ret->channels], GL_UNSIGNED_BYTE, ret->pixeldata );
 
 	SpreadMessage( ret->parent, "texture#", "bbsiiii", ret->texture_in_parent, 97, ret->texture_in_parent, ret->texname, ret->type, ret->channels, ret->w, ret->h);
+
 	return ret;
 }
 
 void SpreadUpdateSubTexture( SpreadTexture * tex, void * texdat, int x, int y, int w, int h )
 {
-	glEnable( GL_TEXTURE_2D );
 	glBindTexture(GL_TEXTURE_2D, tex->textureID);
 	glTexSubImage2D( GL_TEXTURE_2D, 0, x, y, w, h, chanmode[tex->channels], tex->type, texdat );
 	int csz = tex->pixwid;
@@ -866,7 +864,7 @@ void SpreadUpdateSubTexture( SpreadTexture * tex, void * texdat, int x, int y, i
 
 void SpreadApplyTexture( SpreadTexture * tex, int slot )
 {
-	glEnable(GL_TEXTURE_2D);
+//	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, tex->textureID);
 	SpreadMessage( tex->parent, 0, "bbb", 99, tex->texture_in_parent, slot );
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
