@@ -31,7 +31,7 @@ int main()
 	}
 
 //	SpreadGeometry * platform = LoadOBJ( e, "assets/platform.obj", 0, 0 );
-	SpreadGeometry * plat2 = MakeSquareMesh( e, 1, 1 );
+	SpreadGeometry * plat2 = MakeSquareMesh( e, 6, 6 );
 	SpreadGeometry * batchedTri = CreateMeshGen( e, "batchedTri", GL_TRIANGLES, 65535 );
 
 
@@ -125,11 +125,11 @@ int main()
 		tdIdentity( gSMatrix );
 		tdScale( gSMatrix, 2, 2, 2 );
 		tdTranslate( gSMatrix, -4., -4., 0. );
-		for( y = 0; y < 40; y++ )
+		for( y = 0; y < 10; y++ )
 		{
 			tdTranslate( gSMatrix, 0.0, 1.1, 0 );
 			tdPush();
-			for( x = 0; x < 40; x++ )
+			for( x = 0; x < 10; x++ )
 			{
 				tdTranslate( gSMatrix, 1.1, 0, 0 );
 				tdPush();
@@ -147,6 +147,7 @@ int main()
 		}
 		tdPop();
 
+		//printf( "%d %d\n", batchedTri->indices, batchedTri->verts );
 		UpdateMeshToGen( batchedTri );
 
 		tdPush();
