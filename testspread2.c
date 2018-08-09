@@ -24,7 +24,7 @@ int main()
 #endif
 
 	//First: Add a defualt shader
-	SpreadShader * shd1 = SpreadLoadShader( e, "shd1", "assets/textured.frag", "assets/textured.vert", 0 );
+	SpreadShader * shd1 = SpreadLoadShader( e, "shd1", "assets/autobatch.frag", "assets/autobatch.vert", "assets/autobatch.geo" );
 	if( !shd1 )
 	{
 		fprintf( stderr, "Error making shader.\n" );
@@ -32,7 +32,7 @@ int main()
 
 //	SpreadGeometry * platform = LoadOBJ( e, "assets/platform.obj", 0, 0 );
 	SpreadGeometry * plat2 = MakeSquareMesh( e, 6, 6 );
-	SpreadGeometry * batchedTri = CreateMeshGen( e, "batchedTri", GL_TRIANGLES, 65535 );
+	plat2->render_type = GL_POINTS;
 
 
 	float eye[3] = { .014, 5, 5 };
@@ -119,7 +119,7 @@ int main()
 
 
 
-	
+	/*
 		StartImmediateMode( batchedTri );
 		tdPush();
 		tdIdentity( gSMatrix );
@@ -156,9 +156,10 @@ int main()
 		}
 		tdPush();
 		tdScale( gSMatrix, 1., 1., 1. );
+*/
 
-		SpreadRenderGeometry( batchedTri, gSMatrix, 0, -1 ); 
-		//SpreadRenderGeometry( plat2, gSMatrix, 0, -1 ); 
+		//SpreadRenderGeometry( batchedTri, gSMatrix, 0, -1 ); 
+		SpreadRenderGeometry( plat2, gSMatrix, 0, -1 ); 
 		//SpreadRenderGeometry( &e->geos[0], gSMatrix, 0, -1 ); 
 		tdPop();
 

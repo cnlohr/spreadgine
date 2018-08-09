@@ -115,6 +115,7 @@ function InternalProcessPack()
 			var shadername = ts.nam = PopStr();
 			var shaderfrag = ts.fragSource = PopStr();
 			var shadervert = ts.vertSource = PopStr();
+			var shadergeo = ts.geoSource = PopStr();
 	
 			ts.vert = wgl.createShader(wgl.VERTEX_SHADER);
 			wgl.shaderSource(ts.vert, ts.vertSource);
@@ -132,10 +133,27 @@ function InternalProcessPack()
 					return null;
 			}
 
+			if( shadergeo.length > 1 )
+			{
+				ts.geo = wgl.createShader(wgl.GEOMETRY_SHADER);
+				wgl.shaderSource(ts.geo, ts.geoSource);
+				wgl.compileShader(ts.geo);
+				if (!wgl.getShaderParameter(ts.geo, wgl.COMPILE_STATUS)) {
+						alert(wgl.getShaderInfoLog(ts.geo));
+						return null;
+				}
+			}
+			else
+				ts.geo = null;
+
 
 			ts.program = wgl.createProgram();
 			wgl.attachShader(ts.program, ts.frag);
 			wgl.attachShader(ts.program, ts.vert);
+			if( ts.geo )
+			{
+				wgl.attachShader(ts.program, ts.geo );
+			}
 
 			for( i = 0; i < 8; i++ )
 			{

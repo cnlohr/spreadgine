@@ -117,8 +117,11 @@ struct SpreadShader
 
 	char * fragment_shader_source;
 	char * vertex_shader_source;
+	char * geometry_shader_source;
+
 	double fragment_shader_time;
 	double vertex_shader_time;
+	double geometry_shader_time;
 
 	//Need a way to translate uniform locations to client monitors...
 	//These use "index" as the slot.
@@ -136,11 +139,12 @@ struct SpreadShader
 	//Internal backend types.
 	int vertex_shader;
 	int fragment_shader;
+	int geometry_shader;
 	int program_shader;
 	int attribute_slots[MAX_ATTRIBUTES];  //attrib0..attrib7
 };
 
-SpreadShader * SpreadLoadShader( Spreadgine * spr, const char * shadername, const char * fragmentShader, const char * vertexShader );
+SpreadShader * SpreadLoadShader( Spreadgine * spr, const char * shadername, const char * fragmentShader, const char * vertexShader, const char * geometryShader );
 int SpreadGetUniformSlot( SpreadShader * shd, const char * slotname );
 void SpreadUniform4f( SpreadShader * shd, int slot, const float * uni );
 void SpreadUniform16f( SpreadShader * shd, int slot, const float * uni );

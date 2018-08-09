@@ -1,4 +1,4 @@
-all : testspread testsurvive testgame set_optical_calibrations
+all : testspread testsurvive testgame set_optical_calibrations testspread2
 
 uname_m := $(shell uname -m)
 
@@ -34,6 +34,9 @@ CFLAGS += $(SURVIVE_CFLAGS)
 LDFLAGS += $(SURVIVE_LDFLAGS)
 
 testspread : testspread.o $(SPREADGINE_C) $(RESOURCE_O)
+	gcc -o $@ $^ $(CFLAGS) $(LDFLAGS)
+
+testspread2 : testspread2.o $(SPREADGINE_C) $(RESOURCE_O)
 	gcc -o $@ $^ $(CFLAGS) $(LDFLAGS)
 
 testsurvive : testsurvive.c $(SPREADGINE_C) $(RESOURCE_O)
