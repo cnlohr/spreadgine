@@ -8,14 +8,19 @@ varying vec4 vv2Tex;
 
 uniform vec4 timevec;
 
+uniform sampler2D texture0;
+
+
 void main()
 {
-    gl_Position = (pmatrix * 
-		(vmatrix * 
-		(mmatrix * vec4(attrib0, 1.0))
-	));
 	vv1Col = attrib1;
     vv2Tex = attrib2;
+	vec4 tlu = texture2D( texture0, attrib2.xy )*3.;
+
+    gl_Position = (pmatrix * 
+		(vmatrix * 
+		(mmatrix * vec4(attrib0+tlu.xyz, 1.0))
+	));
 
 
 	vv0Pos = (mmatrix * vec4(attrib0, 1.0));

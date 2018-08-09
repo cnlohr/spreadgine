@@ -103,7 +103,7 @@ int main()
 			fprintf( stderr, "Error: Can't find parameter in shader\n" );
 		}
 
-		//SpreadApplyTexture( tex, 0 );
+		SpreadApplyTexture( tex, 0 );
 		SpreadApplyShader( shd1 );
 
 /*
@@ -125,19 +125,19 @@ int main()
 		tdIdentity( gSMatrix );
 		tdScale( gSMatrix, 2, 2, 2 );
 		tdTranslate( gSMatrix, -4., -4., 0. );
-		for( y = 0; y < 10; y++ )
+		for( y = 0; y < 15; y++ )
 		{
 			tdTranslate( gSMatrix, 0.0, 1.1, 0 );
 			tdPush();
-			for( x = 0; x < 10; x++ )
+			for( x = 0; x < 15; x++ )
 			{
 				tdTranslate( gSMatrix, 1.1, 0, 0 );
 				tdPush();
 				tdTranslate( gSMatrix, 0, 0, sin(x*.3+y*.2+tframes*.1)*5 );
 				//int rstart = ((tframes)*6)%36;
 				//				SpreadRenderGeometry( e->geos[0], gSMatrix, 0, -1 ); 
-				float tcoff[4] = { x/40., y/40., 0, 0 };
-				float tcscale[4] = { .025, .025, 0, 0 };
+				float tcoff[4] = { x/10., y/10., 0, 0 };
+				float tcscale[4] = { .1, .1, 0, 0 };
 				ImmediateModeMesh( plat2, gSMatrix, 0, 0, tcoff, tcscale );
 				//SpreadRenderGeometry( batchedTri, gSMatrix, 0, -1 ); 
 				//SpreadRenderGeometry( plat2, gSMatrix, 0, -1 ); 
@@ -147,9 +147,13 @@ int main()
 		}
 		tdPop();
 
-		//printf( "%d %d\n", batchedTri->indices, batchedTri->verts );
-		UpdateMeshToGen( batchedTri );
-
+		printf( "%d %d\n", batchedTri->indices, batchedTri->verts );
+		static int set;
+		if( set == 0 )
+		{
+			set = 1;
+			UpdateMeshToGen( batchedTri );
+		}
 		tdPush();
 		tdScale( gSMatrix, 1., 1., 1. );
 
