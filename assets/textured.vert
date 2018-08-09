@@ -1,24 +1,24 @@
-attribute vec3 v0pos;
-attribute vec4 v1col;
-attribute vec4 v2tex;
+attribute vec3 attrib0;
+attribute vec4 attrib1;
+attribute vec4 attrib2;
 uniform mat4 pmatrix, vmatrix, mmatrix;
-varying vec4 vv2Tex;
-varying vec4 vv1Col;
 varying vec4 vv0Pos;
+varying vec4 vv1Col;
+varying vec4 vv2Tex;
 
 uniform vec4 timevec;
 
 void main()
 {
-    vv2Tex = v2tex;
-	vv1Col = v1col;
-
     gl_Position = (pmatrix * 
 		(vmatrix * 
-		(mmatrix * vec4(v0pos, 1.0))
+		(mmatrix * vec4(attrib0, 1.0))
 	));
+	vv1Col = attrib1;
+    vv2Tex = attrib2;
 
-	vv0Pos = (mmatrix * vec4(v0pos, 1.0));
+
+	vv0Pos = (mmatrix * vec4(attrib0, 1.0));
 
 	vec2 rscreenpos = gl_Position.xy/gl_Position.w;
 

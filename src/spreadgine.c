@@ -14,6 +14,7 @@
 
 uint8_t SpreadTypeSizes[] = { 4, 1 };
 
+
 Spreadgine * SpreadInit( int w, int h, const char * title, int httpport, int vps, FILE * fReport )
 {
 	int i;
@@ -76,8 +77,7 @@ Spreadgine * SpreadInit( int w, int h, const char * title, int httpport, int vps
 
 	{
 		//First: Add a defualt shader
-		const char * attribos[2] = { "vpos", "vcolor" };
-		SpreadShader * shd0 = SpreadLoadShader( ret, "shd0", "assets/default.frag", "assets/default.vert", 2, attribos );
+		SpreadShader * shd0 = SpreadLoadShader( ret, "shd0", "assets/default.frag", "assets/default.vert" );
 		if( !shd0 )
 		{
 			fprintf( fReport, "Error making shader.\n" );
@@ -276,8 +276,6 @@ static SpreadShader * LoadShaderAtPlace( SpreadShader * ret, Spreadgine * spr )
 	int i;
 	int retval;
 
-	int attriblistlength = ret->attriblistlength;
-	char ** attriblist = ret->attriblist;
 	const char * shadername = ret->shadername;
 	const char * fragmentShader = ret->fragment_shader_source;
 	const char * vertexShader = ret->vertex_shader_source;
@@ -390,9 +388,11 @@ static SpreadShader * LoadShaderAtPlace( SpreadShader * ret, Spreadgine * spr )
 	glAttachShader(ret->program_shader, ret->vertex_shader);
 	glAttachShader(ret->program_shader, ret->fragment_shader);
 
-	for( i = 0; i < attriblistlength; i++ )
+	for( i = 0; i < MAX_ATTRIBUTES; i++ )
 	{
-		glBindAttribLocation( ret->program_shader, i, ret->attriblist[i] );
+		char ats[40];
+		sprintf( ats, "attrib%d", i );
+		glBindAttribLocation( ret->program_shader, i, ats );
 	}
 
 	glLinkProgram(ret->program_shader);
@@ -411,6 +411,15 @@ static SpreadShader * LoadShaderAtPlace( SpreadShader * ret, Spreadgine * spr )
 		goto qexit;
 	}
 
+
+	for( i = 0; i < MAX_ATTRIBUTES; i++ )
+	{
+		char ats[40];
+		sprintf( ats, "attrib%d", i );
+		ret->attribute_slots[i] = glGetAttribLocation( ret->program_shader, ats );
+	}
+
+
 	ret->known_uniform_slots = 0;
 
 	ret->model_index = glGetUniformLocation( ret->program_shader, "mmatrix" );
@@ -426,7 +435,7 @@ static SpreadShader * LoadShaderAtPlace( SpreadShader * ret, Spreadgine * spr )
 		fprintf( spr->fReport, "Hanging error on shader compile %d (0x%02x)\n", err, err );
 	}
 
-	SpreadMessage( spr, "shader#", "bbsssS", ret->shader_in_parent, 69, ret->shader_in_parent, shadername, fragmentShader_text, vertexShader_text, attriblistlength, attriblist );
+	SpreadMessage( spr, "shader#", "bbsss", ret->shader_in_parent, 69, ret->shader_in_parent, shadername, fragmentShader_text, vertexShader_text );
 	free( fragmentShader_text );
 	free( vertexShader_text );
 	return ret;
@@ -440,7 +449,7 @@ qexit:
 	return 0;
 }
 
-SpreadShader * SpreadLoadShader( Spreadgine * spr, const char * shadername, const char * fragmentShader, const char * vertexShader, int attriblistlength, const char ** attriblist )
+SpreadShader * SpreadLoadShader( Spreadgine * spr, const char * shadername, const char * fragmentShader, const char * vertexShader )
 {
 	int i;
 	int shaderindex = 0;
@@ -470,13 +479,6 @@ SpreadShader * SpreadLoadShader( Spreadgine * spr, const char * shadername, cons
 	ret->shadername = strdup( shadername );
 	ret->fragment_shader_source = strdup( fragmentShader );
 	ret->vertex_shader_source = strdup( vertexShader );
-	ret->attriblistlength = attriblistlength;
-	ret->attriblist = malloc( sizeof(char*) * attriblistlength );
-	for( i = 0 ; i < attriblistlength; i++ )
-	{
-		ret->attriblist[i] = strdup( attriblist[i] );
-	}
-
 	LoadShaderAtPlace( ret, spr );
 	spr->setshaders++;
 	return ret;
@@ -543,14 +545,6 @@ void SpreadFreeShader( SpreadShader * shd )
 	if( shd->shadername )				{ free( shd->shadername );				shd->shadername = 0; }
 	if( shd->fragment_shader_source )	{ free( shd->fragment_shader_source );	shd->fragment_shader_source = 0; }
 	if( shd->vertex_shader_source )		{ free( shd->vertex_shader_source );	shd->vertex_shader_source = 0; }
-	if( shd->attriblist )
-	{
-		int i;
-		for( i = 0; i < shd->attriblistlength; i++ )
-			free( shd->attriblist[i] );
-		free( shd->attriblist );
-		shd->attriblist = 0;
-	}
 
 	SpreadMessage( shd->parent, 0, "bb", 70, shd->shader_in_parent );
 	SpreadHashRemove( shd->parent, "shader#", shd->shader_in_parent );
@@ -692,12 +686,12 @@ void UpdateSpreadGeometry( SpreadGeometry * geo, int arrayno, void * arraydata )
 		if( arrayno == -2 )
 		{
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, geo->ibo);
-			glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t)*geo->indices, geo->indexarray, GL_STATIC_DRAW);
+			glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(uint16_t)*geo->indices, geo->indexarray );
 			for( i = 0; i < geo->numarrays; i++ )
 			{
 			 	glBindBuffer(GL_ARRAY_BUFFER, geo->vbos[i]);
 				int typesize = SpreadTypeSizes[geo->types[i]];
-				glBufferData(GL_ARRAY_BUFFER, geo->strides[i] * typesize * geo->verts, geo->arrays[i], GL_STATIC_DRAW);
+				glBufferSubData(GL_ARRAY_BUFFER, 0, geo->strides[i] * typesize * geo->verts, geo->arrays[i]);
 			}
 		}
 
@@ -738,8 +732,9 @@ void SpreadRenderGeometry( SpreadGeometry * geo, const float * modelmatrix, int 
 	for( i = 0; i < geo->numarrays; i++ )
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, geo->vbos[i]);
-		glVertexAttribPointer( i, geo->strides[i], (geo->types[i]==0)?GL_FLOAT:GL_UNSIGNED_BYTE, GL_FALSE, 0, /*geo->arrays[i]*/0 );
-	    glEnableVertexAttribArray(i);
+		int attribindex = ss->attribute_slots[i];
+		glVertexAttribPointer( attribindex, geo->strides[i], (geo->types[i]==0)?GL_FLOAT:GL_UNSIGNED_BYTE, GL_FALSE, 0, /*geo->arrays[i]*/0 );
+	    glEnableVertexAttribArray(attribindex);
 	}
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, geo->ibo);

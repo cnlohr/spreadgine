@@ -115,7 +115,6 @@ function InternalProcessPack()
 			var shadername = ts.nam = PopStr();
 			var shaderfrag = ts.fragSource = PopStr();
 			var shadervert = ts.vertSource = PopStr();
-			var arblistlen = Pop32();
 	
 			ts.vert = wgl.createShader(wgl.VERTEX_SHADER);
 			wgl.shaderSource(ts.vert, ts.vertSource);
@@ -138,9 +137,9 @@ function InternalProcessPack()
 			wgl.attachShader(ts.program, ts.frag);
 			wgl.attachShader(ts.program, ts.vert);
 
-			for( i = 0; i < arblistlen; i++ )
+			for( i = 0; i < 8; i++ )
 			{
-				wgl.bindAttribLocation( ts.program, i, PopStr() );
+				wgl.bindAttribLocation( ts.program, i, "attrib" + i );
 			}
 
 			wgl.linkProgram(ts.program);

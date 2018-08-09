@@ -33,6 +33,7 @@ typedef struct Spreadgine Spreadgine;
 #define SPREADGINE_T_FLOAT 0
 #define SPREADGINE_T_UBYTE 1
 
+#define MAX_ATTRIBUTES 8
 
 struct SpreadHashEntry
 {
@@ -136,12 +137,10 @@ struct SpreadShader
 	int vertex_shader;
 	int fragment_shader;
 	int program_shader;
-	int attriblistlength;
-	char ** attriblist;
+	int attribute_slots[MAX_ATTRIBUTES];  //attrib0..attrib7
 };
 
-//Attriblist == the positions of the geometry attributes in your geometry, usually [vpos] [vcolor] or something like that.
-SpreadShader * SpreadLoadShader( Spreadgine * spr, const char * shadername, const char * fragmentShader, const char * vertexShader, int attriblistlength, const char ** attriblist );
+SpreadShader * SpreadLoadShader( Spreadgine * spr, const char * shadername, const char * fragmentShader, const char * vertexShader );
 int SpreadGetUniformSlot( SpreadShader * shd, const char * slotname );
 void SpreadUniform4f( SpreadShader * shd, int slot, const float * uni );
 void SpreadUniform16f( SpreadShader * shd, int slot, const float * uni );

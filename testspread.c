@@ -18,21 +18,20 @@ void HandleMotion( int x, int y, int mask )
 int main()
 {
 #if defined( MALI ) || defined( RASPI_GPU )
-	Spreadgine * e = SpreadInit( 2160, 1200, "Spread Test", 8888, 2, stderr );
+	Spreadgine * e = SpreadInit( 1920, 1080, "Spread Test", 8888, 2, stderr );
 #else
 	Spreadgine * e = SpreadInit( 800, 600, "Spread Test", 8888, 2, stderr );
 #endif
 
 	//First: Add a defualt shader
-	const char * attribos[3] = { "vpos", "vcolor", "vtex" };
-	SpreadShader * shd1 = SpreadLoadShader( e, "shd1", "assets/textured.frag", "assets/textured.vert", 2, attribos );
+	SpreadShader * shd1 = SpreadLoadShader( e, "shd1", "assets/textured.frag", "assets/textured.vert" );
 	if( !shd1 )
 	{
 		fprintf( stderr, "Error making shader.\n" );
 	}
 
-	SpreadGeometry * platform = LoadOBJ( e, "assets/platform.obj", 0, 0 );
-	SpreadGeometry * plat2 = MakeSquareMesh( e, 1, 2 );
+//	SpreadGeometry * platform = LoadOBJ( e, "assets/platform.obj", 0, 0 );
+	SpreadGeometry * plat2 = MakeSquareMesh( e, 1, 1 );
 	SpreadGeometry * batchedTri = CreateMeshGen( e, "batchedTri", GL_TRIANGLES, 65535 );
 
 
@@ -118,17 +117,19 @@ int main()
 		//tdTranslate( modelmatrix, 0, 0, .1 );
 
 
-		StartImmediateMode( batchedTri );
 
+
+	
+		StartImmediateMode( batchedTri );
 		tdPush();
 		tdIdentity( gSMatrix );
-		tdTranslate( gSMatrix, -2., -2., 0. );
-
-		for( y = 0; y < 20; y++ )
+		tdScale( gSMatrix, 2, 2, 2 );
+		tdTranslate( gSMatrix, -4., -4., 0. );
+		for( y = 0; y < 40; y++ )
 		{
 			tdTranslate( gSMatrix, 0.0, 1.1, 0 );
 			tdPush();
-			for( x = 0; x < 20; x++ )
+			for( x = 0; x < 40; x++ )
 			{
 				tdTranslate( gSMatrix, 1.1, 0, 0 );
 				tdPush();
@@ -146,11 +147,13 @@ int main()
 		}
 		tdPop();
 
+		UpdateMeshToGen( batchedTri );
+
 		tdPush();
 		tdScale( gSMatrix, 1., 1., 1. );
-		UpdateMeshToGen( batchedTri );
+
 		SpreadRenderGeometry( batchedTri, gSMatrix, 0, -1 ); 
-		SpreadRenderGeometry( plat2, gSMatrix, 0, -1 ); 
+		//SpreadRenderGeometry( plat2, gSMatrix, 0, -1 ); 
 		//SpreadRenderGeometry( &e->geos[0], gSMatrix, 0, -1 ); 
 		tdPop();
 
