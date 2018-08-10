@@ -11,6 +11,13 @@
 #include <CNFGFunctions.h>
 #include <CNFG3D.h>
 
+//The raspi is a little slow on the uptake.
+#ifndef GL_RED
+#define GL_GEOMETRY_SHADER                0x8DD9
+#define GL_RED 0x1903
+#define GL_RG 0x8227
+#endif
+
 
 uint8_t SpreadTypeSizes[] = { 4, 1 };
 
@@ -835,10 +842,6 @@ void SpreadFreeGeometry( SpreadGeometry * geo )
 	SpreadHashRemove( geo->parent, "geometry#", geo->geo_in_parent );
 }
 
-#ifndef GL_RED
-#define GL_RED 0x1903
-#define GL_RG 0x8227
-#endif
 static const int chanmode[] = { 0, GL_RED, GL_RG, GL_RGB, GL_RGBA };
 
 SpreadTexture * SpreadCreateTexture( Spreadgine * spr, const char * texname, int w, int h, int chan, int mode )
@@ -888,7 +891,7 @@ SpreadTexture * SpreadCreateTexture( Spreadgine * spr, const char * texname, int
 
 	glGenTextures(1, &ret->textureID);
 	glBindTexture(GL_TEXTURE_2D, ret->textureID);
-	glTexImage2D( GL_TEXTURE_2D, 0, chanmode[ret->channels], w, h, 0, chanmode[ret->channels], GL_UNSIGNED_BYTE, ret->pixeldata );
+	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, mode, ret->pixeldata );
 
 	SpreadMessage( ret->parent, "texture#", "bbsiiii", ret->texture_in_parent, 97, ret->texture_in_parent, ret->texname, ret->type, ret->channels, ret->w, ret->h);
 
