@@ -100,7 +100,7 @@ int main()
 		}
 		else
 		{
-			fprintf( stderr, "Error: Can't find parameter in shader\n" );
+			//fprintf( stderr, "Error: Can't find parameter in shader\n" );
 		}
 
 		SpreadApplyTexture( tex, 0 );

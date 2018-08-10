@@ -330,7 +330,7 @@ static SpreadShader * LoadShaderAtPlace( SpreadShader * ret, Spreadgine * spr )
 		rl = ftell( f );
 		fseek( f, 0, SEEK_SET );
 		geometryShader_text = malloc( rl+1 );
-		_ignored_ = fread( vertexShader_text, 1, rl, f );
+		_ignored_ = fread( geometryShader_text, 1, rl, f );
 		geometryShader_text[rl] = 0;
 		fclose( f );
 	}
@@ -358,11 +358,11 @@ static SpreadShader * LoadShaderAtPlace( SpreadShader * ret, Spreadgine * spr )
 		fprintf(spr->fReport, "Error: glCreateShader(GL_VERTEX_SHADER) failed: 0x%08X\n", glGetError());
 		goto qexit;
 	}
-	printf( "Compiling %s\n", vertexShader_text );
+
 	glShaderSource(ret->vertex_shader, 1, (const GLchar**)&vertexShader_text, NULL);
 	glCompileShader(ret->vertex_shader);
 	glGetShaderiv(ret->vertex_shader, GL_COMPILE_STATUS, &retval);
-	printf( "Compiled %d\n", retval );
+
 	if (!retval) {
 		char *log;
 		fprintf(spr->fReport, "Error: vertex shader compilation failed!\n");
