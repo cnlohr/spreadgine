@@ -2,7 +2,7 @@
 #include <string.h>
 
 
-float disappearing = 0.06;
+float disappearing = 0.05;
 float diopter = 0.032;
 float fovie = 73;
 float eyez = -.08;
@@ -19,10 +19,12 @@ SurvivePose wmpC[2];
 SurvivePose wmp[2];
 SurvivePose wmplast[2];
 
+
 Spreadgine * gspe;
 SurviveObject * HMD;
 SurviveObject * WM[2];
 SurvivePose shift_gun, shift_hmd;
+struct SurviveContext *survivectx;
 
 void my_raw_pose_process(SurviveObject *so, uint32_t timecode, SurvivePose *pose)
 {
@@ -41,22 +43,24 @@ void my_raw_pose_process(SurviveObject *so, uint32_t timecode, SurvivePose *pose
 	    WM[id] = so;
 	  }
 
+
+
 	OGUnlockMutex(poll_mutex);
 }
 
 
 void * LibSurviveThread()
 {       
-        struct SurviveContext *ctx = survive_init(gargc,gargv);
+        survivectx = survive_init(gargc,gargv);
 
-        if (ctx == 0) // implies -help or similiar
+        if (survivectx == 0) // implies -help or similiar
                 return 0;
 
-        survive_install_pose_fn(ctx, my_raw_pose_process);
+        survive_install_pose_fn(survivectx, my_raw_pose_process);
 
-        survive_startup(ctx);
+        survive_startup(survivectx);
 
-        while (survive_poll(ctx) == 0) {
+        while (survive_poll(survivectx) == 0) {
         }
 }
 

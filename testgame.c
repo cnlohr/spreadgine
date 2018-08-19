@@ -243,18 +243,30 @@ int main( int argc, char ** argv )
 
 		tdPush();
 
-		//Draw watchmen
-		tdPush();
-		tdTranslate( gSMatrix, wmp[0].Pos[0], wmp[0].Pos[1], wmp[0].Pos[2] );
-		tdRotateQuat( gSMatrix, wmp[0].Rot[0], wmp[0].Rot[1], wmp[0].Rot[2], wmp[0].Rot[3] );
-		SpreadRenderGeometry( gun, gSMatrix, 0, -1 ); 
-		tdPop();
+		int i;
+		//Draw watchmen & lighthouses
+		for( i = 0; i < 2; i++ )
+		{
+			tdPush();
+			tdTranslate( gSMatrix, wmp[i].Pos[0], wmp[i].Pos[1], wmp[i].Pos[2] );
+			tdRotateQuat( gSMatrix, wmp[i].Rot[0], wmp[i].Rot[1], wmp[i].Rot[2], wmp[i].Rot[3] );
+			SpreadRenderGeometry( gun, gSMatrix, 0, -1 ); 
+			tdPop();
 
-		tdPush();
-		tdTranslate( gSMatrix, wmp[1].Pos[0], wmp[1].Pos[1], wmp[1].Pos[2] );
-		tdRotateQuat( gSMatrix, wmp[1].Rot[0], wmp[1].Rot[1], wmp[1].Rot[2], wmp[1].Rot[3] );
-		SpreadRenderGeometry( gun, gSMatrix, 0, -1 ); 
-		tdPop();
+
+			if( survivectx )
+			{
+				SurvivePose * ps = &survivectx->bsd[i].Pose;
+
+				tdPush();
+				tdTranslate( gSMatrix, ps->Pos[0], ps->Pos[1], ps->Pos[2] );
+				tdRotateQuat( gSMatrix, ps->Rot[0], ps->Rot[1], ps->Rot[2], ps->Rot[3] );
+				tdScale( gSMatrix, 2, 2, -2 );
+				SpreadRenderGeometry( gun, gSMatrix, 0, -1 ); 
+				tdPop();
+			}
+		}
+
 
 		SpreadRenderGeometry( platform, gSMatrix, 0, -1 ); 
 

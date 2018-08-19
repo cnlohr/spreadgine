@@ -18,7 +18,7 @@ extern SurvivePose wmp[2];
 extern Spreadgine * gspe;
 extern SurviveObject * HMD;
 extern SurviveObject * WM[2];
-
+extern SurviveContext * survivectx;
 
 extern og_mutex_t poll_mutex;
 
