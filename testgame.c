@@ -193,6 +193,7 @@ int main( int argc, char ** argv )
 		printf( "Made boolets\n" );
 	}
 
+
 	for( i = 0; i < MAX_BLOCKS; i++ )
 	{
 		blockco[i*3+0] = blockpos[i*3+0] = rand()%10;
@@ -287,7 +288,13 @@ int main( int argc, char ** argv )
 
 		for( i = 0 ; i < MAX_BLOCKS; i++ )
 		{
-			if( blocksplode[i] > 1 ) continue;
+			if( blocksplode[i] > 1 )
+			{
+				blockco[i*3+0] = blockpos[i*3+0] = rand()%10;
+				blockco[i*3+1] = blockpos[i*3+1] = rand()%10;
+				blockco[i*3+2] = blockpos[i*3+2] = rand()%10;
+				blocksplode[i] = 0.1;
+			}
 			tdPush();
 			tdTranslate( gSMatrix, blockpos[i*3+0], blockpos[i*3+1], blockpos[i*3+2] );
 			//int rstart = ((tframes)*6)%36;
