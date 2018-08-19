@@ -4,7 +4,7 @@
 
 float disappearing = 0.05;
 float diopter = 0.032;
-float fovie = 73;
+float fovie = 77;
 float eyez = -.08;
 
 og_mutex_t poll_mutex;
