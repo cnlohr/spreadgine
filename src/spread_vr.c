@@ -95,7 +95,7 @@ void UpdateRots( SurvivePose * out, SurvivePose * last, SurvivePose * raw, Survi
 	quatgetreciprocal( invertedlast, last->Rot );
 	quatrotateabout( differential_rotation, invertedlast, raw->Rot );
 
-	quatslerp( differential_rotation, LinmathQuat_Identity, differential_rotation, 2 ); //Account for latency and advance motion feed forward. 
+	quatslerp( differential_rotation, LinmathQuat_Identity, differential_rotation, 2); //Account for latency and advance motion feed forward. 
 
 	memcpy( out, raw, sizeof(SurvivePose) );
 	quatrotateabout( out->Rot, out->Rot, differential_rotation );
