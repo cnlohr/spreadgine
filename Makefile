@@ -1,4 +1,4 @@
-all : testspread testsurvive testgame set_optical_calibrations testspread2
+all : testspread testsurvive testgame set_optical_calibrations testspread2 testabnogeo
 
 uname_m := $(shell uname -m)
 
@@ -48,6 +48,8 @@ testgame : testgame.c $(SPREADGINE_C) $(RESOURCE_O)
 set_optical_calibrations : set_optical_calibrations.c $(SPREADGINE_C) $(RESOURCE_O)
 	gcc -o $@ $^ $(CFLAGS) $(LDFLAGS) $(SURVIVE_LDFLAGS)
 
+testabnogeo : testabnogeo.c $(SPREADGINE_C) $(RESOURCE_O)
+	gcc -o $@ $^ $(CFLAGS) $(LDFLAGS)
 
 cntools/http/http_bsd.c :
 	git submodule update --init --recursive

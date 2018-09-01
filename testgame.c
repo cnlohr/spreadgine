@@ -5,9 +5,11 @@
 #include <math.h>
 #include <spread_vr.h>
 #include <spreadgine_remote.h>
+#include <stdarg.h>
 
-#define MAX_BOOLETS 4096
-#define MAX_BLOCKS 48
+#define MAX_LINES   4096
+#define MAX_BOOLETS 2048
+#define MAX_BLOCKS 32
 
 float boolet_pos[MAX_BOOLETS*3];
 float boolet_vec[MAX_BOOLETS*3];
@@ -15,15 +17,100 @@ float boolet_age[MAX_BOOLETS];
 
 float blocksplode[MAX_BLOCKS];
 float blockpos[MAX_BLOCKS*3];
+float blockspeed[MAX_BLOCKS*3];
 float blockco[MAX_BLOCKS*3];
 
 int boolet_in_use[MAX_BOOLETS];
 float boolet_speed[MAX_BOOLETS];
-float boolets_arrayP[MAX_BOOLETS*6*2];
-float boolets_arrayC[MAX_BOOLETS*8*2];
-uint16_t boolets_ibo[MAX_BOOLETS*2*2];
+float boolets_arrayP[MAX_LINES*6*2];
+float boolets_arrayC[MAX_LINES*8*2];
+uint16_t boolets_ibo[MAX_LINES*2*2];
 int freebid;
 SpreadGeometry * boolets;
+
+int PerLinePlace = 0;
+int ShotsPerGun[2];
+void ClearPerFrameLines()
+{
+	//memset( &boolets_arrayP[MAX_LINES*6], 0, sizeof(MAX_LINES*6)*4 ); 
+	PerLinePlace = MAX_LINES;
+}
+
+void AddPerLinePlace( float * mat, float * pt1, float * pt2, float * c1, float * c2 )
+{
+	tdPTransform( pt1, mat, &boolets_arrayP[PerLinePlace*3+0] );
+	tdPTransform( pt2, mat, &boolets_arrayP[PerLinePlace*3+3] );
+	memcpy( &boolets_arrayC[PerLinePlace*4+0], c1, sizeof( float ) * 4 );
+	memcpy( &boolets_arrayC[PerLinePlace*4+4], c2, sizeof( float ) * 4 );
+	PerLinePlace +=2;
+}
+
+extern const unsigned short FontCharMap[256];
+extern const unsigned char FontCharData[1902];
+
+void RawDrawText( float scale, float * mat, float * color, const char * textf, ... )
+{
+	const unsigned char * lmap;
+	float PenX = 0;
+	float PenY = 0;
+	char text[1024];
+
+
+	va_list args;
+	va_start (args, textf);
+	vsprintf (text, textf, args);
+	va_end (args);
+
+	float iox = PenX;//(float)CNFGPenX;
+	float ioy = PenY;//(float)CNFGPenY;
+
+	int place = 0;
+	unsigned short index;
+	int bQuit = 0;
+	while( text[place] )
+	{
+		unsigned char c = text[place];
+
+		switch( c )
+		{
+		case 9:
+			iox += 12 * scale;
+			break;
+		case 10:
+			iox = PenX;
+			ioy += 6 * scale;
+			break;
+		default:
+			index = FontCharMap[c];
+			if( index == 65535 )
+			{
+				iox += 3 * scale;
+				break;
+			}
+
+			lmap = &FontCharData[index];
+			do
+			{
+				float x1 = (float)((((*lmap) & 0x70)>>4)*scale + iox);
+				float y1 = (float)(((*lmap) & 0x0f)*scale + ioy);
+				float x2 = (float)((((*(lmap+1)) & 0x70)>>4)*scale + iox);
+				float y2 = (float)(((*(lmap+1)) & 0x0f)*scale + ioy);
+				lmap++;
+				float pt1[3] = { x1, y1, 0 };
+				float pt2[3] = { x2, y2, 0 };
+				AddPerLinePlace( mat, pt1, pt2, color, color );
+				//CNFGTackSegment( x1, y1, x2, y2 );
+				bQuit = *lmap & 0x80;
+				lmap++;
+			} while( !bQuit );
+
+			iox += 3 * scale;
+		}
+		place++;
+	}
+}
+
+
 
 void HandleKey( int keycode, int bDown )
 {
@@ -70,6 +157,8 @@ void HandleControllerInput()
 			boolet_in_use[freebid] = 1;
 			boolet_speed[freebid] = 10;
 			freebid = (freebid+1)%MAX_BOOLETS;
+
+			ShotsPerGun[id]++;
 		}
 		wasdown[id] = down;
 
@@ -114,7 +203,10 @@ void UpdateBoolets( float dtime )
 		boolet_pos[i*3+2] += boolet_vec[i*3+2]*dtime*boolet_speed[i];
 		boolet_vec[i*3+2] -= dtime*.02*boolet_speed[i];
 
+		if( boolet_pos[i*3+2] <= 0.01 ) continue;
+
 		int j;
+
 		for( j = 0; j < MAX_BLOCKS; j++ )
 		{
 			if( blocksplode[j] > 0.11 ) continue;
@@ -149,6 +241,14 @@ void UpdateBoolets( float dtime )
 	}
 }
 
+void ResetBlock( int i )
+{
+	blockco[i*3+0] = blockpos[i*3+0] = rand()%10;
+	blockco[i*3+1] = blockpos[i*3+1] = rand()%10;
+	blockco[i*3+2] = blockpos[i*3+2] = rand()%10;
+	blocksplode[i] = 0.1;
+}
+
 int main( int argc, char ** argv )
 {
 	int i;
@@ -170,15 +270,15 @@ int main( int argc, char ** argv )
 
 		printf( "Making boolets\n" );
 		int i;
-		for( i = 0; i < MAX_BOOLETS*2; i++ )
+		for( i = 0; i < MAX_LINES*2; i++ )
 		{
 			boolets_ibo[i] = i;
 		}
 
-		boolets = SpreadCreateGeometry( gspe, "boolets", GL_LINES, MAX_BOOLETS*2, boolets_ibo, MAX_BOOLETS*2, 2, (const void**)arrays, strides, types);
+		boolets = SpreadCreateGeometry( gspe, "boolets", GL_LINES, MAX_LINES*2, boolets_ibo, MAX_LINES*2, 2, (const void**)arrays, strides, types);
 
 
-		for( i = 0; i < MAX_BOOLETS; i++ )
+		for( i = 0; i < MAX_LINES/2; i++ )
 		{
 			boolets_arrayC[i*8+0] = 1; 
 			boolets_arrayC[i*8+1] = 1; 
@@ -189,16 +289,26 @@ int main( int argc, char ** argv )
 			boolets_arrayC[i*8+6] = 0; 
 			boolets_arrayC[i*8+7] = 1; 
 		}
-			UpdateSpreadGeometry( boolets, 1, boolets_arrayC );
+		for( ; i < MAX_LINES; i++ )
+		{
+			boolets_arrayC[i*8+0] = 1; 
+			boolets_arrayC[i*8+1] = 1; 
+			boolets_arrayC[i*8+2] = 1; 
+			boolets_arrayC[i*8+3] = 1; 
+			boolets_arrayC[i*8+4] = 1; 
+			boolets_arrayC[i*8+5] = 1; 
+			boolets_arrayC[i*8+6] = 1; 
+			boolets_arrayC[i*8+7] = 1; 
+		}
+
+		UpdateSpreadGeometry( boolets, 1, boolets_arrayC );
 		printf( "Made boolets\n" );
 	}
 
+
 	for( i = 0; i < MAX_BLOCKS; i++ )
 	{
-		blockco[i*3+0] = blockpos[i*3+0] = rand()%10;
-		blockco[i*3+1] = blockpos[i*3+1] = rand()%10;
-		blockco[i*3+2] = blockpos[i*3+2] = rand()%10;
-		blocksplode[i] = 0.1;
+		ResetBlock( i );
 	}
 
 //exit(-1);
@@ -208,6 +318,7 @@ int main( int argc, char ** argv )
 
 	SpreadSetupVR();
 
+	float Color[4] = { 1, 1, 1, 1 };
 	int x, y, z;
 
 	int frames = 0, tframes = 0;
@@ -233,6 +344,8 @@ int main( int argc, char ** argv )
 
 		int x, y;
 
+		ClearPerFrameLines();
+
         tdMode( tdMODELVIEW );
         tdIdentity( gSMatrix );
 
@@ -243,18 +356,36 @@ int main( int argc, char ** argv )
 
 		tdPush();
 
-		//Draw watchmen
-		tdPush();
-		tdTranslate( gSMatrix, wmp[0].Pos[0], wmp[0].Pos[1], wmp[0].Pos[2] );
-		tdRotateQuat( gSMatrix, wmp[0].Rot[0], wmp[0].Rot[1], wmp[0].Rot[2], wmp[0].Rot[3] );
-		SpreadRenderGeometry( gun, gSMatrix, 0, -1 ); 
-		tdPop();
+		int i;
+		//Draw watchmen & lighthouses
+		for( i = 0; i < 2; i++ )
+		{
+			tdPush();
+			tdTranslate( gSMatrix, wmp[i].Pos[0], wmp[i].Pos[1], wmp[i].Pos[2] );
+			tdRotateQuat( gSMatrix, wmp[i].Rot[0], wmp[i].Rot[1], wmp[i].Rot[2], wmp[i].Rot[3] );
+			SpreadRenderGeometry( gun, gSMatrix, 0, -1 ); 
 
-		tdPush();
-		tdTranslate( gSMatrix, wmp[1].Pos[0], wmp[1].Pos[1], wmp[1].Pos[2] );
-		tdRotateQuat( gSMatrix, wmp[1].Rot[0], wmp[1].Rot[1], wmp[1].Rot[2], wmp[1].Rot[3] );
-		SpreadRenderGeometry( gun, gSMatrix, 0, -1 ); 
-		tdPop();
+			RawDrawText( -.01, gSMatrix, Color, "GUN %d\nSHOT %d", i, ShotsPerGun[i] );
+
+			tdPop();
+
+
+			if( survivectx )
+			{
+				SurvivePose * ps = &survivectx->bsd[i].Pose;
+
+				tdPush();
+				tdTranslate( gSMatrix, ps->Pos[0], ps->Pos[1], ps->Pos[2] );
+				tdRotateQuat( gSMatrix, ps->Rot[0], ps->Rot[1], ps->Rot[2], ps->Rot[3] );
+				tdScale( gSMatrix, 2, 2, -2 );
+				SpreadRenderGeometry( gun, gSMatrix, 0, -1 );
+ 
+				RawDrawText( -.02, gSMatrix, Color, "LH %d", i );
+
+				tdPop();
+			}
+		}
+
 
 		SpreadRenderGeometry( platform, gSMatrix, 0, -1 ); 
 
@@ -275,7 +406,10 @@ int main( int argc, char ** argv )
 
 		for( i = 0 ; i < MAX_BLOCKS; i++ )
 		{
-			if( blocksplode[i] > 1 ) continue;
+			if( blocksplode[i] > 1 )
+			{
+				ResetBlock( i );
+			}
 			tdPush();
 			tdTranslate( gSMatrix, blockpos[i*3+0], blockpos[i*3+1], blockpos[i*3+2] );
 			//int rstart = ((tframes)*6)%36;
@@ -297,7 +431,10 @@ int main( int argc, char ** argv )
 
 //		SpreadRenderGeometry( gun, gSMatrix, 0, -1 ); 
 		UpdateBoolets( Delta );
-		SpreadRenderGeometry( boolets, gSMatrix, 0, MAX_BOOLETS*2);
+
+
+//void RawDrawText( const char * text, int scale, float * mat )
+		SpreadRenderGeometry( boolets, gSMatrix, 0, MAX_LINES*2);
 		tdPop();
 
 #ifndef RASPI_GPU

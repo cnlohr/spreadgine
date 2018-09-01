@@ -20,9 +20,9 @@ void main()
 	vec2 rscreenpos = gl_Position.xy/gl_Position.w;
 
 	//My awful method for trying to correct for lens warp.
-	float compb = dot(rscreenpos,rscreenpos);
+	float compb = pow(dot(rscreenpos,rscreenpos),.7);
 	compb = min( compb, 2.0 );
-	rscreenpos *= (1.0-  compb*.1);
+	rscreenpos *= (1.0-  compb*.15);
 
 	//vvColor.rgb = vec3( vec2(compb), 1.0 );
 	gl_Position.xy = rscreenpos * gl_Position.w;

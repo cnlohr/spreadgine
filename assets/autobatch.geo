@@ -1,17 +1,26 @@
-#version 150
+#version 330
 
 layout(points) in;
-layout(line_strip, max_vertices = 2) out;
+layout(triangle_strip, max_vertices = 1024) out;
 
 void main()
 {
-    gl_Position = gl_in[0].gl_Position + vec4(-10, 0.0, 0.0, 0.0);
-    EmitVertex();
+	for( int i = 0; i < 100; i++ )
+	{
+		float fv = i * 3.14159 * .02;
+	    gl_Position = gl_in[0].gl_Position + vec4(sin(fv)*-5, cos(fv)*-5, 0.0, 0.0);
+    	EmitVertex();
 
-    gl_Position = gl_in[0].gl_Position + vec4(10, 0.0, 0.0, 0.0);
-    EmitVertex();
+    	gl_Position = gl_in[0].gl_Position + vec4(sin(fv)*5., cos(fv)*5., 0.0, 0.0);
+    	EmitVertex();
 
-    EndPrimitive();
+    	gl_Position = gl_in[0].gl_Position + vec4(sin(fv+.02)*5., cos(fv+.02)*5., 0.0, 0.0);
+    	EmitVertex();
+
+
+	    EndPrimitive();
+	}
+
 }
 
 /*
