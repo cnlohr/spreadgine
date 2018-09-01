@@ -662,6 +662,7 @@ SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, i
 	ret->arrays = malloc( sizeof(void*) * nr_arrays );
 	ret->types = malloc( sizeof(uint8_t) * nr_arrays );
 	ret->strides = malloc( sizeof(uint8_t) * nr_arrays );
+	ret->user = 0;
 	
 	glGenBuffers(1, &ret->ibo );
  	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ret->ibo);

@@ -182,6 +182,8 @@ struct SpreadGeometry
 	int verts;
 
 	int max_set; //Not used inside core spreadgine, more for immediate mode.
+
+	void * user; //Used for things like immediate mode, etc.
 };
 
 SpreadGeometry * SpreadCreateGeometry( Spreadgine * spr, const char * geoname, int render_type, int indices, uint16_t * indexbuffer, int verts, int nr_arrays, const void ** arrays, int * strides, int * types );
@@ -215,9 +217,10 @@ void SpreadApplyTexture( SpreadTexture * tex, int slot );
 void SpreadFreeTexture( SpreadTexture * tex );
 
 //////////////////////////UTILITIES//////////////////////////////
-int ImmediateModeMesh( struct SpreadGeometry * geo, float * trans44, float * coloroff, float * colorscale, float * tcoff, float * tcscale );
+//Immediate mode/dynamic mesh functionality
 SpreadGeometry * CreateMeshGen( Spreadgine * spr, const char * geoname, int render_type, int max_iset );
 void StartImmediateMode( SpreadGeometry * geo );
+int ImmediateModeMesh( struct SpreadGeometry * geo, float * trans44, float * coloroff, float * colorscale, float * tcoff, float * tcscale );
 void UpdateMeshToGen( SpreadGeometry * geo );
 
 
