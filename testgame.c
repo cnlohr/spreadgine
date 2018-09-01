@@ -3,7 +3,8 @@
 #include <os_generic.h>
 #include <string.h>
 #include <math.h>
-#include <spread_vr.h>
+#include <spreadgine_vr.h>
+#include <spreadgine_util.h>
 #include <spreadgine_remote.h>
 #include <stdarg.h>
 

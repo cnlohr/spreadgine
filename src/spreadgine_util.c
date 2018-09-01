@@ -2,10 +2,11 @@
 
 #include <string.h>
 #include <spreadgine.h>
+#include <spreadgine_util.h>
 #include <spreadgine_remote.h>
 #include <stdlib.h>
 
-#include <spatialloc.h>
+#include "spatialloc.h"
 
 static uint16_t * TVIndices;
 static float * TVPositions;
@@ -260,7 +261,7 @@ BatchedSet * CreateBatchedSet( Spreadgine * spr, const char * setname, int max_o
 	ret->spatial_allocator = SpatCreate( texturex, texturey );
 	snprintf( ct, sizeof(ct)-1, "%s_geo", setname );
 	ret->coregeo = CreateMeshGen( spr, ct, render_type, max_indices );
-	ret->objects = calloc( max_objects, sizeof( BatchedObject ) );
+	ret->objects = calloc( max_objects, sizeof( BatchedObject * ) );
 	ret->max_objects = max_objects;
 	ret->max_index = max_indices;
 	return ret;
@@ -269,13 +270,14 @@ BatchedSet * CreateBatchedSet( Spreadgine * spr, const char * setname, int max_o
 void FreeBatchedSet( BatchedSet * set )
 {
 	int i;
-	free( set->setname );
+	int mo = set->max_objects;
 	free( set->allocated_indices );
 	free( set->allocated_vertices );
-	for( i = 0; i < max_objects; i++ )
+	for( i = 0; i < mo; i++ )
 	{
-		FreeBatchedObject( &set->objects[i] );
+		FreeBatchedObject( set->objects[i] );
 	}
+	free( set->objects );
 	SpreadFreeTexture( set->associated_texture );
 	SpatDestroy( set->spatial_allocator );
 	SpreadFreeGeometry( set->coregeo );
@@ -286,6 +288,8 @@ void FreeBatchedObject( BatchedObject * o )
 {
 	if( !o ) return;
 	if( !o->name ) free( o->name );
+	struct BatchedSet * parent = o->parent;
+
 	parent->objects[o->objinparent] = 0;
 
 	int vstart = o->which_vertex_place;
@@ -326,8 +330,8 @@ void UpdateBatchedObjectTransformData( BatchedObject * o, const float * Position
 	int i;
 	for( i = 0; i < 8; i++ )
 	{
-		tpd[i * 8 + 0] = pixset[i] >> 8;
-		tpd[i * 8 + 8] = pixset[i] & 0xff;
+		tpd[i + 0] = pixset[i] >> 8;
+		tpd[i + 8] = pixset[i] & 0xff;
 	}
 	SpreadUpdateSubTexture( tex, tpd, x, y, 4, 1 );
 }
@@ -360,7 +364,7 @@ BatchedObject * AllocateBatchedObject( BatchedSet * set, SpreadGeometry * object
 		for( i = 0; i < max_index; i++ )
 		{
 			if( set->allocated_vertices[0] == 0 ) streak++; else streak = 0;
-			if( streak == needed_vertex ) break;
+			if( streak == needed_vert ) break;
 			if( streak == 1 ) vertexstart = i;
 		}
 		if( i == max_index )
@@ -403,5 +407,48 @@ BatchedObject * AllocateBatchedObject( BatchedSet * set, SpreadGeometry * object
 	ret->name = strdup(name);
 	ret->parent = set;
 	ret->extratex = 0;
+	set->objects[i] = ret;
+	return ret;
 }
+
+
+
+int  AllocateBatchedObjectTexture( BatchedObject * o, int * tx, int * ty, int w, int h )
+{
+	int r = SpatMalloc( o->parent->spatial_allocator, w, h, tx, ty );
+	if( r != 0 )
+	{
+		fprintf( stderr, "Error: could not allocate %d, %d to %s\n", w, h, o->name );
+		return r;
+	}
+
+
+	struct ExtraTexs * etp = o->extratex;
+	o->extratex = malloc( sizeof( struct ExtraTexs ) );
+	o->extratex->next = etp;
+	o->extratex->x = *tx;
+	o->extratex->y = *ty;
+
+	return 0;
+}
+
+int FreeBatchedObjectTexture( BatchedObject * o, int tx, int ty )
+{
+	struct ExtraTexs ** et = &o->extratex;
+	struct ExtraTexs * tt;
+	while( (tt = *et) )
+	{
+		if( tt->x == tx && tt->y == ty )
+		{
+			SpatFree( o->parent->spatial_allocator, tx, ty );
+			*et = tt->next;
+			free( tt );
+			return 0;
+		}
+		et = &tt->next;
+	}
+	return 1;
+}
+
+
 

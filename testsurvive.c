@@ -4,7 +4,8 @@
 #include <os_generic.h>
 #include <libsurvive/survive.h>
 #include <string.h>
-#include <spread_vr.h>
+#include <spreadgine_vr.h>
+#include <spreadgine_util.h>
 
 void HandleKey( int keycode, int bDown )
 {
