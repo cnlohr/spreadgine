@@ -211,22 +211,10 @@ struct SpreadTexture
 };
 
 
-SpreadTexture * SpreadCreateTexture( Spreadgine * spr, const char * texname, int w, int h, int chan, int mode );
+SpreadTexture * SpreadCreateTexture( Spreadgine * spr, const char * texname, int w, int h, int chan, int mode ); //Typically chan=4, and mode=GL_UNSIGNED_BYTE (GL_FLOAT not supported on rpi)
 void SpreadUpdateSubTexture( SpreadTexture * tex, void * texdat, int x, int y, int w, int h );
 void SpreadApplyTexture( SpreadTexture * tex, int slot );
 void SpreadFreeTexture( SpreadTexture * tex );
-
-//////////////////////////UTILITIES//////////////////////////////
-//Immediate mode/dynamic mesh functionality
-SpreadGeometry * CreateMeshGen( Spreadgine * spr, const char * geoname, int render_type, int max_iset );
-void StartImmediateMode( SpreadGeometry * geo );
-int ImmediateModeMesh( struct SpreadGeometry * geo, float * trans44, float * coloroff, float * colorscale, float * tcoff, float * tcscale );
-void UpdateMeshToGen( SpreadGeometry * geo );
-
-
-
-SpreadGeometry * LoadOBJ( Spreadgine * spr, const char * filename, int flipv, int make_wireframe );
-SpreadGeometry * MakeSquareMesh( Spreadgine * e, int w, int h );
 
 
 #endif

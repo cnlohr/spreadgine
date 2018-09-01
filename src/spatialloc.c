@@ -56,6 +56,13 @@ Spatialloc * SpatCreate( int w, int h )
 	return ret;
 }
 
+void         SpatDestroy( struct Spatialloc * r )
+{
+	free( r->downmap );
+	free( r );
+}
+
+
 int SpatMalloc( struct Spatialloc * r, int w, int h, int * x, int * y )
 {
 	*x = -1;

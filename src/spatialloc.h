@@ -19,6 +19,6 @@ int          SpatMalloc( struct Spatialloc * r, int w, int h, int * x, int * y )
 int	         SpatFindCorner( struct Spatialloc * r, int x, int y, int * cx, int * cy, int * w, int * h );
 int          SpatFree( struct Spatialloc * r, int x, int y );
 void         SpatPrint( struct Spatialloc * r );
-
+void         SpatDestroy( struct Spatialloc * r );
 #endif
 
