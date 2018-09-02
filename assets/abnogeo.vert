@@ -8,6 +8,9 @@ varying vec4 vv2Tex;
 
 uniform vec4 timevec;
 
+attribute vec3 attrib0;
+attribute vec4 attrib1;
+attribute vec4 attrib2;
 uniform sampler2D texture0;
 
 
