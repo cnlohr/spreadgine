@@ -5,6 +5,7 @@ uniform mat4 pmatrix, vmatrix, mmatrix;
 varying vec4 vv0Pos;
 varying vec4 vv1Col;
 varying vec4 vv2Tex;
+varying vec4 vvExtra;
 
 uniform vec4 timevec;
 
@@ -18,35 +19,46 @@ void main()
 	vv1Col = attrib1;
     vv2Tex = attrib2;
 
-	vec2 gtx = attrib2.xy;
-	vec4 tpos = texture2D( texture0, gtx );
-	gtx += texadvance;
-	vec4 tquat = texture2D( texture0, gtx );
-	gtx += texadvance;
-	tpos += texture2D( texture0, gtx ) / 256.0;
-	gtx += texadvance;
-	tquat += texture2D( texture0, gtx ) / 256.0;
+	vec3 vert;
 
-	//tpos = pos * 1000.0/?????
-	tpos = tpos * (32768.0/1000.0) - 32767;
-	tquat *= 32768.0/1000.0;
+	{
+		vec4 textra;
+		vec2 gtx = attrib2.zw;
+		vec4 tpos = texture2D( texture0, gtx ) * 256.;
+		gtx += texadvance;
+		vec4 tquat = texture2D( texture0, gtx ) * 256.;
+		gtx += texadvance;
+		textra = texture2D( texture0, gtx ) * 256.;
+		gtx += texadvance;
+		tpos += texture2D( texture0, gtx );
+		tpos =  ( tpos - 128 ) * (256./2048.);
 
-vec2( texsizeinv.x   texture2D( texture0, gtx + texsizeinv *  );
+		gtx += texadvance;
+		tquat += texture2D( texture0, gtx );
+		tquat =  ( tquat - 128 ) * (256./32768.);
 
-    gl_Position = (pmatrix * 
-		(vmatrix * 
-		(mmatrix * vec4(attrib0+tlu.xyz, 1.0))
-	));
+		gtx += texadvance;
+		textra = texture2D( texture0, gtx );
+		textra =  ( textra - 128 ) * (256./2048.);
+		vvExtra = textra;
 
+		vert = attrib0;
+		vert = (vert + 2.0 * cross( tquat.xyz, cross(tquat.xyz, vert) + q.w * vert ) ) * tpos.w + tpos.xyz;
+	}
 
-	vv0Pos = (mmatrix * vec4(attrib0, 1.0));
+	vec4 vvpos = mmatrix * vec4(vert, 1.0);
+	vec4 outpos = (pmatrix * 
+		(vmatrix * vvpos ) );
 
-	vec2 rscreenpos = gl_Position.xy/gl_Position.w;
+	vv0Pos = vvpos;
+
+	vec2 rscreenpos = outpos.xy/outpos.w;
 
 	//My awful method for trying to correct for lens warp.
 	float compb = dot(rscreenpos,rscreenpos);
 	compb = min( compb, 2.0 );
 	rscreenpos *= (1.0-  compb*.1);
-
 	gl_Position.xy = rscreenpos * gl_Position.w;
 }
+
+

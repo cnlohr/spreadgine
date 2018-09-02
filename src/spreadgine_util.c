@@ -310,30 +310,39 @@ void FreeBatchedObject( BatchedObject * o )
 	free( o );
 }
 
-void UpdateBatchedObjectTransformData( BatchedObject * o, const float * Position, const float * Quaternion, float scale )
+void UpdateBatchedObjectTransformData( BatchedObject * o, const float * Position, const float * Quaternion, const float * extra, const float scale  )
 {
 	int x = o->texturestartx;
 	int y = o->texturestarty;
 
 	SpreadTexture * tex = o->parent->associated_texture;
 	uint8_t tpd[16];
-	uint16_t pixset[8] = {
-		Position[0] * 1000 + 32767,
-		Position[1] * 1000 + 32767,
-		Position[2] * 1000 + 32767,
-		scale       * 1000 + 32767, 
-		Quaternion[0] * 32767 + 32767,
-		Quaternion[1] * 32767 + 32767,
-		Quaternion[2] * 32767 + 32767,
-		Quaternion[3] * 32767 + 32767 };
+	float pixtf[8] = {
+		Position[0] * 2048,
+		Position[1] * 2048,
+		Position[2] * 2048,
+		scale       * 2048, 
+		Quaternion[0] * 32768,
+		Quaternion[1] * 32768,
+		Quaternion[2] * 32768,
+		Quaternion[3] * 32768,
+		Extra[0] * 2048,
+		Extra[1] * 2048,
+		Extra[2] * 2048,
+		Extra[3] * 2048,
+		 };
 
 	int i;
 	for( i = 0; i < 8; i++ )
 	{
-		tpd[i + 0] = pixset[i] >> 8;
-		tpd[i + 8] = pixset[i] & 0xff;
+		float p = pixtf[i] + 32768;
+		if( p > 65535 ) p = 65535;
+		if( p < 0 ) p = 0;
+		uint16_t ps = (uint16_t)p;
+		tpd[i + 0] = ps >> 8;
+		tpd[i + 8] = ps & 0xff;
 	}
-	SpreadUpdateSubTexture( tex, tpd, x, y, 4, 1 );
+	SpreadUpdateSubTexture( tex, tpd, x, y, 6, 1 );
 }
 
 
@@ -378,7 +387,7 @@ BatchedObject * AllocateBatchedObject( BatchedSet * set, SpreadGeometry * object
 	//Ok, we have indexstart and vertexstart.
 	//Next, allocate the texture space.
 	int texx, texy;
-	if( SpatMalloc( set->spatial_allocator, 4, 1, &texx, &texy ) )
+	if( SpatMalloc( set->spatial_allocator, 6, 1, &texx, &texy ) )
 	{
 		fprintf( stderr, "Could not allocated texture for %s\n", name );
 		return 0;
@@ -408,6 +417,13 @@ BatchedObject * AllocateBatchedObject( BatchedSet * set, SpreadGeometry * object
 	ret->parent = set;
 	ret->extratex = 0;
 	set->objects[i] = ret;
+
+	UpdateBatchedObjectTransformData( ret, { 0, 0, 0 }, { 0, 0, 1 }, { 0, 0, 0, 0 }, 1.0  );
+
+	//Need to add this object's geometry into the batched set... And update texcoord.zw with the location of this object's data.
+
+XXX TODO HERE
+
 	return ret;
 }
 

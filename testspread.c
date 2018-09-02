@@ -24,7 +24,7 @@ int main()
 #endif
 
 	//First: Add a defualt shader
-	SpreadShader * shd1 = SpreadLoadShader( e, "shd1", "assets/textured.frag", "assets/textured.vert", 0 );
+	SpreadShader * shd1 = SpreadLoadShader( e, "shd1", "assets/autobatch.frag", "assets/autobatch.vert", 0 );
 	if( !shd1 )
 	{
 		fprintf( stderr, "Error making shader.\n" );
