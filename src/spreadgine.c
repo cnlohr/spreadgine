@@ -892,7 +892,7 @@ SpreadTexture * SpreadCreateTexture( Spreadgine * spr, const char * texname, int
 
 	glGenTextures(1, &ret->textureID);
 	glBindTexture(GL_TEXTURE_2D, ret->textureID);
-	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, mode, ret->pixeldata );
+	glTexImage2D( GL_TEXTURE_2D, 0, chanmode[chan], w, h, 0, chanmode[chan], mode, ret->pixeldata );
 
 	SpreadMessage( ret->parent, "texture#", "bbsiiii", ret->texture_in_parent, 97, ret->texture_in_parent, ret->texname, ret->type, ret->channels, ret->w, ret->h);
 

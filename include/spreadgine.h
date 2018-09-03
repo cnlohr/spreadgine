@@ -35,6 +35,17 @@ typedef struct Spreadgine Spreadgine;
 
 #define MAX_ATTRIBUTES 8
 
+//Convenience structs for compound literals.
+struct FTriple_t { float x, y, z; };
+struct FQuad_t   { float w, x, y, z; };
+#define FTriple( x, y, z )  (const float*)&((struct FTriple_t){ x, y , z })
+#define FQuad( w, x, y, z ) (const float*)&((struct FQuad_t){ w, x, y , z })
+
+//Having these fixed is faster and smaller than the compound literals.
+extern const float FPIdentity[16]; //Identity matrix
+extern const float FPZero[16]; //All zeroes
+extern const float FQZero[4];
+
 struct SpreadHashEntry
 {
 	struct SpreadHashEntry * next;
@@ -211,22 +222,10 @@ struct SpreadTexture
 };
 
 
-SpreadTexture * SpreadCreateTexture( Spreadgine * spr, const char * texname, int w, int h, int chan, int mode );
+SpreadTexture * SpreadCreateTexture( Spreadgine * spr, const char * texname, int w, int h, int chan, int mode ); //Typically chan=4, and mode=GL_UNSIGNED_BYTE (GL_FLOAT not supported on rpi)
 void SpreadUpdateSubTexture( SpreadTexture * tex, void * texdat, int x, int y, int w, int h );
 void SpreadApplyTexture( SpreadTexture * tex, int slot );
 void SpreadFreeTexture( SpreadTexture * tex );
-
-//////////////////////////UTILITIES//////////////////////////////
-//Immediate mode/dynamic mesh functionality
-SpreadGeometry * CreateMeshGen( Spreadgine * spr, const char * geoname, int render_type, int max_iset );
-void StartImmediateMode( SpreadGeometry * geo );
-int ImmediateModeMesh( struct SpreadGeometry * geo, float * trans44, float * coloroff, float * colorscale, float * tcoff, float * tcscale );
-void UpdateMeshToGen( SpreadGeometry * geo );
-
-
-
-SpreadGeometry * LoadOBJ( Spreadgine * spr, const char * filename, int flipv, int make_wireframe );
-SpreadGeometry * MakeSquareMesh( Spreadgine * e, int w, int h );
 
 
 #endif

@@ -1,7 +1,9 @@
 #include <spreadgine.h>
+#include <spreadgine_util.h>
 #include <CNFG3D.h>
 #include <unistd.h>
 #include <os_generic.h>
+#include <linmath.h>
 
 void HandleKey( int keycode, int bDown )
 {
@@ -24,16 +26,14 @@ int main()
 #endif
 
 	//First: Add a defualt shader
-	SpreadShader * shd1 = SpreadLoadShader( e, "shd1", "assets/textured.frag", "assets/textured.vert", 0 );
+	SpreadShader * shd1 = SpreadLoadShader( e, "shd1", "assets/autobatch.frag", "assets/autobatch.vert", 0 );
 	if( !shd1 )
 	{
 		fprintf( stderr, "Error making shader.\n" );
 	}
 
-//	SpreadGeometry * platform = LoadOBJ( e, "assets/platform.obj", 0, 0 );
-	SpreadGeometry * plat2 = MakeSquareMesh( e, 6, 6 );
-	SpreadGeometry * batchedTri = CreateMeshGen( e, "batchedTri", GL_TRIANGLES, 65535 );
-
+	SpreadGeometry * sixsquare = MakeSquareMesh( e, 3, 3 );
+	BatchedSet * batched   = CreateBatchedSet( e, "batchedTri", 1024, 65536, GL_TRIANGLES, 2048, 2048 );
 
 	float eye[3] = { .014, 5, 5 };
 	float at[3] =  { 0, 0, 0 };
@@ -44,12 +44,8 @@ int main()
 	tdLookAt( e->vpviews[1], eye, at,up );
 	tdTranslate( e->vpviews[1], .4, 0, 0 ); //Shift vanishing point
 
-
 	SpreadChangeCameaView(e, 0, e->vpviews[0] );
 	SpreadChangeCameaView(e, 1, e->vpviews[1] );
-
-	//e->geos[0].render_type = GL_LINES;
-	//UpdateSpreadGeometry( &e->geos[0], -1, 0 );
 
 	tdMode( tdMODELVIEW );
 	tdIdentity( gSMatrix );
@@ -57,23 +53,22 @@ int main()
 	tdScale( gSMatrix, .1, .1, .1 );		//Operates ON f
 	tdTranslate( gSMatrix, 00., 0., 0. );
 
-	SpreadTexture * tex = SpreadCreateTexture( e, "tex0", 2048, 2048, 4, GL_UNSIGNED_BYTE );
-
-	{
-		static int lin = 0;
-		uint32_t * rad = malloc(2048*2048*4);
-		int i;
-		for( i = 0; i < 2048*2048; i++ )
-		{
-			rad[i] = i | ((i*10)<<16);//rand();
-		}
-		SpreadUpdateSubTexture( tex, rad, 0, 0, 2048, 2048 );
-		free( rad );
-	}
-	int x, y;
-
 	int frames = 0, tframes = 0;
 	double lastframetime = OGGetAbsoluteTime();
+
+#define NUMBATCHO 500
+
+	BatchedObject * objs[NUMBATCHO];
+	int i;
+	for( i = 0; i < NUMBATCHO; i++ )
+	{
+		char stname[1024];
+		sprintf( stname, "obj%03d",i);
+		objs[i] = AllocateBatchedObject( batched, sixsquare, stname );
+		UpdateBatchedObjectTransformData( objs[i], FTriple(  (i % 10) * 1.5, (i / 10) * 1.5, 0 ), FQZero, FPZero, 1.0 );
+	}
+
+
 
 	while(1)
 	{
@@ -84,15 +79,7 @@ int main()
 
 		spglLineWidth( e, 4 );
 
-
-		if( 0 ){
-			static int lin = 0;
-			lin+=4;
-			if( lin >= tex->h ) lin = 0;
-			SpreadUpdateSubTexture( tex, tex->pixeldata + tex->pixwid * tex->w * lin, 0, lin, tex->w, 4 );
-		}
-
-		int slot = SpreadGetUniformSlot( shd1, "texSize0");
+/*		int slot = SpreadGetUniformSlot( shd1, "texSize0");
 		if( slot >= 0 )
 		{
 			float ssf[4] = { 2048, 2048, 0, 0 };
@@ -102,9 +89,10 @@ int main()
 		{
 			fprintf( stderr, "Error: Can't find parameter in shader\n" );
 		}
+*/
 
-		SpreadApplyTexture( tex, 0 );
-		SpreadApplyShader( shd1 );
+//		SpreadApplyTexture( tex, 0 );
+//		SpreadApplyShader( shd1 );
 
 /*
 		tdPush();
@@ -113,13 +101,35 @@ int main()
 		tdPop();
 */
 
-		tdRotateEA( gSMatrix, 0,.2125,1 );		//Operates ON f
 		//tdTranslate( modelmatrix, 0, 0, .1 );
 
 
+		for( i = 0; i < NUMBATCHO; i++ )
+		{
+			char stname[1024];
+			sprintf( stname, "obj%03d",i);
 
+			double euler[3] = { 0, 0, tframes*.1 };
+			LinmathQuat q;
+			quatfromeuler( q, euler );
+
+			float quat[4] = { q[0], q[1], q[2], q[3] }; 
+			UpdateBatchedObjectTransformData( objs[i], FTriple(  (i % 10) * 1.5, ((i / 10)%10) * 1.5, sin(i*.2+tframes*.1) + (i/100) ), quat, FPZero, 1.0 );
+		}
+
+		tdPush();
+		tdIdentity( gSMatrix );
+		tdRotateEA( gSMatrix, 0,.2125,1 );		//Operates ON f
+		tdScale( gSMatrix, .3, .3, .3 );
+		RenderBatchedSet( batched, shd1, gSMatrix );
+
+
+//		SpreadApplyShader( shd1 );
+//		SpreadRenderGeometry( sixsquare, gSMatrix, 0, -1 );
+		tdPop();
 
 	
+/*
 		StartImmediateMode( batchedTri );
 		tdPush();
 		tdIdentity( gSMatrix );
@@ -163,7 +173,7 @@ int main()
 		tdPop();
 
 		//SpreadRenderGeometry( e->geos[0], gSMatrix, 0, -1 ); 
-
+*/
 //
 //		usleep(20000);
 		spglSwap( e );
