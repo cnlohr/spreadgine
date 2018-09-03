@@ -68,6 +68,7 @@ struct BatchedSet
 	int internal_w;
 	int internal_h;
 	int tex_dirty;		//XXX BIG NOTE: If this is -1, caching is disabled.
+	int geo_dirty;		//Same as above.
 
 	int max_index;
 	int max_objects;

@@ -20,7 +20,8 @@ void HandleMotion( int x, int y, int mask )
 int main()
 {
 #if defined( MALI ) || defined( RASPI_GPU )
-	Spreadgine * e = SpreadInit( 1920, 1080, "Spread Test", 8888, 2, stderr );
+//	Spreadgine * e = SpreadInit( 1920, 1080, "Spread Test", 8888, 2, stderr );
+	Spreadgine * e = SpreadInit( 2160, 1200, "Spread Game Survive Test", 8888, 2, stderr );
 #else
 	Spreadgine * e = SpreadInit( 800, 600, "Spread Test", 8888, 2, stderr );
 #endif
@@ -32,8 +33,10 @@ int main()
 		fprintf( stderr, "Error making shader.\n" );
 	}
 
-	SpreadGeometry * sixsquare = MakeSquareMesh( e, 3, 3 );
-	BatchedSet * batched   = CreateBatchedSet( e, "batchedTri", 1024, 65536, GL_TRIANGLES, 2048, 2048 );
+	SpreadGeometry * sixsquare = MakeSquareMesh( e, 2, 1 );
+	BatchedSet * batched   = CreateBatchedSet( e, "batchedTri", 8192, 65536, GL_TRIANGLES, 2048, 2048 );
+	batched->tex_dirty = 0; //Batch whole updates.
+	batched->geo_dirty = 0;
 
 	float eye[3] = { .014, 5, 5 };
 	float at[3] =  { 0, 0, 0 };
@@ -56,7 +59,7 @@ int main()
 	int frames = 0, tframes = 0;
 	double lastframetime = OGGetAbsoluteTime();
 
-#define NUMBATCHO 500
+#define NUMBATCHO 2000
 
 	BatchedObject * objs[NUMBATCHO];
 	int i;
@@ -65,7 +68,6 @@ int main()
 		char stname[1024];
 		sprintf( stname, "obj%03d",i);
 		objs[i] = AllocateBatchedObject( batched, sixsquare, stname );
-		UpdateBatchedObjectTransformData( objs[i], FTriple(  (i % 10) * 1.5, (i / 10) * 1.5, 0 ), FQZero, FPZero, 1.0 );
 	}
 
 
@@ -114,7 +116,10 @@ int main()
 			quatfromeuler( q, euler );
 
 			float quat[4] = { q[0], q[1], q[2], q[3] }; 
-			UpdateBatchedObjectTransformData( objs[i], FTriple(  (i % 10) * 1.5, ((i / 10)%10) * 1.5, sin(i*.2+tframes*.1) + (i/100) ), quat, FPZero, 1.0 );
+
+			UpdateBatchedObjectTransformData( objs[i], 
+				FTriple(  (i % 20) * 1 - 5.0, ((i / 20)%20) * 1 - 5.0, (i/400) + sin( (tframes+i) * .01 ) * 2.5 ),
+				quat, FPZero, 1 );
 		}
 
 		tdPush();
@@ -122,59 +127,10 @@ int main()
 		tdRotateEA( gSMatrix, 0,.2125,1 );		//Operates ON f
 		tdScale( gSMatrix, .3, .3, .3 );
 		RenderBatchedSet( batched, shd1, gSMatrix );
-
-
-//		SpreadApplyShader( shd1 );
-//		SpreadRenderGeometry( sixsquare, gSMatrix, 0, -1 );
 		tdPop();
 
-	
-/*
-		StartImmediateMode( batchedTri );
-		tdPush();
-		tdIdentity( gSMatrix );
-		tdScale( gSMatrix, 2, 2, 2 );
-		tdTranslate( gSMatrix, -4., -4., 0. );
-		for( y = 0; y < 15; y++ )
-		{
-			tdTranslate( gSMatrix, 0.0, 1.1, 0 );
-			tdPush();
-			for( x = 0; x < 15; x++ )
-			{
-				tdTranslate( gSMatrix, 1.1, 0, 0 );
-				tdPush();
-				tdTranslate( gSMatrix, 0, 0, sin(x*.3+y*.2+tframes*.1)*5 );
-				//int rstart = ((tframes)*6)%36;
-				//				SpreadRenderGeometry( e->geos[0], gSMatrix, 0, -1 ); 
-				float tcoff[4] = { x/10., y/10., 0, 0 };
-				float tcscale[4] = { .1, .1, 0, 0 };
-				ImmediateModeMesh( plat2, gSMatrix, 0, 0, tcoff, tcscale );
-				//SpreadRenderGeometry( batchedTri, gSMatrix, 0, -1 ); 
-				//SpreadRenderGeometry( plat2, gSMatrix, 0, -1 ); 
-				tdPop();
-			}
-			tdPop();
-		}
-		tdPop();
 
-		printf( "%d %d\n", batchedTri->indices, batchedTri->verts );
-		static int set;
-		if( set == 0 )
-		{
-			set = 1;
-			UpdateMeshToGen( batchedTri );
-		}
-		tdPush();
-		tdScale( gSMatrix, 1., 1., 1. );
 
-		SpreadRenderGeometry( batchedTri, gSMatrix, 0, -1 ); 
-		//SpreadRenderGeometry( plat2, gSMatrix, 0, -1 ); 
-		//SpreadRenderGeometry( &e->geos[0], gSMatrix, 0, -1 ); 
-		tdPop();
-
-		//SpreadRenderGeometry( e->geos[0], gSMatrix, 0, -1 ); 
-*/
-//
 //		usleep(20000);
 		spglSwap( e );
 		SpreadCheckShaders( e );

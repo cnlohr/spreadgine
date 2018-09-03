@@ -29,7 +29,10 @@ void main()
 		vec4 tquat = texture2D( texture0, gtx ) * 255.;
 		gtx += texadvance;
 		textra = texture2D( texture0, gtx ) * 255.;
-		gtx += texadvance;
+
+		//We don't use the extra or next parameters.
+		gtx += texadvance*2.0;
+
 		tpos += texture2D( texture0, gtx ) * 255. / 256.;
 		tpos = ( tpos - 128. ) * (256./2048.);
 
@@ -50,7 +53,9 @@ void main()
 	vec4 outpos = (pmatrix * (vmatrix * vvpos ) );
 
 	vv0Pos = vvpos;
-#if 1
+
+
+#if 0
 	gl_Position = outpos;
 #else
 	vec2 rscreenpos = outpos.xy/outpos.w;
@@ -59,7 +64,7 @@ void main()
 	float compb = dot(rscreenpos,rscreenpos);
 	compb = min( compb, 2.0 );
 	rscreenpos *= (1.0-  compb*.1);
-	gl_Position.xy = rscreenpos * gl_Position.w;
+	gl_Position = vec4( rscreenpos * outpos.w, outpos.zw );
 #endif
 }
 

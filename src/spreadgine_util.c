@@ -6,6 +6,7 @@
 #include <spreadgine_remote.h>
 #include <stdlib.h>
 #include <linmath.h>
+#include <os_generic.h>
 #include "spatialloc.h"
 
 static uint16_t * TVIndices;
@@ -274,6 +275,7 @@ BatchedSet * CreateBatchedSet( Spreadgine * spr, const char * setname, int max_o
 		ret->internal_h = yqty;
 		ret->internal_mbuffer = calloc( xqty, yqty * 4 );
 		ret->tex_dirty = -1;
+		ret->geo_dirty = -1;
 	}
 
 	snprintf( ct, sizeof(ct)-1, "%s_geo", setname );
@@ -301,6 +303,12 @@ void RenderBatchedSet( BatchedSet * set, SpreadShader * shd, const float * model
 			fprintf( stderr, "Error: Can't find parameter in shader\n" );
 		}
 */
+
+	if( set->geo_dirty > 0 )
+	{
+		UpdateMeshToGen( set->coregeo );
+		set->geo_dirty = 0;
+	}
 	if( set->tex_dirty > 0 )
 	{
 		SpreadUpdateSubTexture( set->associated_texture, set->internal_mbuffer, 0, 0, set->internal_w, set->internal_h );
@@ -413,6 +421,8 @@ BatchedObject * AllocateBatchedObject( BatchedSet * set, SpreadGeometry * object
 	int needed_index = object->indices;
 	int needed_vert = object->verts;
 
+	static int allocx;
+
 	int i;
 	{
 		int max_index = set->max_index;
@@ -421,9 +431,14 @@ BatchedObject * AllocateBatchedObject( BatchedSet * set, SpreadGeometry * object
 
 		for( i = 0; i < max_index; i++ )
 		{
-			if( set->allocated_indices[i] == 0 ) streak++; else streak = 0;
-			if( streak == needed_index ) break;
-			if( streak == 1 ) indexstart = i;
+			if( set->allocated_indices[i] == 0 )
+			{
+				streak++;
+				if( streak == 1 ) indexstart = i;
+				else if( streak == needed_index ) break;
+			}
+			else
+				streak = 0;
 		}
 		if( i == max_index )
 		{
@@ -434,16 +449,22 @@ BatchedObject * AllocateBatchedObject( BatchedSet * set, SpreadGeometry * object
 		streak = 0;
 		for( i = 0; i < max_vertex; i++ )
 		{
-			if( set->allocated_vertices[i] == 0 ) streak++; else streak = 0;
-			if( streak == needed_vert ) break;
-			if( streak == 1 ) vertexstart = i;
+			if( set->allocated_vertices[i] == 0 )
+			{
+				streak++;
+				if( streak == 1 ) vertexstart = i;
+				else if( streak == needed_vert ) break;
+			}
+			else
+			{
+				streak = 0;
+			}
 		}
 		if( i == max_index )
 		{
 			fprintf( stderr, "Could not allocate vertex for %s\n", name );
 			return 0;
 		}
-
 	}
 
 	//Ok, we have indexstart and vertexstart.
@@ -492,10 +513,8 @@ BatchedObject * AllocateBatchedObject( BatchedSet * set, SpreadGeometry * object
 		set->allocated_vertices[i] = 2;
 	if( i > set->highest_vertex ) set->highest_vertex = i; 
 
-
-
-
 	UpdateBatchedObjectTransformData( ret, FPZero, FQZero, FPZero, 1.0  );
+
 
 	//Need to add this object's geometry into the batched set... And update texcoord.zw with the location of this object's data.
 	StartImmediateMode( set->coregeo );
@@ -516,7 +535,14 @@ BatchedObject * AllocateBatchedObject( BatchedSet * set, SpreadGeometry * object
 	//For now, we just use the highest.
 	TVindexplace = set->highest_index;
 	TVvertplace = set->highest_vertex;
-	UpdateMeshToGen( set->coregeo );
+	if( set->geo_dirty == -1 )
+	{
+		UpdateMeshToGen( set->coregeo );
+	}
+	else
+	{
+		set->geo_dirty = 1;
+	}
 
 	return ret;
 }
