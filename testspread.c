@@ -36,7 +36,7 @@ int main()
 #define NUMBATCHO 2000
 
 	SpreadGeometry * sixsquare = MakeSquareMesh( e, 2, 1 );
-	BatchedSet * batched   = CreateBatchedSet( e, "batchedTri", NUMBATCHO, 65536, GL_TRIANGLES, 2048, 2048, 4 );
+	BatchedSet * batched   = CreateBatchedSet( e, "batchedTri", NUMBATCHO, 65536, GL_TRIANGLES, 2048, 2048, 6 );
 	batched->tex_dirty = 0; //Batch whole updates.
 	batched->geo_dirty = 0;
 
@@ -116,10 +116,11 @@ int main()
 			quatfromeuler( q, euler );
 
 			float quat[4] = { q[0], q[1], q[2], q[3] }; 
+			float extra[4] = {  ( i % 5 )/5.0, ((i/5)%5)/5.0, 0., 1. };
 
 			UpdateBatchedObjectTransformData( objs[i], 
 				FTriple(  (i % 20) * 1 - 5.0, ((i / 20)%20) * 1 - 5.0, (i/400) + sin( (tframes+i) * .01 ) * 2.5 ), 1,
-				quat, FPZero );
+				quat, extra );
 		}
 
 		tdPush();

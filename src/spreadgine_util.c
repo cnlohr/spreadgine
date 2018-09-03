@@ -278,7 +278,6 @@ BatchedSet * CreateBatchedSet( Spreadgine * spr, const char * setname, int max_o
 		ret->internal_w = xqty;
 		ret->internal_h = yqty;
 		ret->internal_mbuffer = calloc( xqty, yqty * 4 );
-		printf( "ALLOC %d %d\n", xqty, yqty );
 		ret->tex_dirty = -1;
 		ret->geo_dirty = -1;
 	}

@@ -22,11 +22,10 @@ void main()
     vv2Tex = attrib2;
 
 	{
-		vec4 textra;
 		vec2 gtx;
 		gtx = attrib2.zw;		vec4 tpos = texture2D( texture0, gtx );
 		gtx += texadvance;		vec4 tquat = texture2D( texture0, gtx );
-
+		gtx += texadvance;		vec4 textra = texture2D( texture0, gtx );
 		//XXX Advance extra parameters here if needed.
 
 		gtx += texadvance;		tpos = tpos * 255. + texture2D( texture0, gtx ) * 255. / 256.;
@@ -35,6 +34,10 @@ void main()
 		gtx += texadvance;		tquat = tquat * 255. +  texture2D( texture0, gtx ) * 255. / 256.;
 		tquat =  ( tquat - 128. ) * (256./32768.);
 
+		gtx += texadvance;		textra = textra * 255. + texture2D( texture0, gtx ) * 255. / 256.;
+		textra = (textra - 128. ) * ( 256./2048. );
+
+		vvExtra = textra;
 		vert = (vert + 2.0 * cross( tquat.xyz, cross(tquat.xyz, vert) + tquat.w * vert ) ) * tpos.w + tpos.xyz;
 	}
 
