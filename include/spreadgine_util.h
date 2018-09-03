@@ -25,7 +25,6 @@ struct BatchedSet;
 typedef struct BatchedObject BatchedObject;
 typedef struct BatchedSet BatchedSet;
 
-
 struct BatchedObject
 {
 	int which_index_place;
@@ -69,6 +68,7 @@ struct BatchedSet
 	int internal_h;
 	int tex_dirty;		//XXX BIG NOTE: If this is -1, caching is disabled.
 	int geo_dirty;		//Same as above.
+	int px_per_xform;
 
 	int max_index;
 	int max_objects;
@@ -78,12 +78,13 @@ struct BatchedSet
 };
 
 
-BatchedSet * CreateBatchedSet( Spreadgine * spr, const char * setname, int max_objects, int max_indices, int render_type , int texturex, int texturey );
+//NOTE: px_per_xform MUST be at least 4, they are used specificially to hold "extra" data if exceeding 4.
+BatchedSet * CreateBatchedSet( Spreadgine * spr, const char * setname, int max_objects, int max_indices, int render_type , int texturex, int texturey, int px_per_xform );
 void FreeBatchedSet( BatchedSet * set );
 void RenderBatchedSet( BatchedSet * set, SpreadShader * shd, const float * modelmatrix );
 
 BatchedObject * AllocateBatchedObject( BatchedSet * set, SpreadGeometry * object, const char * name );
-void UpdateBatchedObjectTransformData( BatchedObject * o, const float * Position, const float * Quaternion, const float * extra, const float scale );
+void UpdateBatchedObjectTransformData( BatchedObject * o, const float * Position, const float scale, const float * Quaternion, const float * extra );
 void FreeBatchedObject( BatchedObject * o );
 int  AllocateBatchedObjectTexture( BatchedObject * o, int * tx, int * ty, int w, int h );
 int  FreeBatchedObjectTexture( BatchedObject * o, int tx, int ty );

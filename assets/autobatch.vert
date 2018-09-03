@@ -23,30 +23,19 @@ void main()
 
 	{
 		vec4 textra;
-		vec2 gtx = attrib2.zw;
-		vec4 tpos = texture2D( texture0, gtx ) * 255.;
-		gtx += texadvance;
-		vec4 tquat = texture2D( texture0, gtx ) * 255.;
-		gtx += texadvance;
-		textra = texture2D( texture0, gtx ) * 255.;
+		vec2 gtx;
+		gtx = attrib2.zw;		vec4 tpos = texture2D( texture0, gtx );
+		gtx += texadvance;		vec4 tquat = texture2D( texture0, gtx );
 
-		//We don't use the extra or next parameters.
-		gtx += texadvance*2.0;
+		//XXX Advance extra parameters here if needed.
 
-		tpos += texture2D( texture0, gtx ) * 255. / 256.;
+		gtx += texadvance;		tpos = tpos * 255. + texture2D( texture0, gtx ) * 255. / 256.;
 		tpos = ( tpos - 128. ) * (256./2048.);
 
-		gtx += texadvance;
-		tquat += texture2D( texture0, gtx ) * 255. / 256.;
+		gtx += texadvance;		tquat = tquat * 255. +  texture2D( texture0, gtx ) * 255. / 256.;
 		tquat =  ( tquat - 128. ) * (256./32768.);
 
-		gtx += texadvance;
-		textra = texture2D( texture0, gtx ) * 255. / 256.;
-		textra =  ( textra - 128. ) * (256./2048.);
-		vvExtra = textra;
-
 		vert = (vert + 2.0 * cross( tquat.xyz, cross(tquat.xyz, vert) + tquat.w * vert ) ) * tpos.w + tpos.xyz;
-//		vert = vert * tpos.w + tpos.xyz;
 	}
 
 	vec4 vvpos = mmatrix * vec4(vert, 1.0);

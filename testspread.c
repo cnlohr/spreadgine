@@ -33,8 +33,10 @@ int main()
 		fprintf( stderr, "Error making shader.\n" );
 	}
 
+#define NUMBATCHO 2000
+
 	SpreadGeometry * sixsquare = MakeSquareMesh( e, 2, 1 );
-	BatchedSet * batched   = CreateBatchedSet( e, "batchedTri", 8192, 65536, GL_TRIANGLES, 2048, 2048 );
+	BatchedSet * batched   = CreateBatchedSet( e, "batchedTri", NUMBATCHO, 65536, GL_TRIANGLES, 2048, 2048, 4 );
 	batched->tex_dirty = 0; //Batch whole updates.
 	batched->geo_dirty = 0;
 
@@ -58,8 +60,6 @@ int main()
 
 	int frames = 0, tframes = 0;
 	double lastframetime = OGGetAbsoluteTime();
-
-#define NUMBATCHO 2000
 
 	BatchedObject * objs[NUMBATCHO];
 	int i;
@@ -118,8 +118,8 @@ int main()
 			float quat[4] = { q[0], q[1], q[2], q[3] }; 
 
 			UpdateBatchedObjectTransformData( objs[i], 
-				FTriple(  (i % 20) * 1 - 5.0, ((i / 20)%20) * 1 - 5.0, (i/400) + sin( (tframes+i) * .01 ) * 2.5 ),
-				quat, FPZero, 1 );
+				FTriple(  (i % 20) * 1 - 5.0, ((i / 20)%20) * 1 - 5.0, (i/400) + sin( (tframes+i) * .01 ) * 2.5 ), 1,
+				quat, FPZero );
 		}
 
 		tdPush();

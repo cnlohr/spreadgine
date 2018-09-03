@@ -248,7 +248,7 @@ SpreadGeometry * MakeSquareMesh( Spreadgine * e, int w, int h )
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BatchedSet * CreateBatchedSet( Spreadgine * spr, const char * setname, int max_objects, int max_indices, int render_type , int texturex, int texturey )
+BatchedSet * CreateBatchedSet( Spreadgine * spr, const char * setname, int max_objects, int max_indices, int render_type , int texturex, int texturey, int px_per_xform )
 {
 	char ct[1024];
 	BatchedSet * ret = malloc( sizeof( BatchedSet ) );
@@ -256,16 +256,20 @@ BatchedSet * CreateBatchedSet( Spreadgine * spr, const char * setname, int max_o
 	ret->allocated_vertices = calloc( max_indices, 1 );
 	ret->spr = spr;
 	ret->setname = strdup( setname );
+	ret->px_per_xform = px_per_xform;
 	snprintf( ct, sizeof(ct)-1, "%s_tex", setname );
 	ret->associated_texture = SpreadCreateTexture( spr, ct, texturex, texturey, 4, GL_UNSIGNED_BYTE );
 	ret->spatial_allocator = SpatCreate( texturex, texturey );
 
 	{
-		//Individual data elements are 8px x 1px
+		//Individual data elements are px_per_xform px x 1px
 		int texx = 1, texy = 1;
-		int xqty = max_objects * 8; //8px.
-		int yqty = (max_objects * 8-1)/texturex + 1;
-		if( xqty > texturex ) xqty =  texturex;
+		int xmax = (texturex / px_per_xform) * px_per_xform;
+
+		int xqty = max_objects * px_per_xform;
+		int yqty = (max_objects * px_per_xform-1)/xmax + 1;
+		if( xqty > xmax ) xqty = xmax;
+
 		SpatMalloc( ret->spatial_allocator, xqty, yqty, &texx, &texy );
 		if( texx != 0 || texy != 0 )
 		{
@@ -274,6 +278,7 @@ BatchedSet * CreateBatchedSet( Spreadgine * spr, const char * setname, int max_o
 		ret->internal_w = xqty;
 		ret->internal_h = yqty;
 		ret->internal_mbuffer = calloc( xqty, yqty * 4 );
+		printf( "ALLOC %d %d\n", xqty, yqty );
 		ret->tex_dirty = -1;
 		ret->geo_dirty = -1;
 	}
@@ -365,16 +370,24 @@ void FreeBatchedObject( BatchedObject * o )
 	free( o );
 }
 
-void UpdateBatchedObjectTransformData( BatchedObject * o, const float * Position, const float * Quaternion, const float * extra, const float scale )
+void UpdateBatchedObjectTransformData( BatchedObject * o, const float * Position, const float scale, const float * Quaternion, const float * extra )
 {
 	BatchedSet * parent = o->parent;
 	int ow = (parent->associated_texture->w);
 	int id = o->objinparent;
-
+	int i;
 	SpreadTexture * tex = o->parent->associated_texture;
-	uint8_t * tpd = parent->internal_mbuffer + id * 32;
+	int px_per_xform = parent->px_per_xform;
 
-	float pixtf[12] = {
+	int xmax = (ow / px_per_xform) * px_per_xform;
+	int x = (id * px_per_xform)%xmax;
+	int y = (id * px_per_xform)/xmax;
+
+	uint8_t * tpd = &parent->internal_mbuffer[ x * 4 + y * xmax * 4 ];
+
+	
+
+	float pixtfboot[8] = {
 		Position[0] * 2048,
 		Position[1] * 2048,
 		Position[2] * 2048,
@@ -382,29 +395,32 @@ void UpdateBatchedObjectTransformData( BatchedObject * o, const float * Position
 		Quaternion[1] * 32768, //Tricky: GPU is XYZW, we are WXYZ 
 		Quaternion[2] * 32768,
 		Quaternion[3] * 32768,
-		Quaternion[0] * 32768,
-		extra[0] * 2048,
-		extra[1] * 2048,
-		extra[2] * 2048,
-		extra[3] * 2048,
-		 };
+		Quaternion[0] * 32768 };
 
-	int i;
-	for( i = 0; i < 12; i++ )
+	float pixtf[px_per_xform * 2];
+
+	for( i = 0; i < 8; i++ )
+	{
+		pixtf[i] = pixtfboot[i];
+	}
+	for( i = 8; i < px_per_xform * 2; i++ )
+	{
+		pixtf[i] = extra[i-8] * 2048;
+	}
+
+	for( i = 0; i < px_per_xform*2; i++ )
 	{
 		float p = pixtf[i] + 32768;
 		if( p > 65535 ) p = 65535;
 		if( p < 0 ) p = 0;
 		uint16_t ps = (uint16_t)p;
 		tpd[i + 0] = ps >> 8;
-		tpd[i + 16] = ps & 0xff;
+		tpd[i + px_per_xform*2] = ps & 0xff;
 	}
 
 	if( parent->tex_dirty == -1 )
 	{
-		int x = (id * 8)%ow;
-		int y = (id * 8)/ow;
-		SpreadUpdateSubTexture( tex, tpd, x, y, 8, 1 );
+		SpreadUpdateSubTexture( tex, tpd, x, y, px_per_xform, 1 );
 	}
 	else
 	{
@@ -513,8 +529,7 @@ BatchedObject * AllocateBatchedObject( BatchedSet * set, SpreadGeometry * object
 		set->allocated_vertices[i] = 2;
 	if( i > set->highest_vertex ) set->highest_vertex = i; 
 
-	UpdateBatchedObjectTransformData( ret, FPZero, FQZero, FPZero, 1.0  );
-
+	UpdateBatchedObjectTransformData( ret, FPZero, 1.0, FQZero, FPZero );
 
 	//Need to add this object's geometry into the batched set... And update texcoord.zw with the location of this object's data.
 	StartImmediateMode( set->coregeo );
@@ -522,8 +537,8 @@ BatchedObject * AllocateBatchedObject( BatchedSet * set, SpreadGeometry * object
 	TVindexplace = indexstart;
 
 
-	int texx = (id * 8)%set->internal_w;
-	int texy = (id * 8)/set->internal_w;
+	int texx = (id * set->px_per_xform)%set->internal_w;
+	int texy = (id * set->px_per_xform)/set->internal_w;
 
 
 	ImmediateModeMesh( object, 0,	//Position
