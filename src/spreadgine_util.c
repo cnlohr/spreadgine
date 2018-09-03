@@ -5,7 +5,7 @@
 #include <spreadgine_util.h>
 #include <spreadgine_remote.h>
 #include <stdlib.h>
-
+#include <linmath.h>
 #include "spatialloc.h"
 
 static uint16_t * TVIndices;
@@ -19,7 +19,7 @@ static int TVindexplace;
 static int TVrender_type;
 
 //This is an awful hideous function for glomming geometry on the end of this stuff.
-int ImmediateModeMesh( struct SpreadGeometry * geo, float * trans44, float * coloroff, float * colorscale, float * tcoff, float * tcscale )
+int ImmediateModeMesh( struct SpreadGeometry * geo, const float * trans44, const float * coloroff, const float * colorscale, const float * tcoff, const float * tcscale )
 {
 	if( TVindexplace + geo->indices >= TVmax )
 	{
@@ -192,7 +192,6 @@ void UpdateMeshToGen( SpreadGeometry * geo )
 	geo->laststartv = 0;
 	geo->indices = TVindexplace;
 	geo->verts   = TVvertplace;
-
 	UpdateSpreadGeometry( geo, -2, 0 );
 
 	TVvertplace = 0;
@@ -259,13 +258,60 @@ BatchedSet * CreateBatchedSet( Spreadgine * spr, const char * setname, int max_o
 	snprintf( ct, sizeof(ct)-1, "%s_tex", setname );
 	ret->associated_texture = SpreadCreateTexture( spr, ct, texturex, texturey, 4, GL_UNSIGNED_BYTE );
 	ret->spatial_allocator = SpatCreate( texturex, texturey );
+
+	{
+		//Individual data elements are 8px x 1px
+		int texx = 1, texy = 1;
+		int xqty = max_objects * 8; //8px.
+		int yqty = (max_objects * 8-1)/texturex + 1;
+		if( xqty > texturex ) xqty =  texturex;
+		SpatMalloc( ret->spatial_allocator, xqty, yqty, &texx, &texy );
+		if( texx != 0 || texy != 0 )
+		{
+			fprintf( stderr, "Error: SpatMalloc doesn't work the way we expected.\n" );
+		}
+		ret->internal_w = xqty;
+		ret->internal_h = yqty;
+		ret->internal_mbuffer = calloc( xqty, yqty * 4 );
+		ret->tex_dirty = -1;
+	}
+
 	snprintf( ct, sizeof(ct)-1, "%s_geo", setname );
 	ret->coregeo = CreateMeshGen( spr, ct, render_type, max_indices );
 	ret->objects = calloc( max_objects, sizeof( BatchedObject * ) );
 	ret->max_objects = max_objects;
 	ret->max_index = max_indices;
+	ret->highest_index = 0;
+	ret->highest_vertex = 0;
+
 	return ret;
 }
+
+void RenderBatchedSet( BatchedSet * set, SpreadShader * shd, const float * modelmatrix )
+{
+	//TODO: add some uniforms.... like texture size.
+/*		int slot = SpreadGetUniformSlot( shd1, "texSize0");
+		if( slot >= 0 )
+		{
+			float ssf[4] = { 2048, 2048, 0, 0 };
+			SpreadUniform4f( shd1, slot, ssf );
+		}
+		else
+		{
+			fprintf( stderr, "Error: Can't find parameter in shader\n" );
+		}
+*/
+	if( set->tex_dirty > 0 )
+	{
+		SpreadUpdateSubTexture( set->associated_texture, set->internal_mbuffer, 0, 0, set->internal_w, set->internal_h );
+		set->tex_dirty = 0; 
+	}
+
+	SpreadApplyTexture( set->associated_texture, 0 );
+	SpreadApplyShader( shd );
+	SpreadRenderGeometry( set->coregeo, modelmatrix, 0, -1 ); 
+}
+
 
 void FreeBatchedSet( BatchedSet * set )
 {
@@ -281,6 +327,7 @@ void FreeBatchedSet( BatchedSet * set )
 	SpreadFreeTexture( set->associated_texture );
 	SpatDestroy( set->spatial_allocator );
 	SpreadFreeGeometry( set->coregeo );
+	free( set->internal_mbuffer );
 	free( set );
 }
 
@@ -298,7 +345,7 @@ void FreeBatchedObject( BatchedObject * o )
 	while( istart > 0 && parent->allocated_indices[istart] != 1 ) istart--;
 	memset( parent->allocated_vertices + vstart, 0, o->vertices );
 	memset( parent->allocated_indices + istart, 0, o->indices );
-	SpatFree( parent->spatial_allocator, o->texturestartx, o->texturestarty );
+	//SpatFree( parent->spatial_allocator, o->texturestartx, o->texturestarty );
 	struct ExtraTexs * et = o->extratex;
 	while( et )
 	{
@@ -310,39 +357,51 @@ void FreeBatchedObject( BatchedObject * o )
 	free( o );
 }
 
-void UpdateBatchedObjectTransformData( BatchedObject * o, const float * Position, const float * Quaternion, const float * extra, const float scale  )
+void UpdateBatchedObjectTransformData( BatchedObject * o, const float * Position, const float * Quaternion, const float * extra, const float scale )
 {
-	int x = o->texturestartx;
-	int y = o->texturestarty;
+	BatchedSet * parent = o->parent;
+	int ow = (parent->associated_texture->w);
+	int id = o->objinparent;
 
 	SpreadTexture * tex = o->parent->associated_texture;
-	uint8_t tpd[16];
-	float pixtf[8] = {
+	uint8_t * tpd = parent->internal_mbuffer + id * 32;
+
+	float pixtf[12] = {
 		Position[0] * 2048,
 		Position[1] * 2048,
 		Position[2] * 2048,
 		scale       * 2048, 
-		Quaternion[0] * 32768,
-		Quaternion[1] * 32768,
+		Quaternion[1] * 32768, //Tricky: GPU is XYZW, we are WXYZ 
 		Quaternion[2] * 32768,
 		Quaternion[3] * 32768,
-		Extra[0] * 2048,
-		Extra[1] * 2048,
-		Extra[2] * 2048,
-		Extra[3] * 2048,
+		Quaternion[0] * 32768,
+		extra[0] * 2048,
+		extra[1] * 2048,
+		extra[2] * 2048,
+		extra[3] * 2048,
 		 };
 
 	int i;
-	for( i = 0; i < 8; i++ )
+	for( i = 0; i < 12; i++ )
 	{
 		float p = pixtf[i] + 32768;
 		if( p > 65535 ) p = 65535;
 		if( p < 0 ) p = 0;
 		uint16_t ps = (uint16_t)p;
 		tpd[i + 0] = ps >> 8;
-		tpd[i + 8] = ps & 0xff;
+		tpd[i + 16] = ps & 0xff;
 	}
-	SpreadUpdateSubTexture( tex, tpd, x, y, 6, 1 );
+
+	if( parent->tex_dirty == -1 )
+	{
+		int x = (id * 8)%ow;
+		int y = (id * 8)/ow;
+		SpreadUpdateSubTexture( tex, tpd, x, y, 8, 1 );
+	}
+	else
+	{
+		parent->tex_dirty = 1;
+	}
 }
 
 
@@ -353,32 +412,35 @@ BatchedObject * AllocateBatchedObject( BatchedSet * set, SpreadGeometry * object
 	int vertexstart;
 	int needed_index = object->indices;
 	int needed_vert = object->verts;
+
 	int i;
 	{
-		int streak = 0;
 		int max_index = set->max_index;
+		int max_vertex = set->max_index;
+		int streak = 0;
 
 		for( i = 0; i < max_index; i++ )
 		{
-			if( set->allocated_indices[0] == 0 ) streak++; else streak = 0;
+			if( set->allocated_indices[i] == 0 ) streak++; else streak = 0;
 			if( streak == needed_index ) break;
 			if( streak == 1 ) indexstart = i;
 		}
 		if( i == max_index )
 		{
-			fprintf( stderr, "Could not allocated index for %s\n", name );
+			fprintf( stderr, "Could not allocate index for %s\n", name );
 			return 0;
 		}
 
-		for( i = 0; i < max_index; i++ )
+		streak = 0;
+		for( i = 0; i < max_vertex; i++ )
 		{
-			if( set->allocated_vertices[0] == 0 ) streak++; else streak = 0;
+			if( set->allocated_vertices[i] == 0 ) streak++; else streak = 0;
 			if( streak == needed_vert ) break;
 			if( streak == 1 ) vertexstart = i;
 		}
 		if( i == max_index )
 		{
-			fprintf( stderr, "Could not allocated vertex for %s\n", name );
+			fprintf( stderr, "Could not allocate vertex for %s\n", name );
 			return 0;
 		}
 
@@ -386,18 +448,20 @@ BatchedObject * AllocateBatchedObject( BatchedSet * set, SpreadGeometry * object
 
 	//Ok, we have indexstart and vertexstart.
 	//Next, allocate the texture space.
-	int texx, texy;
-	if( SpatMalloc( set->spatial_allocator, 6, 1, &texx, &texy ) )
-	{
-		fprintf( stderr, "Could not allocated texture for %s\n", name );
-		return 0;
-	}
+//	int texx, texy;
+//	if( SpatMalloc( set->spatial_allocator, 6, 1, &texx, &texy ) )
+//	{
+//		fprintf( stderr, "Could not allocate texture for %s\n", name );
+//		return 0;
+//	}
+
 
 	int objin = 0;
 	for( i = 0; i < set->max_objects; i++ )
 	{
 		if( set->objects[i] == 0 ) break;
 	}
+	objin = i;
 
 	if( i == set->max_objects )
 	{
@@ -408,8 +472,6 @@ BatchedObject * AllocateBatchedObject( BatchedSet * set, SpreadGeometry * object
 	BatchedObject * ret = malloc( sizeof( BatchedObject ) );
 	ret->which_index_place = indexstart;
 	ret->which_vertex_place = vertexstart; 
-	ret->texturestartx = texx;
-	ret->texturestarty = texy;
 	ret->objinparent = objin;
 	ret->indices = needed_index;
 	ret->vertices = needed_vert;
@@ -417,12 +479,44 @@ BatchedObject * AllocateBatchedObject( BatchedSet * set, SpreadGeometry * object
 	ret->parent = set;
 	ret->extratex = 0;
 	set->objects[i] = ret;
+	int id = i;
 
-	UpdateBatchedObjectTransformData( ret, { 0, 0, 0 }, { 0, 0, 1 }, { 0, 0, 0, 0 }, 1.0  );
+	//Allocate vertex and index.
+	set->allocated_indices[i=indexstart] = 1;
+	for( i++; i < indexstart + needed_index; i++ )
+		set->allocated_indices[i] = 2;
+	if( i > set->highest_index ) set->highest_index = i; 
+
+	set->allocated_vertices[i=vertexstart] = 1;
+	for( i++; i < vertexstart + needed_vert; i++ )
+		set->allocated_vertices[i] = 2;
+	if( i > set->highest_vertex ) set->highest_vertex = i; 
+
+
+
+
+	UpdateBatchedObjectTransformData( ret, FPZero, FQZero, FPZero, 1.0  );
 
 	//Need to add this object's geometry into the batched set... And update texcoord.zw with the location of this object's data.
+	StartImmediateMode( set->coregeo );
+	TVvertplace = vertexstart;
+	TVindexplace = indexstart;
 
-XXX TODO HERE
+
+	int texx = (id * 8)%set->internal_w;
+	int texy = (id * 8)/set->internal_w;
+
+
+	ImmediateModeMesh( object, 0,	//Position
+		0, 0,	//Color
+		FQuad( 0, 0, ((float)texx+0.0)/set->associated_texture->w, ((float)texy+0.0)/set->associated_texture->h ),
+		FQuad( 1, 1, 0, 0 ) );
+
+	//XXX Future optimization: When deleting objects, maybe you could go back and trim the # of verts/indices in the immediate mode.
+	//For now, we just use the highest.
+	TVindexplace = set->highest_index;
+	TVvertplace = set->highest_vertex;
+	UpdateMeshToGen( set->coregeo );
 
 	return ret;
 }
@@ -456,7 +550,8 @@ int FreeBatchedObjectTexture( BatchedObject * o, int tx, int ty )
 	{
 		if( tt->x == tx && tt->y == ty )
 		{
-			SpatFree( o->parent->spatial_allocator, tx, ty );
+			//Tricky: We already have the data allocated.
+			//SpatFree( o->parent->spatial_allocator, tx, ty );
 			*et = tt->next;
 			free( tt );
 			return 0;
@@ -467,4 +562,7 @@ int FreeBatchedObjectTexture( BatchedObject * o, int tx, int ty )
 }
 
 
+const float FPIdentity[16] = { 1, 0, 0, 0,   0, 1, 0, 0,  0, 0, 1, 0,  0, 0, 0, 1 };
+const float FPZero[16] = { 0 };
+const float FQZero[4] = { 1, 0, 0, 0 };
 
