@@ -40,10 +40,10 @@ int main()
 
 	UpdateBatchedObjectTransformData( first_textbox->obj, 
 		FTriple( 3, 3, 3 ), 2,
-		FQuad( 1, 0, 0, 0), 
+		FQuad( 1, 0, 0, 0 ), 
 		FQuad( 0, 0, 0, 0 ) );
 
-#define NUMBATCHO 2000
+#define NUMBATCHO 256
 
 	SpreadGeometry * sixsquare = MakeSquareMesh( e, 2, 1 );
 	BatchedSet * batched   = CreateBatchedSet( e, "batchedTri", NUMBATCHO, 65536, GL_TRIANGLES, 2048, 2048, 6 );
@@ -107,13 +107,19 @@ int main()
 				FTriple(  (i % 20) * 1 , ((i / 20)%20) * 1, (i/400) + sin( (tframes+i) * .01 ) * 1.5 ), 1,
 				quat, extra );
 		}
+		for( ; i < NUMBATCHO; i++ )
+		{
+			UpdateBatchedObjectTransformData( objs[i], 
+				FTriple(  0, 0, 0 ), 0,
+				FQuad( 1, 0, 0, 0 ), 0 );
+		}
 
 		//Set up the matrix to display the whole set of 
 		tdPush();
 		tdIdentity( gSMatrix );
 		tdScale( gSMatrix, .3, .3, .3 );
 		RenderBatchedSet( batched, shd1, gSMatrix );
-		RenderTextBoxSet( textboxes, gSMatrix);
+//		RenderTextBoxSet( textboxes, gSMatrix);
 		tdPop();
 
 		spglSwap( e );

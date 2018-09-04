@@ -39,7 +39,7 @@ typedef struct Spreadgine Spreadgine;
 struct FTriple_t { float x, y, z; };
 struct FQuad_t   { float w, x, y, z; };
 #define FTriple( x, y, z )  (const float*)&((struct FTriple_t){ x, y , z })
-#define FQuad( w, x, y, z ) (const float*)&((struct FQuad_t){ w, x, y , z })
+#define FQuad( w, x, y, z ) (const float*)&((struct FQuad_t){ w, x, y, z })
 
 //Having these fixed is faster and smaller than the compound literals.
 extern const float FPIdentity[16]; //Identity matrix
