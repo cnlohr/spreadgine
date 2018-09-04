@@ -31,15 +31,18 @@ SPREADGINE_C:=
 
 ifeq ($(uname_m), x86_64)
 	RAWDRAW += rawdraw/CNFGXDriver.o
-	CFLAGS:=-Os -g -Iinclude -Icntools/http -Irawdraw -DCNFGOGL -DHTTP_POLL_TIMEOUT=10 -DCNFG3D_USE_OGL_MAJOR
+	CFLAGS:= -DCNFGOGL -DHTTP_POLL_TIMEOUT=10 -DCNFG3D_USE_OGL_MAJOR
 	LDFLAGS:=-lm -lX11 -lXext -lGL -lpthread
 else
 	RAWDRAW += rawdraw/CNFGEGLDriver.o
-	CFLAGS:=-Os -g -Iinclude -Icntools/http -Irawdraw -DHTTP_POLL_TIMEOUT=10 -DCNFG3D_USE_OGL_MAJOR $(USE_GPU)
+	CFLAGS:= -DHTTP_POLL_TIMEOUT=10 -DCNFG3D_USE_OGL_MAJOR $(USE_GPU)
 	LDFLAGS:=-lm -lpthread $(LINK_GPU)
 endif
 
+CFLAGS+=-Os -g -Iinclude -Icntools/http -Irawdraw -Imodules
 RESOURCE_O:=$(CNHTTP) $(RAWDRAW) src/spreadgine.o src/spreadgine_util.o src/spreadgine_remote.o src/objload.o src/spreadgine_vr.o src/spatialloc.o
+RESOURCE_O+=modules/textboxes.o cntools/vlinterm/vlinterm.o
+
 
 CFLAGS += $(SURVIVE_CFLAGS)
 LDFLAGS += $(SURVIVE_LDFLAGS)

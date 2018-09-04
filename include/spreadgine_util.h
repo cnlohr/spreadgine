@@ -16,7 +16,6 @@ void UpdateMeshToGen( SpreadGeometry * geo );
 SpreadGeometry * LoadOBJ( Spreadgine * spr, const char * filename, int flipv, int make_wireframe );
 SpreadGeometry * MakeSquareMesh( Spreadgine * e, int w, int h );
 
-
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Batched operations
 
@@ -86,12 +85,12 @@ void RenderBatchedSet( BatchedSet * set, SpreadShader * shd, const float * model
 BatchedObject * AllocateBatchedObject( BatchedSet * set, SpreadGeometry * object, const char * name );
 void UpdateBatchedObjectTransformData( BatchedObject * o, const float * Position, const float scale, const float * Quaternion, const float * extra );
 void FreeBatchedObject( BatchedObject * o );
-int  AllocateBatchedObjectTexture( BatchedObject * o, int * tx, int * ty, int w, int h );
-int  FreeBatchedObjectTexture( BatchedObject * o, int tx, int ty );
+int  AllocateBatchedObjectTexture( BatchedObject * o, int * tx, int * ty, int w, int h ); //Nonzero indicates fail.
+int  FreeBatchedObjectTexture( BatchedObject * o, int tx, int ty );	//Nonzero indicates fail.
 
 //Storage of transform data in texture:
 //  (Uses 4x1 pixels)
-//  POS  MSB [x y z scale] POS  QUAT MSB [x y z w]     QUAT LSB [x y z w] LSB [x y z scale] 
+//  POS  MSB [x y z scale] POS  QUAT MSB [x y z w]  [[Possibly more MSB]]  QUAT LSB [x y z w] LSB [x y z scale]  [[Possibly more LSB]]
 //  
 
 #endif

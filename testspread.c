@@ -81,31 +81,6 @@ int main()
 
 		spglLineWidth( e, 4 );
 
-/*		int slot = SpreadGetUniformSlot( shd1, "texSize0");
-		if( slot >= 0 )
-		{
-			float ssf[4] = { 2048, 2048, 0, 0 };
-			SpreadUniform4f( shd1, slot, ssf );
-		}
-		else
-		{
-			fprintf( stderr, "Error: Can't find parameter in shader\n" );
-		}
-*/
-
-//		SpreadApplyTexture( tex, 0 );
-//		SpreadApplyShader( shd1 );
-
-/*
-		tdPush();
-		//tdScale( gSMatrix, .1, .1, .1 );
-		SpreadRenderGeometry( plat2, gSMatrix, 0, -1 ); 
-		tdPop();
-*/
-
-		//tdTranslate( modelmatrix, 0, 0, .1 );
-
-
 		for( i = 0; i < NUMBATCHO; i++ )
 		{
 			char stname[1024];
@@ -123,16 +98,13 @@ int main()
 				quat, extra );
 		}
 
+		//Set up the matrix to display the whole set of 
 		tdPush();
 		tdIdentity( gSMatrix );
-		tdRotateEA( gSMatrix, 0,.2125,1 );		//Operates ON f
 		tdScale( gSMatrix, .3, .3, .3 );
 		RenderBatchedSet( batched, shd1, gSMatrix );
 		tdPop();
 
-
-
-//		usleep(20000);
 		spglSwap( e );
 		SpreadCheckShaders( e );
 		frames++;

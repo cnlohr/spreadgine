@@ -295,18 +295,17 @@ BatchedSet * CreateBatchedSet( Spreadgine * spr, const char * setname, int max_o
 
 void RenderBatchedSet( BatchedSet * set, SpreadShader * shd, const float * modelmatrix )
 {
-	//TODO: add some uniforms.... like texture size.
-/*		int slot = SpreadGetUniformSlot( shd1, "texSize0");
-		if( slot >= 0 )
-		{
-			float ssf[4] = { 2048, 2048, 0, 0 };
-			SpreadUniform4f( shd1, slot, ssf );
-		}
-		else
-		{
-			fprintf( stderr, "Error: Can't find parameter in shader\n" );
-		}
-*/
+	int slot = SpreadGetUniformSlot( shd, "batchsetuni" );
+	if( slot >= 0 )
+	{
+		float invw = 1.0/set->internal_w;
+		float ssf[4] = { invw, 1.0/set->internal_h, set->px_per_xform * 0.5 * invw, 0 };
+		SpreadUniform4f( shd, slot, ssf );
+	}
+	else
+	{
+		fprintf( stderr, "Error: Can't find parameter in shader\n" );
+	}
 
 	if( set->geo_dirty > 0 )
 	{
