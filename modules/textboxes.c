@@ -39,6 +39,30 @@ static int LoadFont( const char * fontfile, int * charset_w, int * charset_h, in
 	return 0;
 }
 
+static void text_update_uniform_callback( struct BatchedSet * ths )
+{
+	struct TextBoxSet * tb = ths->user;
+	//Add uniform pointing to font table.
+	int slot = SpreadGetUniformSlot( tb->shd, "fontspot" );
+	if( slot >= 0 )
+	{
+		float ssf[4] = {
+			tb->charset_x / (float)ths->associated_texture->w,
+			tb->charset_y / (float)ths->associated_texture->h, 
+			( tb->charset_w ) / (float)ths->associated_texture->w, 
+			( tb->charset_h ) / (float)ths->associated_texture->h, 
+		};
+		SpreadUniform4f( tb->shd, slot, ssf );
+	}
+	else
+	{
+		//XXX TODO: Add a "Warning" system.
+		//fprintf( stderr, "Error: Can't find parameter in shader\n" );
+	}
+
+}
+
+
 TextBoxSet * CreateTextBoxSet( Spreadgine * spr, const char * fontfile, int max_boxes, int texsizew, int texsizeh )
 {
 	SpreadGeometry * geo = MakeSquareMesh( spr, 3, 3 );
@@ -64,7 +88,10 @@ TextBoxSet * CreateTextBoxSet( Spreadgine * spr, const char * fontfile, int max_
 		return 0;
 	}
 
-	TextBoxSet * ret = malloc( sizeof( TextBoxSet ) );
+	printf( ":TT: %d %s\n", set->internal_w,set->setname );
+	TextBoxSet * ret = calloc( sizeof( TextBoxSet ), 1 );
+	set->user = ret;
+	set->update_uniform_callback = text_update_uniform_callback;
 	ret->set = set;
 	ret->geo = geo;
 
@@ -94,9 +121,49 @@ TextBoxSet * CreateTextBoxSet( Spreadgine * spr, const char * fontfile, int max_
 	return ret;
 }
 
+
+
 void RenderTextBoxSet( TextBoxSet * set, float * matrix_base )
 {
-	//Add uniform pointing to font table.
+#if 0
+	TextBoxSet * rins = set;
+
+
+	{
+		BatchedSet * set = rins->set;
+
+		if( set->geo_dirty > 0 )
+		{
+			UpdateMeshToGen( set->coregeo );
+			set->geo_dirty = 0;
+		}
+		if( set->tex_dirty > 0 )
+		{
+			SpreadUpdateSubTexture( set->associated_texture, set->internal_mbuffer, 0, 0, set->internal_w, set->internal_h );
+			set->tex_dirty = 0; 
+		}
+
+		SpreadApplyShader( rins->shd );
+		SpreadApplyTexture( set->associated_texture, 0 );
+
+		int slot = SpreadGetUniformSlot( rins->shd, "batchsetuni" );
+		if( slot >= 0 )
+		{
+			float invw = 1.0/set->associated_texture->w;
+			float ssf[4] = { invw, 1.0/set->associated_texture->w, set->px_per_xform * 0.5 * invw, 0 };
+			//printf( "%f -> %f %f %f %d\n", (float)(set->associated_texture->w), 1.0/ssf[0], 1.0/ssf[1], 1.0/ssf[2], set->px_per_xform );
+			SpreadUniform4f( rins->shd, slot, ssf );
+		}
+		else
+		{
+			//XXX TODO: Add a "warning" system.
+			//fprintf( stderr, "Error: Can't find parameter in shader\n" );
+		}
+
+
+		SpreadRenderGeometry( set->coregeo, matrix_base, 0, -1 ); 
+	}
+#endif
 	RenderBatchedSet( set->set, set->shd, matrix_base );
 }
 
@@ -119,6 +186,7 @@ TextBox    * CreateTextBox( TextBoxSet * set, const char * name, int chars_w, in
 		fprintf( stderr, "Error: Couldn't instanciate new textbox\n" );
 		return 0;
 	}
+printf( " ! %d %d %d %s\n", 0, set->set->px_per_xform, set->set->internal_w, set->set->setname );
 
 	int tx, ty;
 	int allc = AllocateBatchedObjectTexture( obj, &tx, &ty, chars_w, chars_h );
@@ -128,11 +196,12 @@ TextBox    * CreateTextBox( TextBoxSet * set, const char * name, int chars_w, in
 		FreeBatchedObject( obj );
 		return 0;
 	}
+printf( " * %d %d %d %s\n", 0, set->set->px_per_xform, set->set->internal_w, set->set->setname );
 
 	ret = malloc( sizeof( TextBox ) );
 	ret->obj = obj;
 	ret->parent = set;
-	ret->ts = malloc( sizeof( struct TermStructure ) );
+	ret->ts = calloc( sizeof( struct TermStructure ), 1 );
 	ResetTerminal( ret->ts );
 	ret->ts->user = ret;
 	ret->width = chars_w;
@@ -163,6 +232,7 @@ void         WriteToTextBox( TextBox * tb, int character )
 int			ResizeTextBox( TextBox * tb, int new_chars_w, int new_chars_h )
 {
 	int tx, ty;
+	printf( "RESIZE\n");
 	int allc = AllocateBatchedObjectTexture( tb->obj, &tx, &ty, new_chars_w, new_chars_h );
 	if( allc )
 	{

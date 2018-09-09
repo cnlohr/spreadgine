@@ -62,6 +62,8 @@ struct BatchedSet
 	//Array of objects. NULL indicates unused.
 	BatchedObject ** objects;
 
+	void (*update_uniform_callback)( struct BatchedSet * ths );
+
 	uint8_t * internal_mbuffer; //For texture
 	int internal_w;
 	int internal_h;
@@ -74,6 +76,7 @@ struct BatchedSet
 
 	int highest_index;
 	int highest_vertex;
+	void * user;
 };
 
 

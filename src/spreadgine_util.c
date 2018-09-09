@@ -269,13 +269,13 @@ BatchedSet * CreateBatchedSet( Spreadgine * spr, const char * setname, int max_o
 		int xqty = max_objects * px_per_xform;
 		int yqty = (max_objects * px_per_xform-1)/xmax + 1;
 		if( xqty > xmax ) xqty = xmax;
-
 		SpatMalloc( ret->spatial_allocator, xqty, yqty, &texx, &texy );
 		if( texx != 0 || texy != 0 )
 		{
 			fprintf( stderr, "Error: SpatMalloc doesn't work the way we expected.\n" );
 		}
 		ret->internal_w = xqty;
+		printf( "PP %d %s\n", ret->internal_w, ret->setname );
 		ret->internal_h = yqty;
 		ret->internal_mbuffer = calloc( xqty, yqty * 4 );
 		ret->tex_dirty = -1;
@@ -289,23 +289,14 @@ BatchedSet * CreateBatchedSet( Spreadgine * spr, const char * setname, int max_o
 	ret->max_index = max_indices;
 	ret->highest_index = 0;
 	ret->highest_vertex = 0;
+	ret->update_uniform_callback = 0;
+	ret->user = 0;
 
 	return ret;
 }
 
 void RenderBatchedSet( BatchedSet * set, SpreadShader * shd, const float * modelmatrix )
 {
-	int slot = SpreadGetUniformSlot( shd, "batchsetuni" );
-	if( slot >= 0 )
-	{
-		float invw = 1.0/set->internal_w;
-		float ssf[4] = { invw, 1.0/set->internal_h, set->px_per_xform * 0.5 * invw, 0 };
-		SpreadUniform4f( shd, slot, ssf );
-	}
-	else
-	{
-		fprintf( stderr, "Error: Can't find parameter in shader\n" );
-	}
 
 	if( set->geo_dirty > 0 )
 	{
@@ -318,8 +309,24 @@ void RenderBatchedSet( BatchedSet * set, SpreadShader * shd, const float * model
 		set->tex_dirty = 0; 
 	}
 
-	SpreadApplyTexture( set->associated_texture, 0 );
 	SpreadApplyShader( shd );
+	SpreadApplyTexture( set->associated_texture, 0 );
+
+	int slot = SpreadGetUniformSlot( shd, "batchsetuni" );
+	if( slot >= 0 )
+	{
+		float invw = 1.0/set->associated_texture->w;
+		float ssf[4] = { invw, 1.0/set->associated_texture->w, set->px_per_xform * 0.5 * invw, 0 };
+		//printf( "%f -> %f %f %f %d\n", (float)(set->associated_texture->w), 1.0/ssf[0], 1.0/ssf[1], 1.0/ssf[2], set->px_per_xform );
+		SpreadUniform4f( shd, slot, ssf );
+	}
+	else
+	{
+		//XXX TODO: Add a "warning" system.
+		//fprintf( stderr, "Error: Can't find parameter in shader\n" );
+	}
+	if( set->update_uniform_callback ) set->update_uniform_callback( set );
+
 	SpreadRenderGeometry( set->coregeo, modelmatrix, 0, -1 ); 
 }
 
@@ -383,8 +390,6 @@ void UpdateBatchedObjectTransformData( BatchedObject * o, const float * Position
 
 	uint8_t * tpd = &parent->internal_mbuffer[ x * 4 + y * xmax * 4 ];
 
-	
-
 	float pixtfboot[8] = {
 		Position[0] * 2048,
 		Position[1] * 2048,
@@ -401,11 +406,14 @@ void UpdateBatchedObjectTransformData( BatchedObject * o, const float * Position
 	{
 		pixtf[i] = pixtfboot[i];
 	}
-	for( i = 8; i < px_per_xform * 2; i++ )
-	{
-		pixtf[i] = extra[i-8] * 2048;
-	}
 
+	if( extra )
+	{
+		for( i = 8; i < px_per_xform * 2; i++ )
+		{
+			pixtf[i] = extra[i-8] * 2048;
+		}
+	}
 	for( i = 0; i < px_per_xform*2; i++ )
 	{
 		float p = pixtf[i] + 32768;
@@ -537,11 +545,11 @@ BatchedObject * AllocateBatchedObject( BatchedSet * set, SpreadGeometry * object
 
 	int texx = (id * set->px_per_xform)%set->internal_w;
 	int texy = (id * set->px_per_xform)/set->internal_w;
-
+//printf( "%d %d %d %s\n", id, set->px_per_xform, set->internal_w, set->setname );
 
 	ImmediateModeMesh( object, 0,	//Position
 		0, 0,	//Color
-		FQuad( 0, 0, ((float)texx+0.0)/set->associated_texture->w, ((float)texy+0.0)/set->associated_texture->h ),
+		FQuad( 0, 0, ((float)texx+0.0)/set->associated_texture->w, ((float)texy+0.0)/set->associated_texture->h ),	//If having weird edge cases, try offsetting from 0.0 here.
 		FQuad( 1, 1, 0, 0 ) );
 
 	//XXX Future optimization: When deleting objects, maybe you could go back and trim the # of verts/indices in the immediate mode.

@@ -43,7 +43,7 @@ void main()
 	vv0Pos = vvpos;
 
 
-#if 0
+#if 1
 	gl_Position = outpos;
 #else
 	vec2 rscreenpos = outpos.xy/outpos.w;

@@ -36,11 +36,13 @@ int main()
 
 	TextBoxSet * textboxes =  CreateTextBoxSet( e, "cntools/vlinterm/ibm437.pgm", 25, 1024, 1024 );
 	TextBox * first_textbox = CreateTextBox( textboxes, "first", 80, 25 );
-	//WriteToTextBox( first_textbox, 'X' );
+	WriteToTextBox( first_textbox, 'X' );
+	WriteToTextBox( first_textbox, 'y' );
+	WriteToTextBox( first_textbox, 'Z' );
 
 	UpdateBatchedObjectTransformData( first_textbox->obj, 
-		FTriple( 3, 3, 3 ), 2,
-		FQuad( 1, 0, 0, 0 ), 
+		FTriple( 0, 0, 0 ), 4,
+		FQuad( 0, 0, 0, 1 ), 
 		FQuad( 0, 0, 0, 0 ) );
 
 #define NUMBATCHO 256
@@ -77,6 +79,7 @@ int main()
 	{
 		char stname[1024];
 		sprintf( stname, "obj%03d",i);
+//		printf( " %s\n", batched->setname );
 		objs[i] = AllocateBatchedObject( batched, sixsquare, stname );
 	}
 
@@ -91,12 +94,12 @@ int main()
 
 		spglLineWidth( e, 4 );
 
-		for( i = 0; i < /*NUMBATCHO*/ 2; i++ )
+		for( i = 0; i < /*NUMBATCHO*/ 25; i++ )
 		{
 			char stname[1024];
 			sprintf( stname, "obj%03d",i);
 
-			double euler[3] = { 0, 0, tframes*.1 };
+			double euler[3] = { 0, 0, 0*.1 };
 			LinmathQuat q;
 			quatfromeuler( q, euler );
 
@@ -117,9 +120,8 @@ int main()
 		//Set up the matrix to display the whole set of 
 		tdPush();
 		tdIdentity( gSMatrix );
-		tdScale( gSMatrix, .3, .3, .3 );
 		RenderBatchedSet( batched, shd1, gSMatrix );
-//		RenderTextBoxSet( textboxes, gSMatrix);
+		RenderTextBoxSet( textboxes, gSMatrix);
 		tdPop();
 
 		spglSwap( e );
