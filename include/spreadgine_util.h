@@ -29,6 +29,10 @@ struct BatchedObject
 	int which_index_place;
 	int which_vertex_place;
 
+	float LastPositionScale[4];
+	float LastQuaternion[4];
+	float * LastExtras;
+
 	int vertices;
 	int indices;
 
@@ -86,7 +90,7 @@ void FreeBatchedSet( BatchedSet * set );
 void RenderBatchedSet( BatchedSet * set, SpreadShader * shd, const float * modelmatrix );
 
 BatchedObject * AllocateBatchedObject( BatchedSet * set, SpreadGeometry * object, const char * name );
-void UpdateBatchedObjectTransformData( BatchedObject * o, const float * Position, const float scale, const float * Quaternion, const float * extra );
+void UpdateBatchedObjectTransformData( BatchedObject * o, const float * Position, const float * Quaternion, const float * Extra );
 void FreeBatchedObject( BatchedObject * o );
 int  AllocateBatchedObjectTexture( BatchedObject * o, int * tx, int * ty, int w, int h ); //Nonzero indicates fail.
 int  FreeBatchedObjectTexture( BatchedObject * o, int tx, int ty );	//Nonzero indicates fail.

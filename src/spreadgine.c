@@ -547,7 +547,7 @@ int SpreadGetUniformSlot( SpreadShader * shd, const char * slotname )
 {
 	int i;
 	int slot = glGetUniformLocation( shd->program_shader, slotname );
-	if( slot > shd->known_uniform_slots )
+	if( slot >= shd->known_uniform_slots )
 	{
 		shd->known_uniform_slots = slot+1;
 		shd->uniform_slot_names = realloc( shd->uniform_slot_names, shd->known_uniform_slots * sizeof( char* ) );

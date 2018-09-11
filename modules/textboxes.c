@@ -1,6 +1,7 @@
 #include "textboxes.h"
 #include "../cntools/vlinterm/vlinterm.h"
 #include "../src/spatialloc.h"
+#include <string.h>
 
 struct TermStructure;
 
@@ -79,7 +80,7 @@ TextBoxSet * CreateTextBoxSet( Spreadgine * spr, const char * fontfile, int max_
 		return 0;
 	}
 
-	BatchedSet * set = CreateBatchedSet( spr, "textboxes", max_boxes, index_needed_per_box * max_boxes, GL_TRIANGLES , texsizew, texsizeh, 6 ); //6: Need one set of extra attributes.
+	BatchedSet * set = CreateBatchedSet( spr, "textboxes", max_boxes, index_needed_per_box * max_boxes, GL_TRIANGLES, texsizew, texsizeh, 6 ); //6: Need one set of extra attributes.
 	if( !set )
 	{
 		fprintf( stderr, "Error: Can't create batch for textboxes.\n" );
@@ -88,7 +89,6 @@ TextBoxSet * CreateTextBoxSet( Spreadgine * spr, const char * fontfile, int max_
 		return 0;
 	}
 
-	printf( ":TT: %d %s\n", set->internal_w,set->setname );
 	TextBoxSet * ret = calloc( sizeof( TextBoxSet ), 1 );
 	set->user = ret;
 	set->update_uniform_callback = text_update_uniform_callback;
@@ -113,6 +113,7 @@ TextBoxSet * CreateTextBoxSet( Spreadgine * spr, const char * fontfile, int max_
 	ret->font_h = font_h;
 	ret->charset_w = charset_w;
 	ret->charset_h = charset_h;
+	ret->first = 0;
 
 	SpreadUpdateSubTexture( set->associated_texture, retfont, ret->charset_x, ret->charset_y, charset_w, charset_h );
 
@@ -125,45 +126,65 @@ TextBoxSet * CreateTextBoxSet( Spreadgine * spr, const char * fontfile, int max_
 
 void RenderTextBoxSet( TextBoxSet * set, float * matrix_base )
 {
-#if 0
-	TextBoxSet * rins = set;
-
-
+	TextBox * t = set->first;
+	while( t )
 	{
-		BatchedSet * set = rins->set;
+		struct TermStructure * ts = t->ts;
+		uint32_t * tb = ts->termbuffer;
 
-		if( set->geo_dirty > 0 )
+
+		int h = ts->chary;
+		int w = ts->charx;
+
+		int scrollback = ts->scrollback;
+		if( scrollback >= ts->historyy-h ) scrollback = ts->historyy-h-1;
+		if( scrollback < 0 ) scrollback = 0;
+		int taint_all = scrollback != t->last_scrollback;
+
+
+		if( t->last_curx != ts->curx || t->last_cury !=  ts->cury || ts->tainted || taint_all )
 		{
-			UpdateMeshToGen( set->coregeo );
-			set->geo_dirty = 0;
-		}
-		if( set->tex_dirty > 0 )
-		{
-			SpreadUpdateSubTexture( set->associated_texture, set->internal_mbuffer, 0, 0, set->internal_w, set->internal_h );
-			set->tex_dirty = 0; 
-		}
+			int x, y;
+			int extentminy = h;
+			int extentmaxy = 0;
 
-		SpreadApplyShader( rins->shd );
-		SpreadApplyTexture( set->associated_texture, 0 );
+			if( t->last_cury != ts->cury ) { extentminy = extentmaxy = ts->cury; }
 
-		int slot = SpreadGetUniformSlot( rins->shd, "batchsetuni" );
-		if( slot >= 0 )
-		{
-			float invw = 1.0/set->associated_texture->w;
-			float ssf[4] = { invw, 1.0/set->associated_texture->w, set->px_per_xform * 0.5 * invw, 0 };
-			//printf( "%f -> %f %f %f %d\n", (float)(set->associated_texture->w), 1.0/ssf[0], 1.0/ssf[1], 1.0/ssf[2], set->px_per_xform );
-			SpreadUniform4f( rins->shd, slot, ssf );
+			if( taint_all )
+			{
+				extentminy = 0;
+				extentmaxy = h;
+			}
+			else
+			{
+				int i;
+				for( i = 0; i < h; i++ )
+				{
+					if( !ts->linetaint[i] ) continue;
+					if( i < extentminy ) extentminy = i;
+					if( i > extentmaxy ) extentmaxy = i; 
+				}
+			}
+
+			int updatelines = extentmaxy - extentminy + 1;
+
+			uint32_t texo[w * updatelines];
+
+			ts->tainted = 0;	//Taint up here in case the buffer changes while we're updating.
+			if( t->last_curx < w && t->last_cury < h )				tb[t->last_curx + t->last_cury * w] |= 1<<24;
+			if( ts->curx < w && ts->cury < h )						tb[ts->curx + ts->cury * w] |= 1<<24;
+			t->last_curx = ts->curx;
+			t->last_cury = ts->cury;
+
+			memcpy( texo, tb + extentminy * 4 * w, updatelines * 4 * w );
+
+			SpreadUpdateSubTexture( t->parent->set->associated_texture, texo, t->table_x, t->table_y + extentminy, w, updatelines );
+			printf( "UPDATE\n" );
+			t->last_scrollback = scrollback;
 		}
-		else
-		{
-			//XXX TODO: Add a "warning" system.
-			//fprintf( stderr, "Error: Can't find parameter in shader\n" );
-		}
-
-
-		SpreadRenderGeometry( set->coregeo, matrix_base, 0, -1 ); 
+		t = t->next;
 	}
-#endif
+
 	RenderBatchedSet( set->set, set->shd, matrix_base );
 }
 
@@ -172,6 +193,28 @@ void FreeTextBoxSet( TextBoxSet * set )
 	FreeBatchedSet( set->set );
 	SpreadFreeGeometry( set->geo );
 	SpreadFreeShader( set->shd );
+
+	TextBox * tb = set->first;
+	while( tb )
+	{
+		TextBox * tt = tb;
+		//Do stuff, like update the textures, etc.
+		tb = tb->next;
+		free( tt );
+	}
+
+}
+
+void TextBoxUpdateExtraVertexData( TextBox * tb )
+{
+	BatchedObject * o = tb->obj;
+	const float Extras[4] = {
+		tb->table_x / (float)o->parent->associated_texture->w,
+		tb->table_y / (float)o->parent->associated_texture->h,
+		tb->width   / (float)o->parent->associated_texture->w,
+		tb->height  / (float)o->parent->associated_texture->h,
+	};
+	UpdateBatchedObjectTransformData( o, 0, 0, Extras );
 }
 
 
@@ -186,7 +229,6 @@ TextBox    * CreateTextBox( TextBoxSet * set, const char * name, int chars_w, in
 		fprintf( stderr, "Error: Couldn't instanciate new textbox\n" );
 		return 0;
 	}
-printf( " ! %d %d %d %s\n", 0, set->set->px_per_xform, set->set->internal_w, set->set->setname );
 
 	int tx, ty;
 	int allc = AllocateBatchedObjectTexture( obj, &tx, &ty, chars_w, chars_h );
@@ -196,18 +238,32 @@ printf( " ! %d %d %d %s\n", 0, set->set->px_per_xform, set->set->internal_w, set
 		FreeBatchedObject( obj );
 		return 0;
 	}
-printf( " * %d %d %d %s\n", 0, set->set->px_per_xform, set->set->internal_w, set->set->setname );
 
 	ret = malloc( sizeof( TextBox ) );
 	ret->obj = obj;
 	ret->parent = set;
-	ret->ts = calloc( sizeof( struct TermStructure ), 1 );
+
+	struct TermStructure * ts = ret->ts = calloc( sizeof( struct TermStructure ), 1 );
+	ts->screen_mutex = OGCreateMutex();
+	ts->charx = chars_w;
+	ts->chary = chars_h;
+	ts->echo = 0;
+	ts->historyy = 1000;
+	ts->termbuffer = 0;
 	ResetTerminal( ret->ts );
+
 	ret->ts->user = ret;
 	ret->width = chars_w;
 	ret->height = chars_h;
 	ret->table_x = tx;
 	ret->table_y = ty;
+	ret->last_scrollback = 0;
+
+	//Insert the linked list object.
+	ret->next = set->first;
+	set->first = ret;
+
+	TextBoxUpdateExtraVertexData( ret );
 
 	return ret;
 }
@@ -247,6 +303,8 @@ int			ResizeTextBox( TextBox * tb, int new_chars_w, int new_chars_h )
 
 	tb->width = new_chars_w;
 	tb->height = new_chars_h;
+
+	TextBoxUpdateExtraVertexData( tb );
 
 	return 0;
 }

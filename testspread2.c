@@ -35,15 +35,18 @@ int main()
 	}
 
 	TextBoxSet * textboxes =  CreateTextBoxSet( e, "cntools/vlinterm/ibm437.pgm", 25, 1024, 1024 );
-	TextBox * first_textbox = CreateTextBox( textboxes, "first", 80, 25 );
+	TextBox * first_textbox = CreateTextBox( textboxes, "first", 10, 8 );
 	WriteToTextBox( first_textbox, 'X' );
 	WriteToTextBox( first_textbox, 'y' );
 	WriteToTextBox( first_textbox, 'Z' );
+	WriteToTextBox( first_textbox, '0' );
+	WriteToTextBox( first_textbox, '\n' );
+	WriteToTextBox( first_textbox, 'Z' );
 
 	UpdateBatchedObjectTransformData( first_textbox->obj, 
-		FTriple( 0, 0, 0 ), 4,
+		FQuad( 0, 0, 0, 4 ),
 		FQuad( 0, 0, 0, 1 ), 
-		FQuad( 0, 0, 0, 0 ) );
+		0 );
 
 #define NUMBATCHO 256
 
@@ -107,13 +110,13 @@ int main()
 			float extra[4] = {  ( i % 5 )/5.0, ((i/5)%5)/5.0, 0., 1. };
 
 			UpdateBatchedObjectTransformData( objs[i], 
-				FTriple(  (i % 20) * 1 , ((i / 20)%20) * 1, (i/400) + sin( (tframes+i) * .01 ) * 1.5 ), 1,
+				FQuad(  (i % 20) * 1 , ((i / 20)%20) * 1, (i/400) + sin( (tframes+i) * .01 ) * 1.5, 1.0 ),
 				quat, extra );
 		}
 		for( ; i < NUMBATCHO; i++ )
 		{
 			UpdateBatchedObjectTransformData( objs[i], 
-				FTriple(  0, 0, 0 ), 0,
+				FQuad( 0, 0, 0, 0 ),
 				FQuad( 1, 0, 0, 0 ), 0 );
 		}
 

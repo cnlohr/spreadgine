@@ -19,6 +19,9 @@ struct TextBox
 	//Location of table in texture.
 	int table_x, table_y;
 	int width, height;		//In characters.
+	int last_curx, last_cury;
+	int last_scrollback;
+	TextBox * next;
 };
 
 struct TextBoxSet
@@ -30,6 +33,8 @@ struct TextBoxSet
 	//Location of font in texture.
 	int charset_x, charset_y, charset_w, charset_h;
 	int font_w, font_h;
+
+	TextBox * first;
 };
 
 //For fontfile, try "cntools/vlinterm/ibm437.pgm"
@@ -38,8 +43,9 @@ void RenderTextBoxSet( TextBoxSet * set, float * matrix_base );
 void FreeTextBoxSet( TextBoxSet * set );
 
 TextBox    * CreateTextBox( TextBoxSet * set, const char * name, int chars_w, int chars_h );
+void		TextBoxUpdateExtraVertexData( TextBox * tb );
 int			ResizeTextBox( TextBox * tb, int new_chars_w, int new_chars_h );
-void         WriteToTextBox( TextBox * tb, int character );
+void        WriteToTextBox( TextBox * tb, int character );
 
 
 #endif

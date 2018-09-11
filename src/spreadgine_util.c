@@ -316,7 +316,7 @@ void RenderBatchedSet( BatchedSet * set, SpreadShader * shd, const float * model
 	if( slot >= 0 )
 	{
 		float invw = 1.0/set->associated_texture->w;
-		float ssf[4] = { invw, 1.0/set->associated_texture->w, set->px_per_xform * 0.5 * invw, 0 };
+		float ssf[4] = { invw, 1.0/set->associated_texture->w, set->px_per_xform * 0.5 * invw, 1.0/set->associated_texture->h };
 		//printf( "%f -> %f %f %f %d\n", (float)(set->associated_texture->w), 1.0/ssf[0], 1.0/ssf[1], 1.0/ssf[2], set->px_per_xform );
 		SpreadUniform4f( shd, slot, ssf );
 	}
@@ -375,7 +375,7 @@ void FreeBatchedObject( BatchedObject * o )
 	free( o );
 }
 
-void UpdateBatchedObjectTransformData( BatchedObject * o, const float * Position, const float scale, const float * Quaternion, const float * extra )
+void UpdateBatchedObjectTransformData( BatchedObject * o, const float * PositionScale, const float * Quaternion, const float * Extra )
 {
 	BatchedSet * parent = o->parent;
 	int ow = (parent->associated_texture->w);
@@ -390,15 +390,28 @@ void UpdateBatchedObjectTransformData( BatchedObject * o, const float * Position
 
 	uint8_t * tpd = &parent->internal_mbuffer[ x * 4 + y * xmax * 4 ];
 
+	if( PositionScale )
+	{
+		memcpy( o->LastPositionScale, PositionScale, sizeof( o->LastPositionScale ) );
+	}
+	if( Quaternion )
+	{
+		memcpy( o->LastQuaternion, Quaternion, sizeof( o->LastQuaternion ) );
+	}
+	if( Extra )
+	{
+		memcpy( o->LastExtras, Extra, ( px_per_xform - 4 ) * sizeof( float ) * 2 );
+	}
+	
 	float pixtfboot[8] = {
-		Position[0] * 2048,
-		Position[1] * 2048,
-		Position[2] * 2048,
-		scale       * 2048, 
-		Quaternion[1] * 32768, //Tricky: GPU is XYZW, we are WXYZ 
-		Quaternion[2] * 32768,
-		Quaternion[3] * 32768,
-		Quaternion[0] * 32768 };
+		o->LastPositionScale[0] * 2048,
+		o->LastPositionScale[1] * 2048,
+		o->LastPositionScale[2] * 2048,
+		o->LastPositionScale[3] * 2048, 
+		o->LastQuaternion[1] * 32768, //Tricky: GPU is XYZW, we are WXYZ 
+		o->LastQuaternion[2] * 32768,
+		o->LastQuaternion[3] * 32768,
+		o->LastQuaternion[0] * 32768 };
 
 	float pixtf[px_per_xform * 2];
 
@@ -407,13 +420,11 @@ void UpdateBatchedObjectTransformData( BatchedObject * o, const float * Position
 		pixtf[i] = pixtfboot[i];
 	}
 
-	if( extra )
+	for( i = 8; i < px_per_xform * 2; i++ )
 	{
-		for( i = 8; i < px_per_xform * 2; i++ )
-		{
-			pixtf[i] = extra[i-8] * 2048;
-		}
+		pixtf[i] = o->LastExtras[i-8] * 2048;
 	}
+
 	for( i = 0; i < px_per_xform*2; i++ )
 	{
 		float p = pixtf[i] + 32768;
@@ -519,6 +530,7 @@ BatchedObject * AllocateBatchedObject( BatchedSet * set, SpreadGeometry * object
 	ret->indices = needed_index;
 	ret->vertices = needed_vert;
 	ret->name = strdup(name);
+	ret->LastExtras = malloc( (set->px_per_xform-4) * 2 * sizeof(float) );
 	ret->parent = set;
 	ret->extratex = 0;
 	set->objects[i] = ret;
@@ -535,7 +547,7 @@ BatchedObject * AllocateBatchedObject( BatchedSet * set, SpreadGeometry * object
 		set->allocated_vertices[i] = 2;
 	if( i > set->highest_vertex ) set->highest_vertex = i; 
 
-	UpdateBatchedObjectTransformData( ret, FPZero, 1.0, FQZero, FPZero );
+	UpdateBatchedObjectTransformData( ret, FPZero, FQZero, FPZero );
 
 	//Need to add this object's geometry into the batched set... And update texcoord.zw with the location of this object's data.
 	StartImmediateMode( set->coregeo );
