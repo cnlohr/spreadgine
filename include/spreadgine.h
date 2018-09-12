@@ -219,10 +219,14 @@ struct SpreadTexture
 	int type;				//Supported: GL_FLOAT and GL_UNSIGNED_BYTE
 	uint8_t * pixeldata;
 	int w, h;
+	int minmag_lin;
+	int clamp;
 };
 
 
 SpreadTexture * SpreadCreateTexture( Spreadgine * spr, const char * texname, int w, int h, int chan, int mode ); //Typically chan=4, and mode=GL_UNSIGNED_BYTE (GL_FLOAT not supported on rpi)
+//minmag_lin = 0 for NEAREST, 1 for LINEAR, 2 for LINEAR_MIPMAP_LINEAR
+void SpreadChangeTextureProperties( SpreadTexture * tex, int minmag_lin, int clamp, int max_miplevel );
 void SpreadUpdateSubTexture( SpreadTexture * tex, void * texdat, int x, int y, int w, int h );
 void SpreadApplyTexture( SpreadTexture * tex, int slot );
 void SpreadFreeTexture( SpreadTexture * tex );

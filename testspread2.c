@@ -35,18 +35,7 @@ int main()
 	}
 
 	TextBoxSet * textboxes =  CreateTextBoxSet( e, "cntools/vlinterm/ibm437.pgm", 25, 1024, 1024 );
-	TextBox * first_textbox = CreateTextBox( textboxes, "first", 10, 8 );
-	WriteToTextBox( first_textbox, 'X' );
-	WriteToTextBox( first_textbox, 'y' );
-	WriteToTextBox( first_textbox, 'Z' );
-	WriteToTextBox( first_textbox, '0' );
-	WriteToTextBox( first_textbox, '\n' );
-	WriteToTextBox( first_textbox, 'Z' );
-
-	UpdateBatchedObjectTransformData( first_textbox->obj, 
-		FQuad( 0, 0, 0, 4 ),
-		FQuad( 0, 0, 0, 1 ), 
-		0 );
+	TextBox * first_textbox = CreateTextBox( textboxes, "first", 40, 25 );
 
 #define NUMBATCHO 256
 
@@ -96,6 +85,24 @@ int main()
 		spglEnable( e, GL_DEPTH_TEST );
 
 		spglLineWidth( e, 4 );
+
+
+		{
+			int i = 64;
+			for( ; i < 126; i++ )
+				WriteToTextBox( first_textbox, i );
+
+			double euler[3] = { 0, 1.57 + .05 * tframes, 0 };
+			LinmathQuat q;
+			quatfromeuler( q, euler );
+
+			float quat[4] = { q[0], q[1], q[2], q[3] }; 
+			UpdateBatchedObjectTransformData( first_textbox->obj, 
+				FQuad( 0, 0, 0, 4 ),
+				quat, 
+				0 );
+		}
+
 
 		for( i = 0; i < /*NUMBATCHO*/ 25; i++ )
 		{

@@ -43,6 +43,9 @@ static int LoadFont( const char * fontfile, int * charset_w, int * charset_h, in
 static void text_update_uniform_callback( struct BatchedSet * ths )
 {
 	struct TextBoxSet * tb = ths->user;
+	SpreadApplyTexture( tb->charset_texture, 1 );
+
+/*
 	//Add uniform pointing to font table.
 	int slot = SpreadGetUniformSlot( tb->shd, "fontspot" );
 	if( slot >= 0 )
@@ -60,24 +63,73 @@ static void text_update_uniform_callback( struct BatchedSet * ths )
 		//XXX TODO: Add a "Warning" system.
 		//fprintf( stderr, "Error: Can't find parameter in shader\n" );
 	}
-
+*/
 }
 
+static unsigned pow2roundup( unsigned v )
+{
+	v--;
+	v |= v >> 1;
+	v |= v >> 2;
+	v |= v >> 4;
+	v |= v >> 8;
+	v |= v >> 16;
+	v++;
+	return v;
+}
 
 TextBoxSet * CreateTextBoxSet( Spreadgine * spr, const char * fontfile, int max_boxes, int texsizew, int texsizeh )
 {
 	SpreadGeometry * geo = MakeSquareMesh( spr, 3, 3 );
 	const int index_needed_per_box = (geo->verts>geo->indices)?geo->verts:geo->indices;
 
-
-	int font_w, font_h;
-	int charset_w, charset_h;
-	uint32_t * retfont;
-	if( LoadFont( fontfile, &charset_w, &charset_h, &font_w, &font_h, &retfont ) )
+	int charset_w, charset_h, font_w, font_h;
+	int charset_w_exp, charset_h_exp;
+	SpreadTexture * charset_texture;
 	{
-		fprintf( stderr, "Error loading font for text boxes.\n" );
-		SpreadFreeGeometry( geo );
-		return 0;
+		uint32_t * retfont;
+		if( LoadFont( fontfile, &charset_w, &charset_h, &font_w, &font_h, &retfont ) )
+		{
+			fprintf( stderr, "Error loading font for text boxes.\n" );
+			SpreadFreeGeometry( geo );
+			return 0;
+		}
+
+		#if 1
+		charset_w_exp = charset_w;
+		charset_h_exp = charset_h;
+
+		charset_texture = SpreadCreateTexture( spr, fontfile, charset_w_exp, charset_h_exp, 4, GL_UNSIGNED_BYTE );
+
+		SpreadChangeTextureProperties( charset_texture, 2, 1, 2 );
+
+		SpreadUpdateSubTexture( charset_texture, retfont, 0, 0, charset_w_exp, charset_h_exp );
+		free( retfont );
+
+		#else
+		//We do a little work to make sure we have a power-of-two texture.  This code is untested and may not be needed.
+
+		charset_w_exp = pow2roundup( charset_w );
+		charset_h_exp = pow2roundup( charset_h );
+		charset_texture = SpreadCreateTexture( spr, fontfile, charset_w_exp, charset_h_exp, 4, GL_UNSIGNED_BYTE, 2, 1 );
+
+		//Build an expanded image for loading into the texture.
+		uint32_t * fontup = malloc( charset_w_exp * charset_h_exp * 4 );
+		int x, y;
+		for( y = 0; y < charset_h_exp; y++ )
+		for( x = 0; x < charset_w_exp; x++ )
+		{
+			if( x < charset_w && y < charset_h )
+				fontup[x+y*charset_w_exp] = retfont[x+y*charset_w];
+			else
+				fontup[x+y*charset_w_exp] = 0;
+		}
+
+		free( retfont );
+		SpreadUpdateSubTexture( charset_texture, fontup, 0, 0, charset_w_exp, charset_h_exp );
+		free( fontup );
+		#endif
+
 	}
 
 	BatchedSet * set = CreateBatchedSet( spr, "textboxes", max_boxes, index_needed_per_box * max_boxes, GL_TRIANGLES, texsizew, texsizeh, 6 ); //6: Need one set of extra attributes.
@@ -85,7 +137,7 @@ TextBoxSet * CreateTextBoxSet( Spreadgine * spr, const char * fontfile, int max_
 	{
 		fprintf( stderr, "Error: Can't create batch for textboxes.\n" );
 		SpreadFreeGeometry( geo );
-		free( retfont );
+		SpreadFreeTexture( charset_texture );
 		return 0;
 	}
 
@@ -95,13 +147,13 @@ TextBoxSet * CreateTextBoxSet( Spreadgine * spr, const char * fontfile, int max_
 	ret->set = set;
 	ret->geo = geo;
 
-	int spa = SpatMalloc( set->spatial_allocator, charset_w, charset_h, &ret->charset_x, &ret->charset_y );
+//	int spa = SpatMalloc( set->spatial_allocator, charset_w, charset_h, &ret->charset_x, &ret->charset_y );
 	SpreadShader * shd = SpreadLoadShader( spr, "text_shd", "assets/textboxes.frag", "assets/textboxes.vert", 0 );
-	if( spa || !shd )
+	if( !shd )
 	{
-		fprintf( stderr, "Aborting text box set [%d %p]\n", spa, shd );
-		free( retfont );
+		fprintf( stderr, "Aborting text box set [%p]\n", shd );
 		FreeBatchedSet( set );
+		SpreadFreeTexture( charset_texture );
 		if( shd ) SpreadFreeShader( shd );
 		SpreadFreeGeometry( geo );
 		free( ret );
@@ -109,15 +161,14 @@ TextBoxSet * CreateTextBoxSet( Spreadgine * spr, const char * fontfile, int max_
 	}
 
 	ret->shd = shd;
-	ret->font_w = font_w;
-	ret->font_h = font_h;
 	ret->charset_w = charset_w;
 	ret->charset_h = charset_h;
+	ret->charset_w_exp = charset_w_exp;
+	ret->charset_h_exp = charset_h_exp;
+	ret->charset_texture = charset_texture;
 	ret->first = 0;
 
-	SpreadUpdateSubTexture( set->associated_texture, retfont, ret->charset_x, ret->charset_y, charset_w, charset_h );
-
-	free( retfont );
+	//SpreadUpdateSubTexture( set->associated_texture, retfont, ret->charset_x, ret->charset_y, charset_w, charset_h );
 
 	return ret;
 }
@@ -179,7 +230,6 @@ void RenderTextBoxSet( TextBoxSet * set, float * matrix_base )
 			memcpy( texo, tb + extentminy * 4 * w, updatelines * 4 * w );
 
 			SpreadUpdateSubTexture( t->parent->set->associated_texture, texo, t->table_x, t->table_y + extentminy, w, updatelines );
-			printf( "UPDATE\n" );
 			t->last_scrollback = scrollback;
 		}
 		t = t->next;
@@ -193,6 +243,7 @@ void FreeTextBoxSet( TextBoxSet * set )
 	FreeBatchedSet( set->set );
 	SpreadFreeGeometry( set->geo );
 	SpreadFreeShader( set->shd );
+	SpreadFreeTexture( set->charset_texture );
 
 	TextBox * tb = set->first;
 	while( tb )

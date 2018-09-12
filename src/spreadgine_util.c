@@ -258,7 +258,7 @@ BatchedSet * CreateBatchedSet( Spreadgine * spr, const char * setname, int max_o
 	ret->setname = strdup( setname );
 	ret->px_per_xform = px_per_xform;
 	snprintf( ct, sizeof(ct)-1, "%s_tex", setname );
-	ret->associated_texture = SpreadCreateTexture( spr, ct, texturex, texturey, 4, GL_UNSIGNED_BYTE );
+	ret->associated_texture = SpreadCreateTexture( spr, ct, texturex, texturey, 4, GL_UNSIGNED_BYTE  );
 	ret->spatial_allocator = SpatCreate( texturex, texturey );
 
 	{

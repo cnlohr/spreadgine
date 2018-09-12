@@ -171,6 +171,13 @@ function InternalProcessPack()
 			ts.pindex = wgl.getUniformLocation(ts.program, "pmatrix" );
 
 
+
+			for( i = 0; i < 8; i++ )
+			{
+				indx = wgl.getUniformLocation( ts.program, "texture" + i );
+				wgl.uniform1i(indx, i);
+			}
+
 			break;
 		case 70:
 			var shaderid = Pop8();
@@ -331,7 +338,38 @@ function InternalProcessPack()
 			var pxsiz = cs*((typ==wgl.GL_FLOAT)?4:1);
 			var buff = new Uint8Array( pxsiz*w*h );
 			wgl.texImage2D( wgl.TEXTURE_2D, 0, fmt, w, h, 0, fmt, typ, buff );
+
 			//console.log( fmt, typ, wgl.RGBA, wgl.UNSIGNED_BYTE, wgl.RGBA );
+			break;
+		case 98:
+			var tip = Pop8();
+			var wgt = wgtexs[tip];
+			var minmag_lin = Pop32();
+			var clamping = Pop32();
+			var max_miplevel = Pop32();
+
+			wgl.bindTexture( wgl.TEXTURE_2D, wgt.tex );
+
+
+			if( minmag_lin < 0 || minmag_lin > 2 ) minmag_lin = 0;
+			int mmmode[3] = { GL_NEAREST, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR };
+			int mamode[3] = { GL_NEAREST, GL_LINEAR, GL_LINEAR };
+			if( minmag_lin == 2 )
+			{
+				wgl.texParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE ); 
+				wgl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+				wgl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, max_miplevel);
+			}
+			var mmmode = [ wgl.NEAREST, wgl.LINEAR, wgl.GL_LINEAR_MIPMAP_LINEAR };
+			var mamode = [ wgl.NEAREST, wgl.LINEAR, wgl.LINEAR };
+			wgl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mamode[minmag_lin] );
+			wgl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mmmode[minmag_lin] );
+			wgl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, clamping?GL_CLAMP:GL_REPEAT);
+			wgl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, clamping?GL_CLAMP:GL_REPEAT);
+
+		 	int mmmode[3] = { GL_NEAREST, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR };
+			int mamode[3] = { GL_NEAREST, GL_LINEAR, GL_LINEAR };
+
 			break;
 		case 99:
 			var tip = Pop8();
@@ -340,10 +378,6 @@ function InternalProcessPack()
 			//wgl.enable(wgl.TEXTURE_2D);
 			wgl.activeTexture(wgl.TEXTURE0+slot);
 			wgl.bindTexture( wgl.TEXTURE_2D, wgt.tex );
-			wgl.texParameteri(wgl.TEXTURE_2D, wgl.TEXTURE_MAG_FILTER, wgl.NEAREST);
-			wgl.texParameteri(wgl.TEXTURE_2D, wgl.TEXTURE_MIN_FILTER, wgl.NEAREST);
-			wgl.texParameteri(wgl.TEXTURE_2D, wgl.TEXTURE_WRAP_S, wgl.REPEAT);
-			wgl.texParameteri(wgl.TEXTURE_2D, wgl.TEXTURE_WRAP_T, wgl.REPEAT);
 			// Tell the shader we bound the texture to texture unit...
 			//console.log( wgshades[wgcurshad].program );
 			//wgl.uniform1i(wgshades[wgcurshad].program.programInfo.uniformLocations.uSampler, slot);
@@ -358,7 +392,8 @@ function InternalProcessPack()
 			wgl.bindTexture( wgl.TEXTURE_2D, wgt.tex );
 			var ntopop = Pop32();
 			var buff = PopMulti8( ntopop );
-			wgl.texSubImage2D( wgl.TEXTURE_2D, 0,  x, y, w, h, wgt.fmt, wgt.typ, buff );
+			var mmpl = Pop8();
+			wgl.texSubImage2D( wgl.TEXTURE_2D, mmpl,  x, y, w, h, wgt.fmt, wgt.typ, buff );
 			break;
 		case 100:
 			var tip = Pop8();

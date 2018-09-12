@@ -29,9 +29,11 @@ struct TextBoxSet
 	BatchedSet * set;		//TextBoxSet inherits all properties from TextBox.
 	SpreadGeometry * geo;	//Geometry template for text box.
 	SpreadShader * shd;
+	SpreadTexture * charset_texture;
+
 
 	//Location of font in texture.
-	int charset_x, charset_y, charset_w, charset_h;
+	int charset_w_exp, charset_h_exp, charset_w, charset_h;
 	int font_w, font_h;
 
 	TextBox * first;

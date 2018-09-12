@@ -493,6 +493,15 @@ static SpreadShader * LoadShaderAtPlace( SpreadShader * ret, Spreadgine * spr )
 		fprintf( spr->fReport, "Hanging error on shader compile %d (0x%02x)\n", err, err );
 	}
 
+	//Do 8 textures.
+	for( i = 0; i < 8; i++ )
+	{
+		char ct[9] = { 't', 'e', 'x', 't', 'u', 'r', 'e', '0', 0 };
+		ct[7] = '0' + i; 
+		int slot = glGetUniformLocation(ret->program_shader, ct);
+		glUniform1i(slot, i);
+	}
+
 	SpreadMessage( spr, "shader#", "bbssss", ret->shader_in_parent, 69, ret->shader_in_parent, shadername, fragmentShader_text, vertexShader_text, geometryShader_text?geometryShader_text:"" );
 	goto finalexit;
 qexit:
@@ -889,15 +898,50 @@ SpreadTexture * SpreadCreateTexture( Spreadgine * spr, const char * texname, int
 	ret->texname = strdup( texname );
 	int pxsiz = ret->pixwid = chan*((mode==GL_FLOAT)?4:1);
 	ret->pixeldata = calloc( w*h,pxsiz );
+	ret->minmag_lin = 0;
+	ret->clamp = 0;
 
 	glGenTextures(1, &ret->textureID);
 	glBindTexture(GL_TEXTURE_2D, ret->textureID);
 	glTexImage2D( GL_TEXTURE_2D, 0, chanmode[chan], w, h, 0, chanmode[chan], mode, ret->pixeldata );
 
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
 	SpreadMessage( ret->parent, "texture#", "bbsiiii", ret->texture_in_parent, 97, ret->texture_in_parent, ret->texname, ret->type, ret->channels, ret->w, ret->h);
+
+
 
 	return ret;
 }
+
+void SpreadChangeTextureProperties( SpreadTexture * tex, int minmag_lin, int clamp, int max_miplevel )
+{
+	glBindTexture(GL_TEXTURE_2D, tex->textureID);
+
+	if( minmag_lin < 0 || minmag_lin > 2 ) minmag_lin = 0;
+	int mmmode[3] = { GL_NEAREST, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR };
+	int mamode[3] = { GL_NEAREST, GL_LINEAR, GL_LINEAR };
+
+	tex->minmag_lin = minmag_lin;
+	tex->clamp = clamp;
+
+	if( minmag_lin == 2 )
+	{
+		glTexParameteri( GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE ); 
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, max_miplevel);
+	}
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mamode[minmag_lin] );
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mmmode[minmag_lin] );
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, clamp?GL_CLAMP:GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, clamp?GL_CLAMP:GL_REPEAT);
+ 
+	SpreadMessage( tex->parent, "texture#", "bbiii", tex->texture_in_parent, 98, tex->texture_in_parent,  minmag_lin, clamp, max_miplevel);
+}
+
 
 void SpreadUpdateSubTexture( SpreadTexture * tex, void * texdat, int x, int y, int w, int h )
 {
@@ -912,19 +956,67 @@ void SpreadUpdateSubTexture( SpreadTexture * tex, void * texdat, int x, int y, i
 	}
 	if( w*h*csz < 65500 )
 	{
-		SpreadMessage( tex->parent, 0, "bbiiiiv", 98, tex->texture_in_parent, x, y, w, h, w*h*csz, texdat );
+		SpreadMessage( tex->parent, 0, "bbiiiivb", 98, tex->texture_in_parent, x, y, w, h, w*h*csz, texdat, 0 );
 	}
+
+#if 0
+	uint8_t * mapin = texdat;
+	if( tex->minmag_lin == 2 )
+	{
+		//glGenerateMipmap( GL_TEXTURE_2D );
+		//Cook up some mipmaps.  (Old GL systems need this code)
+		int level = 1;
+		int newx = x / 2;
+		int newy = y / 2;
+		int neww = w / 2;
+		int newh = h / 2;
+		while( neww && newh )
+		{
+			uint8_t * mapout = malloc( neww*newh*csz );
+			int lx, ly, c;
+			for( ly = 0; ly < newh; ly++ )
+			for( lx = 0; lx < neww; lx++ )
+			{
+				int mlt = 0;
+				for( c = 0; c < csz; c++ )
+				{
+					mlt += ((uint8_t*)mapin)[(lx*2+ly*2*w)*csz + c];
+					mlt += ((uint8_t*)mapin)[(lx*2+ly*2*w+1)*csz + c];
+					mlt += ((uint8_t*)mapin)[(lx*2+(ly*2+1)*w)*csz + c];
+					mlt += ((uint8_t*)mapin)[(lx*2+(ly*2+1)*w+1)*csz + c];
+					mapout[(lx+ly*neww)*csz+c] = (mlt+2)/4;
+				}
+			}
+
+			//memcpy( tex->pixeldata + csz*x + tex->w*csz * ( l + y ), ((uint8_t*)texdat) + l * w * csz, w * csz ); 
+			glTexSubImage2D( GL_TEXTURE_2D, level++, newx, newy, neww, newh, chanmode[tex->channels], tex->type, mapout );
+			printf( "Adding %d: %d %d %d %d %p\n", level, newx, newy, neww, newh, mapout );
+			x = newx;
+			y = newy;
+			w = neww;
+			h = newh;
+			newx /= 2;
+			newy /= 2;
+			neww /= 2;
+			newh /= 2;
+			if( mapin != texdat ) free( mapin );
+			mapin = mapout;
+		}
+		if( mapin != texdat ) free( mapin );
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, level);
+	}
+#endif
 }
+
 
 void SpreadApplyTexture( SpreadTexture * tex, int slot )
 {
 //	glEnable(GL_TEXTURE_2D);
+	glActiveTexture( GL_TEXTURE0 + slot );
 	glBindTexture(GL_TEXTURE_2D, tex->textureID);
 	SpreadMessage( tex->parent, 0, "bbb", 99, tex->texture_in_parent, slot );
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 }
 
 void SpreadFreeTexture( SpreadTexture * tex )
