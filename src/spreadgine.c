@@ -562,6 +562,8 @@ SpreadShader * SpreadLoadShader( Spreadgine * spr, const char * shadername, cons
 int SpreadGetUniformSlot( SpreadShader * shd, const char * slotname )
 {
 	int i;
+	glUseProgram(shd->program_shader);
+	shd->parent->current_shader = shd->shader_in_parent;
 	int slot = glGetUniformLocation( shd->program_shader, slotname );
 	if( slot >= shd->known_uniform_slots )
 	{

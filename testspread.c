@@ -21,9 +21,9 @@ int main()
 {
 #if defined( MALI ) || defined( RASPI_GPU )
 //	Spreadgine * e = SpreadInit( 1920, 1080, "Spread Test", 8888, 2, stderr );
-	Spreadgine * e = SpreadInit( 2160, 1200, "Spread Game Survive Test", 8888, 2, 1, stderr );
+	Spreadgine * e = SpreadInit( 2160, 1200, "Spread Game Survive Test", 8888, 2, stderr );
 #else
-	Spreadgine * e = SpreadInit( 800, 600, "Spread Test", 8888, 2, 1, stderr );
+	Spreadgine * e = SpreadInit( 800, 600, "Spread Test", 8888, 2, stderr );
 #endif
 
 	//First: Add a defualt shader
