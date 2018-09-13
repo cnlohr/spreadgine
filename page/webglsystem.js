@@ -391,19 +391,18 @@ function InternalProcessPack()
 		case 96:
 			var tip = Pop8();
 			var wgt = wgtexs[tip];
-			var minmag_lin = Pop32();
+			var min_lin = Pop32();
+			var mag_lin = Pop32();
 			var clamping = Pop32();
 			var max_miplevel = Pop32();
 
 			wgl.bindTexture( wgl.TEXTURE_2D, wgt.tex );
 
-			if( minmag_lin < 0 || minmag_lin > 2 ) minmag_lin = 0;
-
 			var mmmode = [ wgl.NEAREST, wgl.LINEAR, wgl.NEAREST_MIPMAP_LINEAR ];
 			var mamode = [ wgl.NEAREST, wgl.LINEAR, wgl.LINEAR ];
 
-			wgl.texParameteri(wgl.TEXTURE_2D, wgl.TEXTURE_MAG_FILTER, mamode[minmag_lin] );
-			wgl.texParameteri(wgl.TEXTURE_2D, wgl.TEXTURE_MIN_FILTER, mmmode[minmag_lin] );
+			wgl.texParameteri(wgl.TEXTURE_2D, wgl.TEXTURE_MAG_FILTER, mamode[mag_lin] );
+			wgl.texParameteri(wgl.TEXTURE_2D, wgl.TEXTURE_MIN_FILTER, mmmode[min_lin] );
 			wgl.texParameteri(wgl.TEXTURE_2D, wgl.TEXTURE_WRAP_S, clamping?wgl.CLAMP_TO_EDGE:wgl.REPEAT);
 			wgl.texParameteri(wgl.TEXTURE_2D, wgl.TEXTURE_WRAP_T, clamping?wgl.CLAMP_TO_EDGE:wgl.REPEAT);
 

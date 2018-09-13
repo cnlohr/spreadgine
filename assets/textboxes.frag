@@ -45,6 +45,7 @@ void main()
 
 	vec4 finalchartex = (texture2D( texture1, targetc )); //Look up texture and color-stretch.
 
+//	finalchartex = clamp( (finalchartex - 0.4 ) * 2.0, 0.0, 1.0 );  Don't blur when close.
 	finalchartex = clamp( (finalchartex - 0.4 ) * 2.0, 0.0, 1.0 );
 
 	//Get color + formatting.

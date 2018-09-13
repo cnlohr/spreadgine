@@ -907,7 +907,8 @@ SpreadTexture * SpreadCreateTexture( Spreadgine * spr, const char * texname, int
 	ret->texname = strdup( texname );
 	int pxsiz = ret->pixwid = chan*((mode==GL_FLOAT)?4:1);
 	ret->pixeldata = calloc( w*h,pxsiz );
-	ret->minmag_lin = 0;
+	ret->min_lin = 0;
+	ret->mag_lin = 0;
 	ret->clamp = 0;
 
 	glGenTextures(1, &ret->textureID);
@@ -926,29 +927,31 @@ SpreadTexture * SpreadCreateTexture( Spreadgine * spr, const char * texname, int
 	return ret;
 }
 
-void SpreadChangeTextureProperties( SpreadTexture * tex, int minmag_lin, int clamp, int max_miplevel )
+void SpreadChangeTextureProperties( SpreadTexture * tex, int min_lin, int mag_lin, int clamp, int max_miplevel )
 {
 	glBindTexture(GL_TEXTURE_2D, tex->textureID);
 
-	if( minmag_lin < 0 || minmag_lin > 2 ) minmag_lin = 0;
-	int mmmode[3] = { GL_NEAREST, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR };
+	if( min_lin < 0 || min_lin > 2 ) min_lin = 0;
+	if( mag_lin < 0 || mag_lin > 2 ) mag_lin = 0;
+	int mmmode[3] = { GL_NEAREST, GL_LINEAR, GL_NEAREST_MIPMAP_NEAREST };
 	int mamode[3] = { GL_NEAREST, GL_LINEAR, GL_LINEAR };
 
-	tex->minmag_lin = minmag_lin;
+	tex->min_lin = min_lin;
+	tex->mag_lin = mag_lin;
 	tex->clamp = clamp;
 
-	if( minmag_lin == 2 )
+	if( min_lin == 2 )
 	{
 		glTexParameteri( GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE ); 
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, max_miplevel);
 	}
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mamode[minmag_lin] );
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mmmode[minmag_lin] );
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mamode[mag_lin] );
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mmmode[min_lin] );
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, clamp?GL_CLAMP:GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, clamp?GL_CLAMP:GL_REPEAT);
  
-	SpreadMessage( tex->parent, "texture#props", "bbiii", tex->texture_in_parent, 96, tex->texture_in_parent,  minmag_lin, clamp, max_miplevel);
+	SpreadMessage( tex->parent, "texture#props", "bbiiii", tex->texture_in_parent, 96, tex->texture_in_parent,  min_lin, mag_lin, clamp, max_miplevel);
 }
 
 
