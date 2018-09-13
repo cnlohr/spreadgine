@@ -7,10 +7,10 @@ var wgcurshad = 0;
 var wggeos = [];
 var wgtexs = [];
 
+var sprviewpoints = 1;
 var perspectivematrix = [];
 var viewmatrix = [];
-var doubleview = true;
-
+var currentcam = 0;
 var squareVertexPositionBuffer = null;
 
 function InitSystem( addy, canvas )
@@ -71,22 +71,45 @@ function ProcessPack()
 	StoredSceneOperations = [];
 }
 
+function UpdatePerspective( force )
+{
+	var cid = currentcam;
+
+	if( !wgcams[cid] ) return;
+	//perspectivematrix[cid] = PopMultiFloat(16);
+	var fov = wgcams[cid].fov*2.0;
+	var aspect = screenw/screenh;//wgcams[cid].aspect;
+	var near = wgcams[cid].near;
+	var far = wgcams[cid].far;
+	var name = wgcams[cid].nam;
+	var f = 1./Math.tan(fov/2);
+
+	var m = new Float32Array(16);
+	m[0] = -f/aspect;
+	m[5] = -f;
+	m[10] = (far+near)/(near-far);
+	m[14] = (2*far*near)/(near-far);
+	m[11] = -1;
+	perspectivematrix[0] = m;
+}
+
 function InternalProcessPack()
 {
 	var cal = Pop8();
 	switch( cal )
 	{
-		case 64:		//Setup function iii w,h,cams (discarded)
-			Pop32(); Pop32(); Pop32();
+		case 64:		//Setup function ii w,h (discarded)
+			Pop32(); Pop32(); 
 			document.title = PopStr();
-			console.log( "Initialized" );
+			console.log( "Initialized: " + document.title );
+			UpdatePerspective();
 			break;
 		case 65: //		65 = UpdateCameraName( uint8_t id, char name[...] );
 			//XXX TODO
 			break;
-		case 66:	//XXX Wrong, but we'll use it for now.
+		case 66:	//XXX Wrong... sort of... the spreadgine gives the webpage the perspective matrix but we want to throw it away.
 			var cid = Pop8();
-			perspectivematrix[cid] = PopMultiFloat(16);
+			//Would get the perspective matrix.
 			break;
 		case 67:
 			var cid = Pop8();
@@ -99,13 +122,21 @@ function InternalProcessPack()
 			var near = PopFloat();
 			var far = PopFloat();
 			var name = PopStr();
-			console.log( "Cam " + cid + "  \"" +name + "\" adding: " + fov + " " + aspect + " " + near +" " + far );
+			console.log( "Cam " + cid + "  \"" +name + "\" adding: " + fov + " " + aspect + " " + near +" " + far + "/" + sprviewpoints );
 			while( wgcams.length <= cid ) wgcams.push( {} );
 			wgcams[cid].fov = fov;
 			wgcams[cid].aspect = aspect;
 			wgcams[cid].near = near;
 			wgcams[cid].far = far;
 			wgcams[cid].nam = name;
+
+			var sel = document.getElementById( "cameraselect" );
+			var so = wgcams[cid].selopt = document.createElement("option");
+			so.value = cid;
+			so.text  = name;
+			so.onclick = function () { currentcam = cid; };
+			sel.appendChild(so);
+
 			break;
 		case 69:  //Setup new shader.
 			//SpreadMessage( spr, "shader%d", "bbsssS", ret->shader_in_parent, 69, ret->shader_in_parent, shadername, fragmentShader, vertexShader, attriblistlength, attriblist );
@@ -116,7 +147,7 @@ function InternalProcessPack()
 			var shaderfrag = ts.fragSource = PopStr();
 			var shadervert = ts.vertSource = PopStr();
 			var shadergeo = ts.geoSource = PopStr();
-	
+
 			ts.vert = wgl.createShader(wgl.VERTEX_SHADER);
 			wgl.shaderSource(ts.vert, ts.vertSource);
 			wgl.compileShader(ts.vert);
@@ -165,17 +196,19 @@ function InternalProcessPack()
 			if (!wgl.getProgramParameter(ts.program, wgl.LINK_STATUS)) {
 				alert("Could not initialise shaders");
 			}
-
-			ts.mindex = wgl.getUniformLocation(ts.program, "mmatrix" );
-			ts.vindex = wgl.getUniformLocation(ts.program, "vmatrix" );
-			ts.pindex = wgl.getUniformLocation(ts.program, "pmatrix" );
-
-
-
-			for( i = 0; i < 8; i++ )
+			else
 			{
-				indx = wgl.getUniformLocation( ts.program, "texture" + i );
-				wgl.uniform1i(indx, i);
+				wgl.useProgram(ts.program);
+
+				ts.mindex = wgl.getUniformLocation(ts.program, "mmatrix" );
+				ts.vindex = wgl.getUniformLocation(ts.program, "vmatrix" );
+				ts.pindex = wgl.getUniformLocation(ts.program, "pmatrix" );
+
+				for( i = 0; i < 8; i++ )
+				{
+					indx = wgl.getUniformLocation( ts.program, "texture" + i );
+					wgl.uniform1i(indx, i);
+				}
 			}
 
 			break;
@@ -194,6 +227,7 @@ function InternalProcessPack()
 			wgl.lineWidth( PopFloat() );
 			break;
 		case 77:
+			UpdatePerspective();
 			//"Swap Buffers"  this is actually the last thing that happens...
 			break;
 		case 78:
@@ -213,12 +247,16 @@ function InternalProcessPack()
 			break;
 		case 81:
 			var v = PopMultiFloat(4);
-			var loc = wgl.getUniformLocation(wgshades[wgcurshad].program,PopStr() );
+			var pgm = wgshades[wgcurshad].program;
+			var loc = wgl.getUniformLocation(pgm,PopStr() );
+			wgl.useProgram(pgm);
 			wgl.uniform4fv( loc, v );
 			break;
 		case 82:
 			var v = PopMultiFloat(16);
-			var loc = wgl.getUniformLocation(wgshades[wgcurshad].program,PopStr() );
+			var pgm = wgshades[wgcurshad].program;
+			var loc = wgl.getUniformLocation(pgm,PopStr() );
+			wgl.useProgram(pgm);
 			wgl.uniformMatrix4fv( loc, v );
 			break;
 
@@ -289,7 +327,7 @@ function InternalProcessPack()
 				wggeos[gip].laststart = start;
 			}
 
-			if( doubleview )
+			if( sprviewpoints > 1 )
 			{
 				for( var i = 0; i < 2; i++ )
 				{
@@ -301,11 +339,13 @@ function InternalProcessPack()
 			}
 			else
 			{
-				wgl.uniformMatrix4fv( curshad.vindex, wgl.FALSE, viewmatrix[0]);
-				wgl.uniformMatrix4fv( curshad.pindex, wgl.FALSE, perspectivematrix[1] );			
-				wgl.drawElements(ge.rendertype,	(num!=65535)?num:ge.indices, wgl.UNSIGNED_SHORT, 0 );
+				if( perspectivematrix[0] )
+				{
+					wgl.uniformMatrix4fv( curshad.vindex, wgl.FALSE, viewmatrix[currentcam]);
+					wgl.uniformMatrix4fv( curshad.pindex, wgl.FALSE, perspectivematrix[0] );			
+					wgl.drawElements(ge.rendertype,	(num!=65535)?num:ge.indices, wgl.UNSIGNED_SHORT, 0 );
+				}
 			}
-
 
 			break;
 		case 90:
@@ -339,9 +379,16 @@ function InternalProcessPack()
 			var buff = new Uint8Array( pxsiz*w*h );
 			wgl.texImage2D( wgl.TEXTURE_2D, 0, fmt, w, h, 0, fmt, typ, buff );
 
+			wgl.bindTexture( wgl.TEXTURE_2D, tex );
+
+			wgl.texParameteri(wgl.TEXTURE_2D, wgl.TEXTURE_MAG_FILTER, wgl.NEAREST );
+			wgl.texParameteri(wgl.TEXTURE_2D, wgl.TEXTURE_MIN_FILTER, wgl.NEAREST );
+			wgl.texParameteri(wgl.TEXTURE_2D, wgl.TEXTURE_WRAP_S, wgl.CLAMP_TO_EDGE );
+			wgl.texParameteri(wgl.TEXTURE_2D, wgl.TEXTURE_WRAP_T, wgl.CLAMP_TO_EDGE );  //Required for np2 textures.
+
 			//console.log( fmt, typ, wgl.RGBA, wgl.UNSIGNED_BYTE, wgl.RGBA );
 			break;
-		case 98:
+		case 96:
 			var tip = Pop8();
 			var wgt = wgtexs[tip];
 			var minmag_lin = Pop32();
@@ -350,25 +397,24 @@ function InternalProcessPack()
 
 			wgl.bindTexture( wgl.TEXTURE_2D, wgt.tex );
 
-
 			if( minmag_lin < 0 || minmag_lin > 2 ) minmag_lin = 0;
-			int mmmode[3] = { GL_NEAREST, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR };
-			int mamode[3] = { GL_NEAREST, GL_LINEAR, GL_LINEAR };
+
+			var mmmode = [ wgl.NEAREST, wgl.LINEAR, wgl.NEAREST_MIPMAP_LINEAR ];
+			var mamode = [ wgl.NEAREST, wgl.LINEAR, wgl.LINEAR ];
+
+			wgl.texParameteri(wgl.TEXTURE_2D, wgl.TEXTURE_MAG_FILTER, mamode[minmag_lin] );
+			wgl.texParameteri(wgl.TEXTURE_2D, wgl.TEXTURE_MIN_FILTER, mmmode[minmag_lin] );
+			wgl.texParameteri(wgl.TEXTURE_2D, wgl.TEXTURE_WRAP_S, clamping?wgl.CLAMP_TO_EDGE:wgl.REPEAT);
+			wgl.texParameteri(wgl.TEXTURE_2D, wgl.TEXTURE_WRAP_T, clamping?wgl.CLAMP_TO_EDGE:wgl.REPEAT);
+
 			if( minmag_lin == 2 )
 			{
-				wgl.texParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE ); 
-				wgl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
-				wgl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, max_miplevel);
+				/*wgl.texParameteri(wgl.TEXTURE_2D, wgl.GENERATE_MIPMAP, wgl.TRUE ); 
+				wgl.texParameteri(wgl.TEXTURE_2D, wgl.TEXTURE_BASE_LEVEL, 0);*/
+				//wgl.texParameteri(wgl.TEXTURE_2D, wgl.TEXTURE_MAX_LEVEL, max_miplevel);
+				wgl.generateMipmap( wgl.TEXTURE_2D );
+				//At least in firefox, much else seems busted.
 			}
-			var mmmode = [ wgl.NEAREST, wgl.LINEAR, wgl.GL_LINEAR_MIPMAP_LINEAR };
-			var mamode = [ wgl.NEAREST, wgl.LINEAR, wgl.LINEAR };
-			wgl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mamode[minmag_lin] );
-			wgl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mmmode[minmag_lin] );
-			wgl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, clamping?GL_CLAMP:GL_REPEAT);
-			wgl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, clamping?GL_CLAMP:GL_REPEAT);
-
-		 	int mmmode[3] = { GL_NEAREST, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR };
-			int mamode[3] = { GL_NEAREST, GL_LINEAR, GL_LINEAR };
 
 			break;
 		case 99:

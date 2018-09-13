@@ -415,10 +415,16 @@ static unsigned long case_matters_djb_hashl(const char *clave)
     return h;
 }
 
+int HashIDFromName( const char * he )
+{
+	return (he[0] == '-')?0:((he[0]=='+')?2:1);
+}
+
 struct SpreadHashEntry * SpreadHashEntryGetOrInsert( Spreadgine * e , const char * he )
 {
 	int hashval = case_matters_djb_hashl( he ) % SPREADGINE_CACHEMAP_SIZE;
-	struct SpreadHashEntry ** hashbin = &e->KEEPhash[hashval];
+	int hashid = HashIDFromName( he );
+	struct SpreadHashEntry ** hashbin = &e->KEEPhash[hashid][hashval];
 
 	while( *hashbin )
 	{
@@ -427,7 +433,7 @@ struct SpreadHashEntry * SpreadHashEntryGetOrInsert( Spreadgine * e , const char
 		hashbin = &((*hashbin)->next);
 	}
 
-	if( e->KEEPlistnum > SPREADGINE_MAXKEEP )
+	if( e->KEEPlistnum[hashid] > SPREADGINE_MAXKEEP )
 	{
 		fprintf( e->fReport, "Error: Too many KEEP elements attached.\n" );
 		return 0;
@@ -438,9 +444,9 @@ struct SpreadHashEntry * SpreadHashEntryGetOrInsert( Spreadgine * e , const char
 	ne->payload_reserved = 0;
 	ne->payload = 0;
 	ne->next = 0;
-	int kel = e->KEEPlistnum++;
+	int kel = e->KEEPlistnum[hashid]++;
 	ne->entry_in_KEEPlist = kel;
-	e->KEEPlist[kel] = ne;
+	e->KEEPlist[hashid][kel] = ne;
 
 	return ne;
 }
@@ -461,17 +467,18 @@ void SpreadHashRemove( Spreadgine * e, const char * he, ... )
 
 
 	OGLockMutex( e->KEEPmutex );
-	int hashval = case_matters_djb_hashl( he ) % SPREADGINE_CACHEMAP_SIZE;
-	struct SpreadHashEntry ** hashbin = &e->KEEPhash[hashval];
+	int hashval = case_matters_djb_hashl( hebuff ) % SPREADGINE_CACHEMAP_SIZE;
+	int hashid = HashIDFromName( hebuff );
+	struct SpreadHashEntry ** hashbin = &e->KEEPhash[hashid][hashval];
 	while( hashbin )
 	{
 		if( strcmp( (*hashbin)->key, he ) == 0 )
 		{
 			struct SpreadHashEntry * next = (*hashbin)->next;
 			int i;
-			for( i = (*hashbin)->entry_in_KEEPlist; i < e->KEEPlistnum-1; i++ )
+			for( i = (*hashbin)->entry_in_KEEPlist; i < e->KEEPlistnum[hashid]-1; i++ )
 			{
-				e->KEEPlist[i] = e->KEEPlist[i+1];
+				e->KEEPlist[hashid][i] = e->KEEPlist[hashid][i+1];
 			}
 
 			free( (*hashbin)->key );
@@ -495,23 +502,27 @@ int SpreadCreateDump( Spreadgine * spr, uint8_t ** ptrout )
 	int poutreserved = 1024;
 	int poutsize = 0;
 	int i;
-	for( i = 0; i < spr->KEEPlistnum; i++ )
+	int hashid = 0;
+	for( ; hashid < 3; hashid++ )
 	{
-		SpreadHashEntry * ke = spr->KEEPlist[i];
-		printf( "KEY: %s\n",ke->key );
-		OGLockMutex( spr->KEEPmutex );
-
-		if( !ke ) continue;
-
-		if( poutsize + ke->payloadlen > poutreserved )
+		for( i = 0; i < spr->KEEPlistnum[hashid]; i++ )
 		{
-			poutreserved = poutsize + ke->payloadlen + 1024;
-			pout = realloc( pout, poutreserved );
-		}
-		memcpy( pout + poutsize, ke->payload, ke->payloadlen );
-		poutsize += ke->payloadlen;
+			SpreadHashEntry * ke = spr->KEEPlist[hashid][i];
+			printf( "KEY: %s\n",ke->key );
+			OGLockMutex( spr->KEEPmutex );
 
-		OGUnlockMutex( spr->KEEPmutex );
+			if( !ke ) continue;
+
+			if( poutsize + ke->payloadlen > poutreserved )
+			{
+				poutreserved = poutsize + ke->payloadlen + 1024;
+				pout = realloc( pout, poutreserved );
+			}
+			memcpy( pout + poutsize, ke->payload, ke->payloadlen );
+			poutsize += ke->payloadlen;
+
+			OGUnlockMutex( spr->KEEPmutex );
+		}
 	}
 	*ptrout = pout;
 	return poutsize;

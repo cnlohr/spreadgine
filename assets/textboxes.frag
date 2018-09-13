@@ -4,9 +4,13 @@
 
 varying vec4 vv1Col;
 varying vec4 vvExtra;	//coded text location in texture [x y] [w h]
-//uniform vec4 fontspot;	//Location within the texture of the font [x y] [w h]
+
+uniform vec4 fontspot;	//Location within the texture of the font [x y] [w h] Only useful when font doesn't take full-room.
+
+
 uniform sampler2D texture0, texture1;
-uniform vec4 batchsetuni; //invw, 1.0/set->associated_texture->w, set->px_per_xform * 0.5 * invw, 1.0/set->associated_texture->h
+//uniform vec4 batchsetuni; //invw, 1.0/set->associated_texture->w, set->px_per_xform * 0.5 * invw, 1.0/set->associated_texture->h
+varying vec4 batchsetpass;
 
 
 void main()
@@ -29,36 +33,32 @@ void main()
 
 	//Pointer to where in the font we need to look up.
 
-	vec2 char_area_size = vvExtra.zw / batchsetuni.yw;
+	vec2 char_area_size = vvExtra.zw / batchsetpass.yw;
 	vec2 placeincharacter = mod( vv1Col.xy * char_area_size, 1.0 ) / 16.0;
 
-	vec2 targetc = trunc( vec2( mod( tv.x, 16.0 ), tv.x / 16.0 ) )/16.0;
+	vec2 targetc = floor( vec2( mod( tv.x, 16.0 ), vec2( tv.x / 16.0 ) ) )/16.0;
 	//targetc now contains 0..1, 0..1 of where to look up in the output map.
 
-	targetc = targetc + placeincharacter + vec2( -0.01, 0.0001 );
+	targetc = targetc + placeincharacter + vec2( -0.001, -0.001 ); //This tweaks the position in the texture we're looking.
 
-	vec4 finalchartex = (texture2D( texture1, targetc )-0.1)*2.0;
-	gl_FragColor = vec4( finalchartex.xyz, 1.0 );
+	targetc *= fontspot.zw;
 
+	vec4 finalchartex = (texture2D( texture1, targetc )); //Look up texture and color-stretch.
 
-#if 0
+	finalchartex = clamp( (finalchartex - 0.4 ) * 2.0, 0.0, 1.0 );
 
-#ifdef NOTERP
-	vec4 finalchartex = texture2D( texture0, targetc  * fontspot.zw + fontspot.xy );
-	gl_FragColor = vec4( finalchartex.xy, 0.0, 1.0 );
-#else
-	vec2 ttargetc = (targetc-0.0042)  * fontspot.zw + fontspot.xy;
-	vec4 finalchartex0 = texture2D( texture0, ttargetc );
-	vec4 finalchartex1 = texture2D( texture0, ttargetc + vec2( batchsetuni.y, 0.0 ) );
-	vec4 finalchartex2 = texture2D( texture0, ttargetc + vec2( 0.0, batchsetuni.w ) );
-	vec4 finalchartex3 = texture2D( texture0, ttargetc + batchsetuni.yw );
-	vec2 mixing = mod( ttargetc / batchsetuni.yw, 1.0 );
-	vec4 mixx0 = mix( finalchartex0, finalchartex1, mixing.x );
-	vec4 mixx1 = mix( finalchartex2, finalchartex3, mixing.x );
-	vec4 finalchartexo = mix( mixx0, mixx1, mixing.y );
+	//Get color + formatting.
 
-	gl_FragColor = vec4( (finalchartexo.xy-0.5)*4.0, 0.0, 1.0 );
+		//Attrib & 4 == invert colors
+		//Attrib & 1 == extra bold
+	float intensity = (mod( tv.y, 2.0 ) >= 1.0)?1.0:0.7;
+	if( mod(tv.y/16.0,2.0) >= 1.0 ) finalchartex.rgb = vec3(1.0)- finalchartex.rgb; 
+	float red = (mod( tv.z, 2.0 ) >= 1.0)?intensity:0.0;
+	float grn = (mod( tv.z/2.0, 2.0 ) >= 1.0)?intensity:0.0;
+	float blu = (mod( tv.z/4.0, 2.0 ) >= 1.0)?intensity:0.0;
 
-#endif
-#endif
+//	if( length(finalchartex.xyz) < 0.1 ) discard;
+
+	finalchartex.rgb *= vec3( red, grn, blu );
+	gl_FragColor = vec4( finalchartex.xyz+0.1, 1.0 );
 }

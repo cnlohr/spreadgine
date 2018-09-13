@@ -11,12 +11,13 @@ varying vec4 vvExtra;
 uniform vec4 timevec;
 uniform sampler2D texture0;
 uniform vec4 batchsetuni;  //1/texx, 1/texy, 0.5*samps/texx
-
+varying vec4 batchsetpass;
 void main()
 {
 	vec3 vert = attrib0;
 	vv1Col = attrib1;
     vv2Tex = attrib2;
+	batchsetpass = batchsetuni;
 
 	{
 		vec2 texadvance = vec2( batchsetuni.x, 0.0 );
@@ -34,8 +35,12 @@ void main()
 		textra = ( textra - 128. ) * (256./2048. );
 
 		vvExtra = textra;
+
+		vec2 mux = vvExtra.zw / batchsetuni.xy * vec2( 1., 1.5 );
+		vert.xy *= mux;
 		vert = (vert + 2.0 * cross( tquat.xyz, cross(tquat.xyz, vert) + tquat.w * vert ) ) * tpos.w + tpos.xyz;
 	}
+
 
 	vec4 vvpos = mmatrix * vec4(vert, 1.0);
 	vec4 outpos = (pmatrix * (vmatrix * vvpos ) );

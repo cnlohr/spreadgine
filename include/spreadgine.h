@@ -86,9 +86,9 @@ struct Spreadgine
 	float  lastclearcolor[4];
 
 	//These are filled with messages that will be transferred to newly connected clients.
-	SpreadHashEntry * KEEPhash[SPREADGINE_CACHEMAP_SIZE];
-	SpreadHashEntry * KEEPlist[SPREADGINE_MAXKEEP];
-	int KEEPlistnum;
+	SpreadHashEntry * KEEPhash[3][SPREADGINE_CACHEMAP_SIZE];
+	SpreadHashEntry * KEEPlist[3][SPREADGINE_MAXKEEP];
+	int KEEPlistnum[3];
 	void * KEEPmutex;
 	volatile int doexit;
 };

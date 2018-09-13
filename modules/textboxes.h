@@ -3,7 +3,6 @@
 
 #include <spreadgine_util.h>
 
-
 //Double-up a terminal + textbox
 typedef struct TextBox TextBox;
 typedef struct TextBoxSet TextBoxSet;
@@ -22,6 +21,7 @@ struct TextBox
 	int last_curx, last_cury;
 	int last_scrollback;
 	TextBox * next;
+	void * rxthread; //Actually an og_thread_t
 };
 
 struct TextBoxSet
@@ -45,10 +45,13 @@ void RenderTextBoxSet( TextBoxSet * set, float * matrix_base );
 void FreeTextBoxSet( TextBoxSet * set );
 
 TextBox    * CreateTextBox( TextBoxSet * set, const char * name, int chars_w, int chars_h );
+void 		DestroyTextBox( TextBox * tb );
 void		TextBoxUpdateExtraVertexData( TextBox * tb );
 int			ResizeTextBox( TextBox * tb, int new_chars_w, int new_chars_h );
 void        WriteToTextBox( TextBox * tb, int character );
 
+int TextboxAttachTerminal( TextBox * tb, char * const *  localargv );
+void TextBoxHandleKeyX11( TextBox * tb, int keycode, int bDown );
 
 #endif
 

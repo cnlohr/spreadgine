@@ -21,9 +21,9 @@ int main()
 {
 #if defined( MALI ) || defined( RASPI_GPU )
 //	Spreadgine * e = SpreadInit( 1920, 1080, "Spread Test", 8888, 2, stderr );
-	Spreadgine * e = SpreadInit( 2160, 1200, "Spread Game Survive Test", 8888, 2, stderr );
+	Spreadgine * e = SpreadInit( 2160, 1200, "Spread Game Survive Test", 8888, 2, 1, stderr );
 #else
-	Spreadgine * e = SpreadInit( 800, 600, "Spread Test", 8888, 2, stderr );
+	Spreadgine * e = SpreadInit( 800, 600, "Spread Test", 8888, 2, 1, stderr );
 #endif
 
 	//First: Add a defualt shader
@@ -36,7 +36,7 @@ int main()
 #define NUMBATCHO 2000
 
 	SpreadGeometry * sixsquare = MakeSquareMesh( e, 2, 1 );
-	BatchedSet * batched   = CreateBatchedSet( e, "batchedTri", NUMBATCHO, 65536, GL_TRIANGLES, 2048, 2048, 6 );
+	BatchedSet * batched   = CreateBatchedSet( e, "batchedTri", NUMBATCHO, 65536, GL_TRIANGLES, 2048, 2048, 8 );
 	batched->tex_dirty = 0; //Batch whole updates.
 	batched->geo_dirty = 0;
 
@@ -94,7 +94,7 @@ int main()
 			float extra[4] = {  ( i % 5 )/5.0, ((i/5)%5)/5.0, 0., 1. };
 
 			UpdateBatchedObjectTransformData( objs[i], 
-				FTriple(  (i % 20) * 1 - 5.0, ((i / 20)%20) * 1 - 5.0, (i/400) + sin( (tframes+i) * .01 ) * 2.5 ), 1,
+				FQuad(  (i % 20) * 1 - 5.0, ((i / 20)%20) * 1 - 5.0, (i/400) + sin( (tframes+i) * .01 ) * 2.5, 1),
 				quat, extra );
 		}
 

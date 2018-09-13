@@ -39,7 +39,7 @@ else
 	LDFLAGS:=-lm -lpthread $(LINK_GPU)
 endif
 
-CFLAGS+=-Os -g -Iinclude -Icntools/http -Irawdraw -Imodules
+CFLAGS+=-O0 -g -Iinclude -Icntools/http -Irawdraw -Imodules
 RESOURCE_O:=$(CNHTTP) $(RAWDRAW) src/spreadgine.o src/spreadgine_util.o src/spreadgine_remote.o src/objload.o src/spreadgine_vr.o src/spatialloc.o
 RESOURCE_O+=modules/textboxes.o cntools/vlinterm/vlinterm.o
 

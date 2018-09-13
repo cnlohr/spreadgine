@@ -62,10 +62,11 @@ Spreadgine * SpreadInit( int w, int h, const char * title, int httpport, int vps
 	}
 
 	SpreadRemoteInit( ret, httpport );
-	SpreadMessage( ret, "setup", "biiis", 64, w, h, vps, title );
+	SpreadMessage( ret, "-setup", "biis", 64, w, h, title );
 
 
 	ret->setvps = vps;
+
 	for( i = 0; i < vps; i++ )
 	{
 		char EyeName[5] = { 'E', 'y', 'e', '0'+i };
@@ -224,13 +225,15 @@ void SpreadSetupCamera( Spreadgine * spr, uint8_t camid, float fov, float aspect
 
 void SpreadChangeCameaPerspective( Spreadgine * spr, uint8_t camid, float * newpersp )
 {
-	memcpy( spr->vpperspectives[camid], newpersp, sizeof(float)*16 );
+	if( spr->vpperspectives[camid] != newpersp )
+		memcpy( spr->vpperspectives[camid], newpersp, sizeof(float)*16 );
 	SpreadMessage( spr, "campersp#", "bbX", camid, 66, camid, 16*sizeof(float), newpersp );
 }
 
 void SpreadChangeCameaView( Spreadgine * spr, uint8_t camid, float * newview )
 {
-	memcpy( spr->vpviews[camid], newview, sizeof(float)*16 );
+	if( spr->vpviews[camid] != newview )
+		memcpy( spr->vpviews[camid], newview, sizeof(float)*16 );
 	SpreadMessage( spr, "camview#", "bbX", camid, 67, camid, 16*sizeof(float), newview );
 }
 
@@ -432,8 +435,11 @@ static SpreadShader * LoadShaderAtPlace( SpreadShader * ret, Spreadgine * spr )
 	}
 
 
-	if( !ret->program_shader ) ret->program_shader = glCreateProgram();
-	if (!ret->program_shader) {
+	if( !ret->program_shader )
+	{
+		ret->program_shader = glCreateProgram();
+	}
+	if( !ret->program_shader ) {
 		fprintf(spr->fReport, "Error: failed to create program!\n");
 		free( ret );
 		goto qexit;
@@ -502,7 +508,7 @@ static SpreadShader * LoadShaderAtPlace( SpreadShader * ret, Spreadgine * spr )
 		glUniform1i(slot, i);
 	}
 
-	SpreadMessage( spr, "shader#", "bbssss", ret->shader_in_parent, 69, ret->shader_in_parent, shadername, fragmentShader_text, vertexShader_text, geometryShader_text?geometryShader_text:"" );
+	SpreadMessage( spr, "-shader#", "bbssss", ret->shader_in_parent, 69, ret->shader_in_parent, shadername, fragmentShader_text, vertexShader_text, geometryShader_text?geometryShader_text:"" );
 	goto finalexit;
 qexit:
 	if( ret->fragment_shader ) { glDeleteShader( ret->fragment_shader ); ret->fragment_shader = 0; }
@@ -547,6 +553,7 @@ SpreadShader * SpreadLoadShader( Spreadgine * spr, const char * shadername, cons
 	ret->fragment_shader_source = strdup( fragmentShader );
 	ret->vertex_shader_source = strdup( vertexShader );
 	ret->geometry_shader_source = geometryShader?strdup( geometryShader ):0;
+	ret->known_uniform_slots = 0;
 	LoadShaderAtPlace( ret, spr );
 	spr->setshaders++;
 	return ret;
@@ -910,7 +917,7 @@ SpreadTexture * SpreadCreateTexture( Spreadgine * spr, const char * texname, int
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-	SpreadMessage( ret->parent, "texture#", "bbsiiii", ret->texture_in_parent, 97, ret->texture_in_parent, ret->texname, ret->type, ret->channels, ret->w, ret->h);
+	SpreadMessage( ret->parent, "-texture#", "bbsiiii", ret->texture_in_parent, 97, ret->texture_in_parent, ret->texname, ret->type, ret->channels, ret->w, ret->h);
 
 
 
@@ -939,7 +946,7 @@ void SpreadChangeTextureProperties( SpreadTexture * tex, int minmag_lin, int cla
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, clamp?GL_CLAMP:GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, clamp?GL_CLAMP:GL_REPEAT);
  
-	SpreadMessage( tex->parent, "texture#", "bbiii", tex->texture_in_parent, 98, tex->texture_in_parent,  minmag_lin, clamp, max_miplevel);
+	SpreadMessage( tex->parent, "texture#props", "bbiii", tex->texture_in_parent, 96, tex->texture_in_parent,  minmag_lin, clamp, max_miplevel);
 }
 
 
@@ -954,9 +961,18 @@ void SpreadUpdateSubTexture( SpreadTexture * tex, void * texdat, int x, int y, i
 	{
 		memcpy( tex->pixeldata + csz*x + tex->w*csz * ( l + y ), ((uint8_t*)texdat) + l * w * csz, w * csz ); 
 	}
-	if( w*h*csz < 65500 )
+
+	if( x == 0 && y == 0 )
 	{
-		SpreadMessage( tex->parent, 0, "bbiiiivb", 98, tex->texture_in_parent, x, y, w, h, w*h*csz, texdat, 0 );
+		//Is the whole image... Need to store it.
+		SpreadMessage( tex->parent, "+texture#data", "bbiiiivb", tex->texture_in_parent, 98, tex->texture_in_parent, x, y, w, h, w*h*csz, texdat, 0 );
+	}
+	else
+	{
+		if( w*h*csz < 65500 )
+		{
+			SpreadMessage( tex->parent, 0, "bbiiiivb", 98, tex->texture_in_parent, x, y, w, h, w*h*csz, texdat, 0 );
+		}
 	}
 
 #if 0
