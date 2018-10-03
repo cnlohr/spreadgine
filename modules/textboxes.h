@@ -15,7 +15,10 @@ struct TextBox
 	struct TermStructure * ts;
 	struct TextBoxSet * parent;
 
-	//Location of table in texture.
+	//Location of table in texture.  This is the character table.
+	//It is actually duplicated, one above the other.
+	//The below one contains precomputed color and inversion properties.
+	//The top one contains the data as from vlinterm
 	int table_x, table_y;
 	int width, height;		//In characters.
 	int last_curx, last_cury;

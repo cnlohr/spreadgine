@@ -111,13 +111,16 @@ TextBoxSet * CreateTextBoxSet( Spreadgine * spr, const char * fontfile, int max_
 		#else
 		//We do a little work to make sure we have a power-of-two texture.  This code is untested and may not be needed.
 
+#ifdef RASPI_GPU
+		charset_w_exp = ( charset_w );
+		charset_h_exp = ( charset_h );
+		charset_texture = SpreadCreateTexture( spr, fontfile, charset_w_exp, charset_h_exp, 4, GL_UNSIGNED_BYTE );
+#else
 		charset_w_exp = pow2roundup( charset_w );
 		charset_h_exp = pow2roundup( charset_h );
 		charset_texture = SpreadCreateTexture( spr, fontfile, charset_w_exp, charset_h_exp, 4, GL_UNSIGNED_BYTE );
-
-//		SpreadChangeTextureProperties( charset_texture, 2, 0, 1, 2 );
-
-
+		SpreadChangeTextureProperties( charset_texture, 2, 0, 1, 2 );
+#endif
 		//Build an expanded image for loading into the texture.
 		uint32_t * fontup = malloc( charset_w_exp * charset_h_exp * 4 );
 		int x, y;
@@ -236,7 +239,8 @@ void RenderTextBoxSet( TextBoxSet * set, float * matrix_base )
 			if( extentminy < 0 ) extentminy = 0;
 
 			int updatelines = extentmaxy - extentminy + 1;
-			uint32_t texo[w * updatelines];
+			uint32_t texoA[w * updatelines];
+			uint32_t texoB[w * updatelines];
 
 			ts->tainted = 0;	//Taint up here in case the buffer changes while we're updating.
 			//If something changed before here, it's ok because it's already read.
@@ -246,13 +250,70 @@ void RenderTextBoxSet( TextBoxSet * set, float * matrix_base )
 			t->last_curx = ts->curx;
 			t->last_cury = ts->cury;
 
-			memcpy( texo, tb + extentminy * w, updatelines * 4 * w );
+			//Precompute the stuff for the shader.
+			{				
+				int i;
+				uint32_t * tpa = tb + extentminy * w;
+				for( i = 0; i < updatelines * w; i++ )
+				{
+					//We start off in the following format:
+						// text  <<lsB
+						// attrib
+						// color
+						// taint <<msB  (Could also contain more attirbutes if needed)
+					uint32_t propsin = tpa[i];
+
+					//Output format is:
+					//	text-x
+					//  text-y
+					//	bg-r
+					//	bg-g
+
+					//  bg-b
+					//  fg-r
+					//  fg-g
+					//  fg-b
+
+/*		//Attrib & 4 == invert colors
+		//Attrib & 1 == extra bold
+	float intensity = (mod( tv.y, 2.0 ) >= 1.0)?1.0:0.7;
+	if( mod(tv.y/16.0,2.0) >= 1.0 ) finalchartex.rgb = vec3(1.0)- finalchartex.rgb; 
+	float red = (mod( tv.z, 2.0 ) >= 1.0)?intensity:0.0;
+	float grn = (mod( tv.z/2.0, 2.0 ) >= 1.0)?intensity:0.0;
+	float blu = (mod( tv.z/4.0, 2.0 ) >= 1.0)?intensity:0.0;
+*/
+					int intensity = (propsin & (1<<8))?0xff:0xaa;
+					int invert =    (propsin & (1<<12))?1:0;
+					int bg = 0x11;
+					if( invert ) { bg = intensity; intensity = 0x11; };
+					int fgred = (propsin&(1<<16))?intensity:bg;
+					int fggrn = (propsin&(1<<17))?intensity:bg;
+					int fgblu = (propsin&(1<<18))?intensity:bg;
+					int bgred = (propsin&(1<<16))?bg:intensity;
+					int bggrn = (propsin&(1<<17))?bg:intensity;
+					int bgblu = (propsin&(1<<18))?bg:intensity;
+					uint8_t ch = propsin;
+					int lx = ((ch % 16) * 16);
+					int ly = ((ch / 16) * 16);
+					texoA[i] = lx | 
+						( ly << 8 ) | 
+						( bgred<<16 ) |
+						( bggrn<<24 );
+					texoB[i] = (bgblu) | (fgred<<8) | (fggrn<<16) | (fgblu<<24);
+				}
+			}
+
 
 			int cursorplace = (ts->curx + (ts->cury-extentminy)*w);
 			if( cursorplace >= 0 && cursorplace < w*updatelines )
-				texo[cursorplace] |= 0x00ffff00; //
+			{
+				texoA[cursorplace] |= 0xffff0000; //
+				texoB[cursorplace] |= 0x000000ff; //
+			}
 
-			SpreadUpdateSubTexture( t->parent->set->associated_texture, texo, t->table_x, t->table_y + extentminy, w, updatelines );
+			SpreadUpdateSubTexture( t->parent->set->associated_texture, texoA, t->table_x, t->table_y + extentminy, w, updatelines );
+			SpreadUpdateSubTexture( t->parent->set->associated_texture, texoB, t->table_x, t->table_y + extentminy + t->height, w, updatelines );
+
 			t->last_scrollback = scrollback;
 		}
 		t = t->next;
@@ -305,7 +366,7 @@ TextBox    * CreateTextBox( TextBoxSet * set, const char * name, int chars_w, in
 	}
 
 	int tx, ty;
-	int allc = AllocateBatchedObjectTexture( obj, &tx, &ty, chars_w, chars_h );
+	int allc = AllocateBatchedObjectTexture( obj, &tx, &ty, chars_w, chars_h*2 );
 	if( allc )
 	{
 		fprintf( stderr, "Error: couldn't get enough texture space to make textbox\n" );
@@ -365,7 +426,7 @@ int			ResizeTextBox( TextBox * tb, int new_chars_w, int new_chars_h )
 {
 	int tx, ty;
 	printf( "RESIZE\n");
-	int allc = AllocateBatchedObjectTexture( tb->obj, &tx, &ty, new_chars_w, new_chars_h );
+	int allc = AllocateBatchedObjectTexture( tb->obj, &tx, &ty, new_chars_w, new_chars_h*2 );
 	if( allc )
 	{
 		fprintf( stderr, "Error: can't reallocated texture %d, %d -> %d, %d\n", tb->width, tb->height, new_chars_w, new_chars_h );
