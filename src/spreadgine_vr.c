@@ -129,12 +129,12 @@ void SpreadSetupEyes()
 
 	double pin[3] = {  0.0, 0., 0 }; //Left eye
 
-	double pineye1[3] = { -diopter, 0., eyez }; //Left eye
-	double pineye2[3] = { diopter, 0., eyez };
-	double pinat1[3] = { -disappearing, 0., (1+eyez) }; //Left eye
-	double pinat2[3] = { disappearing, 0., (1+eyez) };
+	double pineye1[3] = { -diopter, 0., -eyez }; //Left eye
+	double pineye2[3] = { diopter, 0., -eyez };
+	double pinat1[3] = { -disappearing, 0., -(1+eyez) }; //Left eye
+	double pinat2[3] = { disappearing, 0., -(1+eyez) };
 
-	double pinup[3] = { 0, -1., 0 };
+	double pinup[3] = { 0, 1., 0 };
 
 	if( HMD )
 	{

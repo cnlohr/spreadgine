@@ -7,6 +7,9 @@
 #include <spreadgine_util.h>
 #include <spreadgine_remote.h>
 #include <stdarg.h>
+#include "modules/textboxes.h"
+TextBox * tbfocus;
+
 
 #define MAX_LINES   4096
 #define MAX_BOOLETS 2048
@@ -306,6 +309,14 @@ int main( int argc, char ** argv )
 		printf( "Made boolets\n" );
 	}
 
+	TextBoxSet * textboxes =  CreateTextBoxSet( gspe, "cntools/vlinterm/ibm437.pgm", 25, 1024, 1024 );
+	TextBox * first_textbox = CreateTextBox( textboxes, "first", 80, 25 );
+	{
+		char * localargv[] = { "/bin/bash", "./starttop.sh", 0 };
+		TextboxAttachTerminal( first_textbox, localargv );
+		tbfocus = first_textbox;
+	}
+
 
 	for( i = 0; i < MAX_BLOCKS; i++ )
 	{
@@ -388,7 +399,46 @@ int main( int argc, char ** argv )
 		}
 
 
-		SpreadRenderGeometry( platform, gSMatrix, 0, -1 ); 
+
+
+
+
+
+		{
+//			int i = 64;
+//			for( ; i < 126; i++ )
+//				WriteToTextBox( first_textbox, i );
+#if 0
+			double euler[3] = { 1.57,  3.14159, 3.14159 };
+			LinmathQuat q;
+			quatfromeuler( q, euler );
+
+			float quat[4] = { q[0], q[1], q[2], q[3] }; 
+			UpdateBatchedObjectTransformData( first_textbox->obj, 
+				FQuad( -0, 2, 1, .02 ),
+				quat, 
+				0 );
+#else
+			double euler[3] = {3.14159, 0, 0 };
+			LinmathQuat q;
+			quatfromeuler( q, euler );
+
+			float quat[4] = { q[0], q[1], q[2], q[3] }; 
+			UpdateBatchedObjectTransformData( first_textbox->obj, 
+				FQuad( 0, 1, 0, .02 ),
+				quat, 
+				0 );
+#endif
+			spglDisable( gspe, GL_CULL_FACE );
+			RenderTextBoxSet( textboxes, gSMatrix);
+			spglEnable( gspe, GL_CULL_FACE );
+		}
+
+
+
+
+
+//		SpreadRenderGeometry( platform, gSMatrix, 0, -1 ); 
 
 //		printf( "%f %f %f / %f %f %f / %f %f %f\n", wmp[0].Pos[0], wmp[0].Pos[1], wmp[0].Pos[2], wmp[1].Pos[0], wmp[1].Pos[1], wmp[1].Pos[2], phmd.Pos[0], phmd.Pos[1], phmd.Pos[2] );
 
@@ -434,10 +484,15 @@ int main( int argc, char ** argv )
 		UpdateBoolets( Delta );
 
 
+
+
+
+
 //void RawDrawText( const char * text, int scale, float * mat )
 		SpreadRenderGeometry( boolets, gSMatrix, 0, MAX_LINES*2);
-		tdPop();
 
+
+		tdPop();
 #ifndef RASPI_GPU
 		glFlush();
 		double TWS = OGGetAbsoluteTime();

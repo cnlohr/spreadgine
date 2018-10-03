@@ -1,2 +1,2 @@
 #!/bin/bash
-top -d .1
+top -d 1
