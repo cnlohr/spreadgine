@@ -17,17 +17,16 @@ void main()
 {
 	//This linearizes the position we're getting the source text from over the space.
 	//I.E. this can look into the array of the text buffer.
+
 	vec2 fvpos = vv1Col.xy * vvExtra.zw + vvExtra.xy;
 
 	vec4 tvA  = texture2D( texture0, fvpos );
-	vec4 tvB  = texture2D( texture0, fvpos + vec2( 0, vvExtra.w ) );
+	vec4 tvB  = texture2D( texture0, fvpos + vec2( 0, vvExtra.w ) ); //Doing the second texture look up "looks" slower but is in fact way faster, up from 25 FPS to 42.
 
 	vec2 targetc = tvA.xy;
 	vec2 placeincharacter = mod( vv1Col.zw, 1.0 ) / 16.0;
 	targetc = targetc + placeincharacter - vec2( 0.005); //This tweaks the position in the texture we're looking.
 
-//gl_FragColor = vec4( targetc.xy, 0.0, 1.0 ); return;
-//	targetc *= fontspot.zw;
 
 	float finalchartex = (texture2D( texture1, targetc )).r; //Look up texture and color-stretch.
 

@@ -103,6 +103,14 @@ void UpdateRots( SurvivePose * out, SurvivePose * last, SurvivePose * raw, Survi
 	quatrotateabout( out->Rot, out->Rot, shift->Rot );
 	//ApplyPoseToPose( out, shift, out );
 
+//	quatgetreciprocal( out->Rot, out->Rot );
+
+//	out->Rot[0] *= -1;
+//	out->Rot[1] *= -1;
+//	out->Rot[2] *= -1;
+//	out->Rot[1] *= -1;
+//	out->Pos[0] *= -1;
+//	out->Pos[1] *= -1;
 	//Keep current value.
 	memcpy( last, raw, sizeof( SurvivePose ) );
 }
@@ -120,12 +128,13 @@ void SpreadSetupEyes()
 	double up[3] = { 1, 1, 1 };
 
 	double pin[3] = {  0.0, 0., 0 }; //Left eye
-	double pineye1[3] = {  diopter, 0., eyez }; //Left eye
-	double pineye2[3] = { -diopter, 0., eyez };
-	double pinat1[3] = {  disappearing, 0., 1+eyez }; //Left eye
-	double pinat2[3] = { -disappearing, 0., 1+eyez };
 
-	double pinup[3] = { 0, 1., 0 };
+	double pineye1[3] = { -diopter, 0., eyez }; //Left eye
+	double pineye2[3] = { diopter, 0., eyez };
+	double pinat1[3] = { -disappearing, 0., (1+eyez) }; //Left eye
+	double pinat2[3] = { disappearing, 0., (1+eyez) };
+
+	double pinup[3] = { 0, -1., 0 };
 
 	if( HMD )
 	{

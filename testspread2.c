@@ -145,8 +145,6 @@ int main()
 		tdIdentity( gSMatrix );
 		RenderBatchedSet( batched, shd1, gSMatrix );
 		RenderTextBoxSet( textboxes, gSMatrix);
-		RenderTextBoxSet( textboxes, gSMatrix);
-		RenderTextBoxSet( textboxes, gSMatrix);
 		tdPop();
 
 		spglSwap( e );
