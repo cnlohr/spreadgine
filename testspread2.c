@@ -8,6 +8,7 @@
 
 TextBox * tbfocus;
 
+#ifndef RASPI_GPU
 void HandleKey( int keycode, int bDown )
 {
 	if( tbfocus ) TextBoxHandleKeyX11( tbfocus, keycode, bDown );
@@ -20,6 +21,8 @@ void HandleButton( int x, int y, int button, int bDown )
 void HandleMotion( int x, int y, int mask )
 {
 }
+#endif
+
 
 int main()
 {
@@ -40,7 +43,7 @@ int main()
 	TextBoxSet * textboxes =  CreateTextBoxSet( e, "cntools/vlinterm/ibm437.pgm", 25, 1024, 1024 );
 	TextBox * first_textbox = CreateTextBox( textboxes, "first", 80, 25 );
 	{
-		char * localargv[] = { "/bin/bash", 0 };
+		char * localargv[] = { "/bin/bash", "./starttop.sh", 0 };
 		TextboxAttachTerminal( first_textbox, localargv );
 		tbfocus = first_textbox;
 	}
@@ -102,13 +105,13 @@ int main()
 //			for( ; i < 126; i++ )
 //				WriteToTextBox( first_textbox, i );
 
-			double euler[3] = { 0, 1.57 + .05 * tframes, 0 };
+			double euler[3] = { .6, 1.57 + .005 * tframes * 0 + 1.57, 0 };
 			LinmathQuat q;
 			quatfromeuler( q, euler );
 
 			float quat[4] = { q[0], q[1], q[2], q[3] }; 
 			UpdateBatchedObjectTransformData( first_textbox->obj, 
-				FQuad( 0, 0, 0, .4 ),
+				FQuad( 14, -15, 0, .6 ),
 				quat, 
 				0 );
 		}
@@ -142,6 +145,8 @@ int main()
 		tdIdentity( gSMatrix );
 		RenderBatchedSet( batched, shd1, gSMatrix );
 		RenderTextBoxSet( textboxes, gSMatrix);
+		RenderTextBoxSet( textboxes, gSMatrix);
+		RenderTextBoxSet( textboxes, gSMatrix);
 		tdPop();
 
 		spglSwap( e );
@@ -156,6 +161,6 @@ int main()
 			lastframetime++;
 		}
 
-		usleep(30000);
+//		usleep(30000);
 	}
 }

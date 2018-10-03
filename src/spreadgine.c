@@ -939,17 +939,23 @@ void SpreadChangeTextureProperties( SpreadTexture * tex, int min_lin, int mag_li
 	tex->min_lin = min_lin;
 	tex->mag_lin = mag_lin;
 	tex->clamp = clamp;
-
+#ifdef RASPI_GPU
+#define GL_GENERATE_MIPMAP 0x8191
+#define GL_TEXTURE_BASE_LEVEL             0x813C
+#define GL_TEXTURE_MAX_LEVEL              0x813D
+#endif
 	if( min_lin == 2 )
 	{
+//#ifndef RASPI_GPU
 		glTexParameteri( GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE ); 
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, max_miplevel);
+//#endif
 	}
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mamode[mag_lin] );
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mmmode[min_lin] );
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, clamp?GL_CLAMP:GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, clamp?GL_CLAMP:GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, clamp?GL_CLAMP_TO_EDGE:GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, clamp?GL_CLAMP_TO_EDGE:GL_REPEAT);
  
 	SpreadMessage( tex->parent, "texture#props", "bbiiii", tex->texture_in_parent, 96, tex->texture_in_parent,  min_lin, mag_lin, clamp, max_miplevel);
 }

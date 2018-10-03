@@ -7,6 +7,7 @@ varying vec4 vv0Pos;
 varying vec4 vv1Col;
 varying vec4 vv2Tex;
 varying vec4 vvExtra;
+varying vec4 vv1ColScale;
 
 uniform vec4 timevec;
 uniform sampler2D texture0;
@@ -15,7 +16,6 @@ varying vec4 batchsetpass;
 void main()
 {
 	vec3 vert = attrib0;
-	vv1Col = attrib1;
     vv2Tex = attrib2;
 	batchsetpass = batchsetuni;
 
@@ -35,10 +35,12 @@ void main()
 		textra = ( textra - 128. ) * (256./2048. );
 
 		vvExtra = textra;
+		vec4 vvExtra2Scale = textra / batchsetuni.ywyw;
 
 		vec2 mux = vvExtra.zw / batchsetuni.xy * vec2( 1., 1.5 );
 		vert.xy *= mux;
 		vert = (vert + 2.0 * cross( tquat.xyz, cross(tquat.xyz, vert) + tquat.w * vert ) ) * tpos.w + tpos.xyz;
+		vv1Col = vec4( attrib1.xy, attrib1.xy * textra.zw / batchsetpass.yw );
 	}
 
 
@@ -48,7 +50,7 @@ void main()
 	vv0Pos = vvpos;
 
 
-#if 1
+#if 0
 	gl_Position = outpos;
 #else
 	vec2 rscreenpos = outpos.xy/outpos.w;

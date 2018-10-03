@@ -114,7 +114,10 @@ TextBoxSet * CreateTextBoxSet( Spreadgine * spr, const char * fontfile, int max_
 		charset_w_exp = pow2roundup( charset_w );
 		charset_h_exp = pow2roundup( charset_h );
 		charset_texture = SpreadCreateTexture( spr, fontfile, charset_w_exp, charset_h_exp, 4, GL_UNSIGNED_BYTE );
-		SpreadChangeTextureProperties( charset_texture, 2, 0, 1, 2 );
+
+//		SpreadChangeTextureProperties( charset_texture, 2, 0, 1, 2 );
+
+
 		//Build an expanded image for loading into the texture.
 		uint32_t * fontup = malloc( charset_w_exp * charset_h_exp * 4 );
 		int x, y;
@@ -421,6 +424,8 @@ int TextboxAttachTerminal( TextBox * tb, char * const *  localargv )
 	return r;
 }
 
+#ifndef RASPI_GPU
+
 void TextBoxHandleKeyX11( TextBox * tb, int keycode, int bDown )
 {
 	struct TermStructure * ts = tb->ts;
@@ -550,3 +555,6 @@ void TextBoxHandleKeyX11( TextBox * tb, int keycode, int bDown )
 		}
 	}
 }
+
+#endif
+
