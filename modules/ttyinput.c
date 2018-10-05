@@ -25,6 +25,9 @@ void * HandleTTYInput( void * d )
 		int r = read( f, &c, 1 );
 		//printf( "%d %d\n", r,c );
 		//if( tbfocus ) TextBoxHandleKeyAscii( tbfocus, c, bDown );
+		if( c == 126 ) c = '|';
+		if( c == 194 ) c = '~';
+		if( c == 172 ) continue;
 
 		HandleKeypress( c );
 		if( r < 0 ) return 0;
