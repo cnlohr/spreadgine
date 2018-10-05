@@ -14,7 +14,6 @@ TextBox * tbfocus;
 
 void HandleKeypress( int ch )
 {
-	printf( "%d\n", ch );
 	if( tbfocus ) TextBoxHandleKeyAscii( tbfocus, ch, 1 );
 }
 

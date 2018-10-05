@@ -36,10 +36,17 @@ void main()
 	vec3 fg = finalchartex * fgcolor;
 	vec3 bg = (1.-finalchartex) * bgcolor; ///??? Why is this faster than "mix"??
 	gl_FragColor = vec4( fg+bg, 1.0 );*/
+
 	if( finalchartex > 0.5 )
 		gl_FragColor = vec4( tvB.yzw, 1.0 );
 	else
-		gl_FragColor = vec4( tvA.zw, tvB.x, 1.0 );
+	{
+		if( length( tvA.zw ) < .4 )
+			discard;
+		else
+			gl_FragColor = vec4( tvA.zw, tvB.x, 1.0 );
+	}
+
 #if 0
 	//Uncomment for more debug.
 	//	    gl_FragColor = vec4( tv.xy*1.0, 0.1, 1.0); return;
