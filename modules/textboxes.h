@@ -55,6 +55,7 @@ void        WriteToTextBox( TextBox * tb, int character );
 
 int TextboxAttachTerminal( TextBox * tb, char * const *  localargv );
 void TextBoxHandleKeyX11( TextBox * tb, int keycode, int bDown );
+void TextBoxHandleKeyAscii( TextBox * tb, int keycode, int bDown );
 
 #endif
 

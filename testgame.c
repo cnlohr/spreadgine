@@ -8,12 +8,19 @@
 #include <spreadgine_remote.h>
 #include <stdarg.h>
 #include "modules/textboxes.h"
+#include "modules/ttyinput.h"
+
 TextBox * tbfocus;
 
+void HandleKeypress( int ch )
+{
+	printf( "%d\n", ch );
+	if( tbfocus ) TextBoxHandleKeyAscii( tbfocus, ch, 1 );
+}
 
-#define MAX_LINES   4096
-#define MAX_BOOLETS 2048
-#define MAX_BLOCKS 32
+#define MAX_LINES   2048
+#define MAX_BOOLETS 1024
+#define MAX_BLOCKS 20
 
 float boolet_pos[MAX_BOOLETS*3];
 float boolet_vec[MAX_BOOLETS*3];
@@ -31,6 +38,9 @@ float boolets_arrayC[MAX_LINES*8*2];
 uint16_t boolets_ibo[MAX_LINES*2*2];
 int freebid;
 SpreadGeometry * boolets;
+
+
+
 
 int PerLinePlace = 0;
 int ShotsPerGun[2];
@@ -258,6 +268,10 @@ int main( int argc, char ** argv )
 	int i;
 	gspe = SpreadInit( 2160, 1200, "Spread Game Survive Test", 8888, 2, stderr );
 
+#ifdef RASPI_GPU
+	OGCreateThread( HandleTTYInput, 0 );
+#endif
+
 	gargc = argc;
 	gargv = argv;
 
@@ -309,12 +323,15 @@ int main( int argc, char ** argv )
 		printf( "Made boolets\n" );
 	}
 
+	#define NUM_TEXTBOXES 1
 	TextBoxSet * textboxes =  CreateTextBoxSet( gspe, "cntools/vlinterm/ibm437.pgm", 25, 1024, 1024 );
-	TextBox * first_textbox = CreateTextBox( textboxes, "first", 80, 25 );
+	TextBox * textboxset[NUM_TEXTBOXES];
+	for( i = 0; i < NUM_TEXTBOXES; i++ )
 	{
-		char * localargv[] = { "/bin/bash", "./starttop.sh", 0 };
-		TextboxAttachTerminal( first_textbox, localargv );
-		tbfocus = first_textbox;
+		textboxset[i] = CreateTextBox( textboxes, "first", 80, 25 );
+		char * localargv[] = { "/bin/bash", 0 };
+		TextboxAttachTerminal( textboxset[i], localargv );
+		tbfocus = textboxset[i];
 	}
 
 
@@ -365,6 +382,13 @@ int main( int argc, char ** argv )
 
 		SpreadApplyShader( gspe->shaders[0] );
 
+		float ssf[4] = { TimeSinceStart, 0, 0, 0 };
+		int slot = SpreadGetUniformSlot( gspe->shaders[0], "timevec");
+		if( slot >= 0 )
+		{
+			//printf( "%f\n", ssf[0] );
+			SpreadUniform4f( gspe->shaders[0], slot, ssf );
+		}
 
 		tdPush();
 
@@ -398,60 +422,12 @@ int main( int argc, char ** argv )
 			}
 		}
 
+//		SpreadRenderGeometry( gun, gSMatrix, 0, -1 ); 
+		UpdateBoolets( Delta );
 
 
-
-
-
-
-		{
-//			int i = 64;
-//			for( ; i < 126; i++ )
-//				WriteToTextBox( first_textbox, i );
-#if 0
-			double euler[3] = { 1.57,  3.14159, 3.14159 };
-			LinmathQuat q;
-			quatfromeuler( q, euler );
-
-			float quat[4] = { q[0], q[1], q[2], q[3] }; 
-			UpdateBatchedObjectTransformData( first_textbox->obj, 
-				FQuad( -0, 2, 1, .02 ),
-				quat, 
-				0 );
-#else
-			double euler[3] = {3.14159, 0, 0 };
-			LinmathQuat q;
-			quatfromeuler( q, euler );
-
-			float quat[4] = { q[0], q[1], q[2], q[3] }; 
-			UpdateBatchedObjectTransformData( first_textbox->obj, 
-				FQuad( 0, 1, 0, .02 ),
-				quat, 
-				0 );
-#endif
-			spglDisable( gspe, GL_CULL_FACE );
-			RenderTextBoxSet( textboxes, gSMatrix);
-			spglEnable( gspe, GL_CULL_FACE );
-		}
-
-
-
-
-
-//		SpreadRenderGeometry( platform, gSMatrix, 0, -1 ); 
-
-//		printf( "%f %f %f / %f %f %f / %f %f %f\n", wmp[0].Pos[0], wmp[0].Pos[1], wmp[0].Pos[2], wmp[1].Pos[0], wmp[1].Pos[1], wmp[1].Pos[2], phmd.Pos[0], phmd.Pos[1], phmd.Pos[2] );
-
-		tdPush();
-		//tdScale( gSMatrix, .2, .2, .2 );		//Operates ON f
-
-		float ssf[4] = { TimeSinceStart, 0, 0, 0 };
-		int slot = SpreadGetUniformSlot( gspe->shaders[0], "timevec");
-		if( slot >= 0 )
-		{
-			//printf( "%f\n", ssf[0] );
-			SpreadUniform4f( gspe->shaders[0], slot, ssf );
-		}
+//void RawDrawText( const char * text, int scale, float * mat )
+		SpreadRenderGeometry( boolets, gSMatrix, 0, MAX_LINES*2);
 
 
 
@@ -480,19 +456,29 @@ int main( int argc, char ** argv )
 			tdPop();
 		}
 
-//		SpreadRenderGeometry( gun, gSMatrix, 0, -1 ); 
-		UpdateBoolets( Delta );
 
-
-
-
-
-
-//void RawDrawText( const char * text, int scale, float * mat )
-		SpreadRenderGeometry( boolets, gSMatrix, 0, MAX_LINES*2);
+		{
+			for( i = 0; i < NUM_TEXTBOXES; i++ )
+			{
+				double euler[3] = {-1.57, 0, 0 };
+				LinmathQuat q;
+				quatfromeuler( q, euler );
+	
+				float quat[4] = { q[0], q[1], q[2], q[3] }; 
+				UpdateBatchedObjectTransformData( textboxset[i]->obj, 
+					FQuad( 0, 1, i+1, .02 ),
+					quat, 
+					0 );
+			}
+			spglDisable( gspe, GL_CULL_FACE );
+			RenderTextBoxSet( textboxes, gSMatrix);
+			spglEnable( gspe, GL_CULL_FACE );
+		}
 
 
 		tdPop();
+
+
 #ifndef RASPI_GPU
 		glFlush();
 		double TWS = OGGetAbsoluteTime();
@@ -513,6 +499,6 @@ int main( int argc, char ** argv )
 			lastframetime++;
 		}
 		Last = Now;
-		enable_spread_remote = !enable_spread_remote;
+		//enable_spread_remote = !enable_spread_remote;
 	}
 }

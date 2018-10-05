@@ -616,6 +616,16 @@ void TextBoxHandleKeyX11( TextBox * tb, int keycode, int bDown )
 		}
 	}
 }
+#else
+
+void TextBoxHandleKeyAscii( TextBox * tb, int keycode, int bDown )
+{
+	struct TermStructure * ts = tb->ts;
+	char st[10];
+	st[0] = keycode;
+	FeedbackTerminal( ts, st, 1 );
+	if( ts->echo ) EmitChar( ts, st[0] );
+}
 
 #endif
 

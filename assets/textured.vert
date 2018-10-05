@@ -30,7 +30,7 @@ void main()
 	//My awful method for trying to correct for lens warp.
 	float compb = dot(rscreenpos,rscreenpos);
 	compb = min( compb, 2.0 );
-	rscreenpos *= (1.0-  compb*.1);
+	rscreenpos *= (1.0-  compb*.13);
 
 	gl_Position.xy = rscreenpos * gl_Position.w;
 }

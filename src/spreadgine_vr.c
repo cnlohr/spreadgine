@@ -33,6 +33,7 @@ void my_raw_pose_process(SurviveObject *so, uint32_t timecode, SurvivePose *pose
 
 	if( strcmp( so->codename, "HMD" ) == 0 )
 	  {
+//		printf( "%f %f %f  %f %f %f %f\n", pose->Pos[0], pose->Pos[1], pose->Pos[2], pose->Rot[0], pose->Rot[1], pose->Rot[2], pose->Rot[3] );
 		memcpy( &phmdC, pose, sizeof( SurvivePose ) ); 
 	    HMD = so;
 	  }
@@ -78,7 +79,7 @@ void SpreadSetupVR()
 	SpreadSetupCamera( gspe, 1, fovie, (float)act_w/1200, .01, 1000, "CAM1" );
 
 	memcpy( &shift_gun, &LinmathPose_Identity, sizeof(LinmathPose_Identity) ); 
-	LinmathEulerAngle euler = { -.15, 0, 0 };
+	LinmathEulerAngle euler = { 1.35, 3.14159, 0 };
 	quatfromeuler( shift_gun.Rot, euler );
 
 	memcpy( &shift_hmd, &LinmathPose_Identity, sizeof(LinmathPose_Identity) ); 

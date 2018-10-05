@@ -120,6 +120,9 @@ static void WSStreamOut( )
 		}
 		if( tosend > tos ) tosend = tos;
 		if( tosend > 1024 ) tosend = 1024;
+//static int lp;
+//printf( "%d %d %d\n", splace, splace - lp, tosend );
+//lp = splace;
 		//printf( "TOS %d/%d/%d [%d/%d] %d %d\n", tplace, splace, tosend, SpreadForHTTP->cbhead, cs->CircPtr, SPREADGINE_CIRCBUF, tos );
 		if( tosend )
 		{
@@ -230,14 +233,11 @@ void SpreadPushMessage( Spreadgine * e, uint8_t messageid, int payloadsize, void
 
 }
 
-
-
 //"entry" is in printf mode... "format" is in 'b' for byte, 'i' for integer, 'f' for float, 's' for string, 'v' takes two parameters, a # of bytes and a pointer to the payload.
 void SpreadMessage( Spreadgine * e, const char * entry, const char * format, ... )
 {
 	if( !enable_spread_remote ) return;
 	//XXX TODO:  This does an allocation every time it sends a message. Consider changing behavior so that doesn't happen.
-
     va_list ap;
     va_start(ap, format);
 	struct SpreadHashEntry * he;
