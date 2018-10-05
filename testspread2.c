@@ -144,6 +144,7 @@ int main()
 		tdPush();
 		tdIdentity( gSMatrix );
 		RenderBatchedSet( batched, shd1, gSMatrix );
+		for( i = 0; i < 3; i++ )
 		RenderTextBoxSet( textboxes, gSMatrix);
 		tdPop();
 
