@@ -30,49 +30,19 @@ void main()
 
 	float finalchartex = (texture2D( texture1, targetc )).r; //Look up texture and color-stretch.
 
-/*
+/*  //For filtering
 	vec3 fgcolor = vec3( tvB.yzw );
 	vec3 bgcolor = vec3( tvA.zw, tvB.x );
 	vec3 fg = finalchartex * fgcolor;
 	vec3 bg = (1.-finalchartex) * bgcolor; ///??? Why is this faster than "mix"??
 	gl_FragColor = vec4( fg+bg, 1.0 );*/
+
+
+	//For otherwise...
+
 	if( finalchartex > 0.5 )
 		gl_FragColor = vec4( tvB.yzw, 1.0 );
 	else
 		gl_FragColor = vec4( tvA.zw, tvB.x, 1.0 );
-#if 0
-	//Uncomment for more debug.
-	//	    gl_FragColor = vec4( tv.xy*1.0, 0.1, 1.0); return;
-
-	//Pointer to where in the font we need to look up.
-
-	vec2 targetc = floor( vec2( mod( tv.x, 16.0 ), vec2( tv.x / 16.0 ) ) )/16.0;
-
-	//targetc now contains 0..1, 0..1 of where to look up in the output map.
-
-
-
-	gl_FragColor = finalchartex;
-
-#if 1
-
-//	finalchartex = clamp( (finalchartex - 0.4 ) * 2.0, 0.0, 1.0 );  Don't blur when close.
-//	finalchartex = clamp( (finalchartex - 0.4 ) * 2.0, 0.0, 1.0 );  //<<This line makes it look good if you were doing biliner or trilinear interpolation.
-
-	//Get color + formatting.
-
-		//Attrib & 4 == invert colors
-		//Attrib & 1 == extra bold
-	float intensity = (mod( tv.y, 2.0 ) >= 1.0)?1.0:0.7;
-	if( mod(tv.y/16.0,2.0) >= 1.0 ) finalchartex.rgb = vec3(1.0)- finalchartex.rgb; 
-	float red = (mod( tv.z, 2.0 ) >= 1.0)?intensity:0.0;
-	float grn = (mod( tv.z/2.0, 2.0 ) >= 1.0)?intensity:0.0;
-	float blu = (mod( tv.z/4.0, 2.0 ) >= 1.0)?intensity:0.0;
-
-//	if( length(finalchartex.xyz) < 0.1 ) discard;
-	finalchartex.rgb *= vec3( red, grn, blu );
-	gl_FragColor = vec4( finalchartex.xyz+0.1, 1.0 );
-#endif
-#endif
 
 }
