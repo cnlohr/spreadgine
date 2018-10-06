@@ -616,7 +616,8 @@ void TextBoxHandleKeyX11( TextBox * tb, int keycode, int bDown )
 		}
 	}
 }
-#else
+
+#endif
 
 void TextBoxHandleKeyAscii( TextBox * tb, int keycode, int bDown )
 {
@@ -627,5 +628,4 @@ void TextBoxHandleKeyAscii( TextBox * tb, int keycode, int bDown )
 	if( ts->echo ) EmitChar( ts, st[0] );
 }
 
-#endif
 

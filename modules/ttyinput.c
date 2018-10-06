@@ -8,7 +8,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <termios.h>
-#endif
 
 
 void * HandleTTYInput( void * d )
@@ -33,5 +32,7 @@ void * HandleTTYInput( void * d )
 		if( r < 0 ) return 0;
 	}
 }
-
+#else
+void * HandleTTYInput( void * d ) { }
+#endif
 

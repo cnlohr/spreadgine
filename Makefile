@@ -1,4 +1,4 @@
-all : testspread testsurvive testgame set_optical_calibrations testspread2 testabnogeo
+all : testspread testsurvive testgame set_optical_calibrations testspread2 tccenvironment
 
 uname_m := $(shell uname -m)
 
@@ -63,6 +63,9 @@ set_optical_calibrations : set_optical_calibrations.c $(SPREADGINE_C) $(RESOURCE
 	gcc -o $@ $^ $(CFLAGS) $(LDFLAGS) $(SURVIVE_LDFLAGS)
 
 testabnogeo : testabnogeo.c $(SPREADGINE_C) $(RESOURCE_O)
+	gcc -o $@ $^ $(CFLAGS) $(LDFLAGS)
+
+tccenvironment : tccenvironment.c $(SPREADGINE_C) $(RESOURCE_O)
 	gcc -o $@ $^ $(CFLAGS) $(LDFLAGS)
 
 cntools/http/http_bsd.c :
