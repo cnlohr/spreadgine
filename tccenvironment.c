@@ -31,7 +31,33 @@ void HandleMotion( int x, int y, int mask )
 {
 }
 
+#define MAX_LINES 1024
 
+float boolets_arrayP[MAX_LINES*6];
+float boolets_arrayC[MAX_LINES*8];
+uint16_t boolets_ibo[MAX_LINES*2];
+int freebid;
+SpreadGeometry * boolets;
+int PerLinePlace = 0;
+int ShotsPerGun[2];
+void ClearPerFrameLines()
+{
+	//memset( &boolets_arrayP[MAX_LINES*6], 0, sizeof(MAX_LINES*6)*4 ); 
+	PerLinePlace = 0;
+}
+
+
+
+
+void AddPerLinePlace( float * mat, float * pt1, float * pt2, float * c1, float * c2 )
+{
+	if( PerLinePlace >= MAX_LINES ) return;
+	tdPTransform( pt1, mat, &boolets_arrayP[PerLinePlace*3+0] );
+	tdPTransform( pt2, mat, &boolets_arrayP[PerLinePlace*3+3] );
+	memcpy( &boolets_arrayC[PerLinePlace*4+0], c1, sizeof( float ) * 4 );
+	memcpy( &boolets_arrayC[PerLinePlace*4+4], c2, sizeof( float ) * 4 );
+	PerLinePlace +=2;
+}
 
 extern const unsigned short FontCharMap[256];
 extern const unsigned char FontCharData[1902];
@@ -201,6 +227,8 @@ int main( int argc, char ** argv )
         tdMode( tdMODELVIEW );
         tdIdentity( gSMatrix );
 
+		ClearPerFrameLines();
+
 		spglLineWidth( gspe, 4 );
 
 		SpreadApplyShader( gspe->shaders[0] );
@@ -224,7 +252,7 @@ int main( int argc, char ** argv )
 			tdRotateQuat( gSMatrix, wmp[i].Rot[0], wmp[i].Rot[1], wmp[i].Rot[2], wmp[i].Rot[3] );
 			SpreadRenderGeometry( gun, gSMatrix, 0, -1 ); 
 
-			RawDrawText( -.01, gSMatrix, Color, "GUN %d\nSHOT %d", i, ShotsPerGun[i] );
+			RawDrawText( -.01, gSMatrix, Color, "GUN %d", i );
 
 			tdPop();
 
@@ -264,6 +292,9 @@ int main( int argc, char ** argv )
 			spglEnable( gspe, GL_CULL_FACE );
 		}
 
+
+
+		SpreadRenderGeometry( boolets, gSMatrix, 0, MAX_LINES*2);
 
 		tdPop();
 
