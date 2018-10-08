@@ -8,7 +8,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <termios.h>
-#endif
 
 
 void * HandleTTYInput( void * d )
@@ -39,5 +38,7 @@ void * HandleTTYInput( void * d )
 		HandleKeypress( c );
 	}
 }
-
+#else
+void * HandleTTYInput( void * d ) { }
+#endif
 
