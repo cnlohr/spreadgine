@@ -12,7 +12,7 @@
 
 TextBox * tbfocus;
 
-void HandleKeypress( int ch )
+void HandleKeypress( int ch, int down )
 {
 	if( tbfocus ) TextBoxHandleKeyAscii( tbfocus, ch, 1 );
 }

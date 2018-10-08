@@ -1,4 +1,4 @@
-all : testspread testsurvive testgame set_optical_calibrations testspread2 tccenvironment
+all : testspread testsurvive testgame set_optical_calibrations testspread2
 
 uname_m := $(shell uname -m)
 
@@ -65,12 +65,9 @@ set_optical_calibrations : set_optical_calibrations.c $(SPREADGINE_C) $(RESOURCE
 testabnogeo : testabnogeo.c $(SPREADGINE_C) $(RESOURCE_O)
 	gcc -o $@ $^ $(CFLAGS) $(LDFLAGS)
 
-tccenvironment : tccenvironment.c $(SPREADGINE_C) $(RESOURCE_O)
-	gcc -o $@ $^ $(CFLAGS) $(LDFLAGS)
-
 cntools/http/http_bsd.c :
 	git submodule update --init --recursive
 
 
 clean :
-	rm -rf testspread testsurvive testgame $(RESOURCE_O)
+	rm -rf testspread testsurvive testgame testspread2 set_optical_calibrations testabnogeo $(RESOURCE_O)

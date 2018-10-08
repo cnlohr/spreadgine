@@ -5,6 +5,10 @@
 #include <os_generic.h>
 #include <linmath.h>
 
+void HandleKeypress( int ch, int down )
+{
+}
+
 void HandleKey( int keycode, int bDown )
 {
 }

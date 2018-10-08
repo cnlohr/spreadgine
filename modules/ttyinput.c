@@ -8,7 +8,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <termios.h>
-
+#include "ttyinput.h"
 
 void * HandleTTYInput( void * d )
 {
@@ -35,7 +35,7 @@ void * HandleTTYInput( void * d )
 			else if( c == 163 ) c = '#';
 			else continue;
 		}
-		HandleKeypress( c );
+		HandleKeypress( c, 1 );
 	}
 }
 #else

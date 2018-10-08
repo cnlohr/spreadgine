@@ -7,6 +7,10 @@
 #include <spreadgine_vr.h>
 #include <spreadgine_util.h>
 
+void HandleKeypress( int ch, int down )
+{
+}
+
 void HandleKey( int keycode, int bDown )
 {
 }

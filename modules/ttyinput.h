@@ -4,6 +4,6 @@
 void * HandleTTYInput( void * d );
 
 //You implement this:
-void HandleKeypress( int ch );
+void HandleKeypress( int ch, int down );
 
 #endif

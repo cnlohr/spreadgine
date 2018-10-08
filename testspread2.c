@@ -8,6 +8,12 @@
 
 TextBox * tbfocus;
 
+//You implement this:
+void HandleKeypress( int ch, int down )
+{
+	if( tbfocus ) TextBoxHandleKeyAscii( tbfocus, ch, down );
+}
+
 #ifndef RASPI_GPU
 void HandleKey( int keycode, int bDown )
 {
