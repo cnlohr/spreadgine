@@ -27,8 +27,8 @@ void main()
 	vec2 placeincharacter = mod( vv1Col.zw, 1.0 ) / 16.0;
 	targetc = targetc + placeincharacter - vec2( 0.005); //This tweaks the position in the texture we're looking.
 
-
 	float finalchartex = (texture2D( texture1, targetc )).r; //Look up texture and color-stretch.
+
 
 /*  //For filtering
 	vec3 fgcolor = vec3( tvB.yzw );

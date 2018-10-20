@@ -111,16 +111,10 @@ TextBoxSet * CreateTextBoxSet( Spreadgine * spr, const char * fontfile, int max_
 		#else
 		//We do a little work to make sure we have a power-of-two texture.  This code is untested and may not be needed.
 
-#ifdef RASPI_GPU
 		charset_w_exp = ( charset_w );
 		charset_h_exp = ( charset_h );
 		charset_texture = SpreadCreateTexture( spr, fontfile, charset_w_exp, charset_h_exp, 4, GL_UNSIGNED_BYTE );
-#else
-		charset_w_exp = pow2roundup( charset_w );
-		charset_h_exp = pow2roundup( charset_h );
-		charset_texture = SpreadCreateTexture( spr, fontfile, charset_w_exp, charset_h_exp, 4, GL_UNSIGNED_BYTE );
-		SpreadChangeTextureProperties( charset_texture, 2, 0, 1, 2 );
-#endif
+
 		//Build an expanded image for loading into the texture.
 		uint32_t * fontup = malloc( charset_w_exp * charset_h_exp * 4 );
 		int x, y;

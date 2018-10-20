@@ -124,9 +124,10 @@ void RawDrawText( float scale, float * mat, float * color, const char * textf, .
 }
 
 
-
+#ifndef RASPI_GPU
 void HandleKey( int keycode, int bDown )
 {
+	if( tbfocus ) TextBoxHandleKeyX11( tbfocus, keycode, bDown );
 }
 
 void HandleButton( int x, int y, int button, int bDown )
@@ -136,6 +137,7 @@ void HandleButton( int x, int y, int button, int bDown )
 void HandleMotion( int x, int y, int mask )
 {
 }
+#endif
 
 void HandleControllerInput()
 {
@@ -265,7 +267,7 @@ void ResetBlock( int i )
 int main( int argc, char ** argv )
 {
 	int i;
-	gspe = SpreadInit( 2160, 1200, "Spread Game Survive Test", 8888, 2, stderr );
+	gspe = SpreadInit( 2048, 1200, "Spread Game Survive Test", 8888, 2, stderr );
 
 #ifdef RASPI_GPU
 	OGCreateThread( HandleTTYInput, 0 );
@@ -361,7 +363,7 @@ int main( int argc, char ** argv )
 		spglClearColor( gspe, .01, 0.01, 0.01, 1.0 );
 
 		HandleControllerInput();
-
+		CNFGHandleInput();
 
 		spglClear( gspe, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 		spglEnable( gspe, GL_DEPTH_TEST );

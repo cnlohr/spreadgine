@@ -27,11 +27,14 @@ Spreadgine * SpreadInit( int w, int h, const char * title, int httpport, int vps
 	int i;
 	Spreadgine * ret;
 
+#if 0
 	if( CNFGSetup( title, w, h ) )
 	{
 		fprintf( fReport, "Error: Could not setup graphics frontend.\n" );
 		return 0;
 	}
+#endif
+	CNFGSetupFullscreen( title, 1 );
 
 #ifdef RASPI_GPU
 	if( w > 2048 )
