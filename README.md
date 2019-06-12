@@ -49,11 +49,15 @@ hdmi_timings=720 1 16 62 60 480 1 9 6 36 0 0 0 60 0 27027000 5  #Initial, will b
 
 ```root@rasvive:~# cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq 1400000```
 
-```vcgencmd measure_clock core
-frequency(1)=600000000```
+```
+vcgencmd measure_clock core
+frequency(1)=600000000
+```
 
-```vcgencmd measure_clock isp
-frequency(42)=300000000```
+```
+vcgencmd measure_clock isp
+frequency(42)=300000000
+```
 
 Using above configuration and git fd7d7f6 We get 43 FPS.
 
