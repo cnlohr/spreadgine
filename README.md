@@ -67,7 +67,8 @@ At 600Core/1.5GHzArm/600MHzRAM, 43-44 FPS.
 
 At that, with a heat sink and a slow fan right above...
 ```vcgencmd measure_temp
-temp=40.8'C```
+temp=40.8'C
+```
 
 The following is a little unstable:
 ```
