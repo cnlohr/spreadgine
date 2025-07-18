@@ -9,7 +9,8 @@ uname_m := $(shell uname -m)
 USE_GPU:=-DRASPI_GPU -DGLES2 -I/opt/vc/include # -DNEED_BUFFER_BITS
 LINK_GPU:=-L/opt/vc/lib -lbrcmGLESv2 -lbrcmEGL -lopenmaxil -lbcm_host -lvcos -lvchiq_arm
 
-SURVIVE:=`echo ~`/git/libsurvive
+#SURVIVE:=`echo ~`/git/libsurvive
+SURVIVE:=modules/libsurvive
 SURVIVE_CFLAGS:=-I$(SURVIVE)/include -I$(SURVIVE)/redist -DUSE_DOUBLE
 SURVIVE_LDFLAGS:=$(SURVIVE)/lib/libsurvive.so -lcblas -llapacke
 
@@ -39,7 +40,7 @@ else
 	LDFLAGS:=-lm -lpthread $(LINK_GPU)
 endif
 
-CFLAGS+=-Os -g -Iinclude -Icntools/http -Irawdraw -Imodules
+CFLAGS+=-Os -g -Iinclude -Icntools/http -Irawdraw -Imodules -Imodules/libsurvive/include -Imodules/libsurvive/redist -Imodules/libsurvive/libs -Imodules/libsurvive/libs/cnmatrix/include
 RESOURCE_O:=$(CNHTTP) $(RAWDRAW) src/spreadgine.o src/spreadgine_util.o src/spreadgine_remote.o src/objload.o src/spreadgine_vr.o src/spatialloc.o
 RESOURCE_O+=modules/textboxes.o cntools/vlinterm/vlinterm.o
 RESOURCE_O+=modules/ttyinput.o
